@@ -1,0 +1,745 @@
+/* ========================================
+   INSTALLATION REPORT DETAILS - CLEAN PROFESSIONAL
+   ======================================== */
+
+.installation-details-container {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 24px 32px;
+    min-height: 100vh;
+    background: #f0f2f5;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+}
+
+/* ========================================
+   HEADER
+   ======================================== */
+.view-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: white;
+    padding: 16px 24px;
+    border-radius: 12px;
+    margin-bottom: 20px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+.header-left {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.btn-back {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: none;
+    border: none;
+    color: #1a237e;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    padding: 6px 12px;
+    border-radius: 6px;
+    transition: all 0.2s;
+}
+
+.btn-back:hover {
+    background: #e8eaf6;
+}
+
+.header-title {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.header-title h1 {
+    margin: 0;
+    font-size: 22px;
+    font-weight: 600;
+    color: #1a1a2e;
+}
+
+.header-badges {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.report-badge {
+    background: #e8eaf6;
+    color: #1a237e;
+    padding: 2px 12px;
+    border-radius: 12px;
+    font-size: 13px;
+    font-weight: 600;
+}
+
+.header-right {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+
+.header-right button {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 18px;
+    border: none;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.btn-edit {
+    background: #1a237e;
+    color: white;
+}
+
+.btn-edit:hover {
+    background: #0d47a1;
+}
+
+.btn-pdf {
+    background: #dc2626;
+    color: white;
+}
+
+.btn-pdf:hover:not(:disabled) {
+    background: #b91c1c;
+}
+
+.btn-pdf:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.btn-print {
+    background: #4b5563;
+    color: white;
+}
+
+.btn-print:hover {
+    background: #374151;
+}
+
+/* ========================================
+   REPORT INFO BAR
+   ======================================== */
+.report-info-bar {
+    display: flex;
+    gap: 30px;
+    background: white;
+    padding: 12px 24px;
+    border-radius: 12px;
+    margin-bottom: 20px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+    flex-wrap: wrap;
+    align-items: center;
+}
+
+.info-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 14px;
+    color: #4b5563;
+}
+
+.info-item .info-icon {
+    color: #1a237e;
+    font-size: 16px;
+}
+
+.info-item strong {
+    color: #1a1a2e;
+}
+
+/* ========================================
+   BASIC INFORMATION
+   ======================================== */
+.basic-info-section,
+.equipment-section,
+.activity-section,
+.remark-section,
+.confirmation-section,
+.signoff-section {
+    background: white;
+    border-radius: 12px;
+    padding: 20px 24px;
+    margin-bottom: 20px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+.section-header {
+    border-bottom: 2px solid #e5e7eb;
+    padding-bottom: 12px;
+    margin-bottom: 16px;
+}
+
+.section-header h2 {
+    margin: 0;
+    font-size: 16px;
+    font-weight: 600;
+    color: #1a237e;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.section-icon {
+    color: #1a237e;
+}
+
+.basic-info-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px 40px;
+}
+
+.info-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 8px 0;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.info-row:last-child {
+    border-bottom: none;
+}
+
+.info-label {
+    font-size: 13px;
+    font-weight: 600;
+    color: #6b7280;
+}
+
+.info-value {
+    font-size: 14px;
+    font-weight: 500;
+    color: #1a1a2e;
+}
+
+/* ========================================
+   STATUS BADGE
+   ======================================== */
+.status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 14px;
+    border-radius: 20px;
+    font-size: 13px;
+    font-weight: 600;
+}
+
+.status-success {
+    background: #d1fae5;
+    color: #065f46;
+}
+
+.status-pending {
+    background: #fee2e2;
+    color: #991b1b;
+}
+
+/* ========================================
+   EQUIPMENT TABLE
+   ======================================== */
+.table-responsive {
+    overflow-x: auto;
+}
+
+.equipment-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 14px;
+}
+
+.equipment-table thead {
+    background: #f8fafc;
+}
+
+.equipment-table th {
+    padding: 10px 14px;
+    text-align: left;
+    font-weight: 600;
+    color: #1a237e;
+    border-bottom: 2px solid #e5e7eb;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.equipment-table td {
+    padding: 10px 14px;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.equipment-table tbody tr:hover {
+    background: #f8fafc;
+}
+
+/* ========================================
+   WORK ACTIVITY
+   ======================================== */
+.activity-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+}
+
+.activity-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 16px;
+    background: #f8fafc;
+    border-radius: 8px;
+    border-left: 4px solid #e5e7eb;
+    transition: all 0.2s;
+}
+
+.activity-item.completed {
+    border-left-color: #10b981;
+}
+
+.activity-item.pending {
+    border-left-color: #ef4444;
+}
+
+.activity-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.activity-status.status-success {
+    color: #065f46;
+}
+
+.activity-status.status-pending {
+    color: #991b1b;
+}
+
+/* ========================================
+   REMARK
+   ======================================== */
+.remark-content {
+    padding: 12px 16px;
+    background: #fffbeb;
+    border-radius: 8px;
+    border-left: 4px solid #f59e0b;
+    font-size: 14px;
+    color: #1a1a2e;
+    line-height: 1.6;
+}
+
+/* ========================================
+   CONFIRMATION
+   ======================================== */
+.confirmation-box {
+    padding: 16px 20px;
+    background: #f8fafc;
+    border-radius: 8px;
+    border-left: 4px solid #3b82f6;
+}
+
+.confirmation-box p {
+    margin: 0 0 12px 0;
+    font-size: 14px;
+    color: #1a1a2e;
+    line-height: 1.6;
+}
+
+.confirmation-status {
+    display: flex;
+    justify-content: flex-end;
+}
+
+/* ========================================
+   SIGNOFF
+   ======================================== */
+.signoff-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+}
+
+.signoff-box {
+    padding: 16px 20px;
+    border-radius: 8px;
+    border: 1px solid #e5e7eb;
+}
+
+.signoff-box.customer {
+    border-left: 4px solid #3b82f6;
+}
+
+.signoff-box.engineer {
+    border-left: 4px solid #10b981;
+}
+
+.signoff-box h4 {
+    margin: 0 0 12px 0;
+    font-size: 14px;
+    font-weight: 600;
+    color: #1a237e;
+}
+
+.signoff-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 4px 0;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.signoff-row:last-child {
+    border-bottom: none;
+}
+
+.signoff-row label {
+    font-size: 12px;
+    font-weight: 600;
+    color: #6b7280;
+}
+
+.signoff-row span {
+    font-size: 14px;
+    color: #1a1a2e;
+}
+
+.signature-text {
+    font-family: 'Brush Script MT', cursive;
+    font-size: 18px;
+    color: #1a237e;
+}
+
+/* ========================================
+   FOOTER
+   ======================================== */
+.view-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: white;
+    padding: 16px 24px;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+.footer-left {
+    display: flex;
+    align-items: center;
+}
+
+.footer-brand {
+    font-size: 14px;
+    font-weight: 600;
+    color: #1a237e;
+    letter-spacing: 0.5px;
+}
+
+.footer-actions {
+    display: flex;
+    gap: 10px;
+}
+
+.btn-back-footer {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 16px;
+    background: #f5f6fa;
+    border: none;
+    border-radius: 6px;
+    color: #4b5563;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.btn-back-footer:hover {
+    background: #e5e7eb;
+}
+
+.btn-edit-footer {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 20px;
+    background: #1a237e;
+    border: none;
+    border-radius: 6px;
+    color: white;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.btn-edit-footer:hover {
+    background: #0d47a1;
+}
+
+.btn-pdf-footer {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 20px;
+    background: #dc2626;
+    border: none;
+    border-radius: 6px;
+    color: white;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.btn-pdf-footer:hover:not(:disabled) {
+    background: #b91c1c;
+}
+
+.btn-pdf-footer:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.spinning {
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+/* ========================================
+   LOADING & ERROR
+   ======================================== */
+.installation-details-loading {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 400px;
+    gap: 16px;
+}
+
+.loading-spinner {
+    width: 48px;
+    height: 48px;
+    border: 4px solid #e5e7eb;
+    border-top-color: #1a237e;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+.installation-details-loading p {
+    color: #6b7280;
+    font-size: 14px;
+}
+
+.installation-details-error {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 400px;
+}
+
+.error-content {
+    text-align: center;
+    padding: 40px;
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+    max-width: 420px;
+}
+
+.error-icon {
+    font-size: 48px;
+    display: block;
+    margin-bottom: 12px;
+}
+
+.error-content h3 {
+    color: #1a1a2e;
+    margin: 0 0 8px 0;
+}
+
+.error-content p {
+    color: #6b7280;
+    margin: 0 0 16px 0;
+}
+
+.btn-primary {
+    padding: 8px 20px;
+    background: #1a237e;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.btn-primary:hover {
+    background: #0d47a1;
+}
+
+/* ========================================
+   RESPONSIVE
+   ======================================== */
+@media (max-width: 1024px) {
+    .basic-info-grid {
+        grid-template-columns: 1fr;
+        gap: 4px;
+    }
+
+    .activity-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .signoff-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 768px) {
+    .installation-details-container {
+        padding: 12px 16px;
+    }
+
+    .view-header {
+        flex-direction: column;
+        gap: 12px;
+        align-items: stretch;
+    }
+
+    .header-left {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .header-right {
+        flex-wrap: wrap;
+    }
+
+    .header-right button {
+        flex: 1;
+        justify-content: center;
+    }
+
+    .report-info-bar {
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .info-row {
+        flex-direction: column;
+        gap: 2px;
+        padding: 6px 0;
+    }
+
+    .view-footer {
+        flex-direction: column;
+        gap: 12px;
+    }
+
+    .footer-actions {
+        width: 100%;
+        flex-wrap: wrap;
+    }
+
+    .footer-actions button {
+        flex: 1;
+        justify-content: center;
+        min-width: 120px;
+    }
+
+    .signoff-row {
+        flex-direction: column;
+        gap: 2px;
+    }
+}
+
+@media (max-width: 480px) {
+    .installation-details-container {
+        padding: 8px 10px;
+    }
+
+    .header-title h1 {
+        font-size: 18px;
+    }
+
+    .header-badges {
+        flex-wrap: wrap;
+    }
+
+    .basic-info-section,
+    .equipment-section,
+    .activity-section,
+    .remark-section,
+    .confirmation-section,
+    .signoff-section {
+        padding: 16px;
+    }
+
+    .footer-actions button {
+        min-width: 100px;
+        font-size: 12px;
+        padding: 6px 12px;
+    }
+}
+
+/* ========================================
+   PRINT STYLES
+   ======================================== */
+@media print {
+    .btn-back,
+    .btn-edit,
+    .btn-pdf,
+    .btn-print,
+    .view-footer .footer-actions {
+        display: none !important;
+    }
+
+    .installation-details-container {
+        padding: 0 !important;
+        background: white !important;
+    }
+
+    .view-header {
+        box-shadow: none !important;
+        border-bottom: 2px solid #1a237e !important;
+    }
+
+    .basic-info-section,
+    .equipment-section,
+    .activity-section,
+    .remark-section,
+    .confirmation-section,
+    .signoff-section {
+        box-shadow: none !important;
+        border: 1px solid #e5e7eb !important;
+        break-inside: avoid;
+    }
+
+    .status-badge {
+        border: 1px solid #d1d5db;
+    }
+
+    .footer-brand {
+        font-size: 12px;
+    }
+}

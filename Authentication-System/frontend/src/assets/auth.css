@@ -1,0 +1,227 @@
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+    font-family:"Segoe UI",sans-serif;
+}
+
+body{
+    background:linear-gradient(135deg,#b3c6f0,#37323f);
+    min-height:100vh;
+}
+
+.auth-page{
+
+    display:flex;
+    min-height:100vh;
+}
+
+.left-panel{
+
+    flex:1;
+
+    display:flex;
+
+    flex-direction:column;
+
+    justify-content:center;
+
+    align-items:center;
+
+    color:white;
+
+    padding:60px;
+}
+
+.left-panel h1{
+
+    font-size:50px;
+
+    margin-bottom:20px;
+}
+
+.left-panel p{
+
+    font-size:18px;
+
+    width:70%;
+
+    line-height:1.8;
+
+    opacity:.9;
+}
+
+.right-panel{
+
+    flex:1;
+
+    display:flex;
+
+    justify-content:center;
+
+    align-items:center;
+}
+
+.auth-card{
+
+    width:420px;
+
+    background:rgba(255,255,255,.15);
+
+    backdrop-filter:blur(20px);
+
+    border:1px solid rgba(255,255,255,.2);
+
+    border-radius:20px;
+
+    padding:40px;
+
+    color:white;
+
+    box-shadow:0 20px 40px rgba(0,0,0,.2);
+}
+
+.auth-card h2{
+
+    text-align:center;
+
+    margin-bottom:10px;
+
+    font-size:32px;
+}
+
+.auth-card p{
+
+    text-align:center;
+
+    margin-bottom:25px;
+
+    color:#f3f4f6;
+}
+
+form{
+
+    display:flex;
+
+    flex-direction:column;
+}
+
+.input{
+
+    width:100%;
+
+    padding:15px;
+
+    margin-bottom:18px;
+
+    border:none;
+
+    border-radius:12px;
+
+    background:white;
+
+    outline:none;
+
+    font-size:16px;
+
+    transition:.3s;
+}
+
+.input:focus{
+
+    transform:scale(1.02);
+
+    box-shadow:0 0 10px rgba(37,99,235,.4);
+}
+
+.password-box{
+
+    position:relative;
+}
+
+.show-btn{
+
+    position:absolute;
+
+    right:15px;
+
+    top:14px;
+
+    border:none;
+
+    background:none;
+
+    cursor:pointer;
+
+    color:#2563eb;
+
+    font-weight:bold;
+}
+
+.login-btn{
+
+    padding:15px;
+
+    border:none;
+
+    border-radius:12px;
+
+    background:#2563eb;
+
+    color:white;
+
+    font-size:17px;
+
+    font-weight:600;
+
+    cursor:pointer;
+
+    transition:.3s;
+}
+
+.login-btn:hover{
+
+    background:#1d4ed8;
+
+    transform:translateY(-2px);
+}
+
+.bottom-text{
+
+    text-align:center;
+
+    margin-top:20px;
+}
+
+.bottom-text a{
+
+    color:#fff;
+
+    font-weight:bold;
+
+    text-decoration:none;
+}
+
+.bottom-text a:hover{
+
+    text-decoration:underline;
+}
+
+@media(max-width:900px){
+
+.auth-page{
+
+    flex-direction:column;
+}
+
+.left-panel{
+
+    display:none;
+}
+
+.auth-card{
+
+    width:90%;
+}
+
+}

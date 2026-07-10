@@ -1,0 +1,67 @@
+.pre-visit-module {
+  padding: 20px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.module-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 25px;
+  padding-bottom: 15px;
+  border-bottom: 2px solid #f0f0f0;
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.header-left h2 {
+  margin: 0;
+  color: #333;
+  font-size: 24px;
+}
+
+.report-count {
+  background: #4a6cf7;
+  color: white;
+  padding: 2px 12px;
+  border-radius: 20px;
+  font-size: 14px;
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, #4a6cf7, #6c5ce7);
+  color: white;
+  border: none;
+  padding: 10px 24px;
+  border-radius: 8px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 15px rgba(74, 108, 247, 0.3);
+}
+
+@media (max-width: 768px) {
+  .module-header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 15px;
+  }
+
+  .header-left {
+    justify-content: space-between;
+  }
+
+  .btn-primary {
+    width: 100%;
+  }
+}

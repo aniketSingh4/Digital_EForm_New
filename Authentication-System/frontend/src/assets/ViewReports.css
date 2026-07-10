@@ -1,0 +1,954 @@
+/* src/assets/ViewReports.css */
+
+.view-reports-container {
+    min-height: 100vh;
+    padding: 2rem;
+    background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+    color: #e2e8f0;
+}
+
+/* Header */
+.reports-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+
+.reports-header h1 {
+    font-size: 1.75rem;
+    font-weight: 700;
+    color: white;
+    margin: 0;
+}
+
+.back-btn {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.6rem 1.2rem;
+    background: rgba(255, 255, 255, 0.08);
+    color: white;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-size: 0.9rem;
+}
+
+.back-btn:hover {
+    background: rgba(255, 255, 255, 0.15);
+    transform: translateX(-4px);
+}
+
+.header-actions {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+}
+
+.bulk-pdf-btn {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.6rem 1.2rem;
+    background: linear-gradient(135deg, #EF4444, #DC2626);
+    color: white;
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+    font-weight: 600;
+    transition: all 0.3s ease;
+}
+
+.bulk-pdf-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(239, 68, 68, 0.3);
+}
+
+.create-btn {
+    padding: 0.6rem 1.5rem;
+    background: linear-gradient(135deg, #4F46E5, #7C3AED);
+    color: white;
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    font-size: 0.95rem;
+}
+
+.create-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(79, 70, 229, 0.3);
+}
+
+/* Controls */
+.reports-controls {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+    background: rgba(255, 255, 255, 0.05);
+    padding: 1rem 1.5rem;
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.search-wrapper {
+    display: flex;
+    align-items: center;
+    background: rgba(255, 255, 255, 0.06);
+    border-radius: 8px;
+    padding: 0.4rem 0.8rem;
+    flex: 1;
+    max-width: 400px;
+    position: relative;
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    transition: all 0.3s ease;
+}
+
+.search-wrapper:focus-within {
+    border-color: rgba(79, 70, 229, 0.5);
+    background: rgba(255, 255, 255, 0.08);
+}
+
+.search-icon {
+    color: rgba(255, 255, 255, 0.4);
+    margin-right: 0.5rem;
+}
+
+.search-input {
+    background: transparent;
+    border: none;
+    color: white;
+    padding: 0.4rem 0;
+    flex: 1;
+    outline: none;
+    font-size: 0.9rem;
+}
+
+.search-input::placeholder {
+    color: rgba(255, 255, 255, 0.3);
+}
+
+.clear-search {
+    background: none;
+    border: none;
+    color: rgba(255, 255, 255, 0.4);
+    cursor: pointer;
+    padding: 0.2rem;
+}
+
+.clear-search:hover {
+    color: white;
+}
+
+.filter-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.filter-icon {
+    color: rgba(255, 255, 255, 0.4);
+}
+
+.filter-select {
+    background: rgba(255, 255, 255, 0.06);
+    color: white;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    padding: 0.4rem 1rem;
+    border-radius: 8px;
+    cursor: pointer;
+    outline: none;
+    font-size: 0.9rem;
+}
+
+.filter-select option {
+    background: #1e293b;
+    color: white;
+}
+
+.reports-count {
+    color: rgba(255, 255, 255, 0.6);
+    font-size: 0.9rem;
+}
+
+.demo-badge {
+    background: rgba(245, 158, 11, 0.15);
+    color: #FBBF24;
+    padding: 0.15rem 0.5rem;
+    border-radius: 12px;
+    font-size: 0.7rem;
+    margin-left: 0.3rem;
+}
+
+.refresh-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.4rem 0.8rem;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 8px;
+    color: rgba(255, 255, 255, 0.6);
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.refresh-btn:hover {
+    background: rgba(255, 255, 255, 0.12);
+    color: white;
+    transform: rotate(180deg);
+}
+
+/* Error Message */
+.error-message {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    background: rgba(239, 68, 68, 0.1);
+    border: 1px solid rgba(239, 68, 68, 0.2);
+    padding: 0.75rem 1rem;
+    border-radius: 8px;
+    color: #F87171;
+    margin-bottom: 1rem;
+}
+
+.error-message.warning {
+    background: rgba(245, 158, 11, 0.1);
+    border-color: rgba(245, 158, 11, 0.2);
+    color: #FBBF24;
+}
+
+.error-message button {
+    margin-left: auto;
+    background: rgba(239, 68, 68, 0.2);
+    color: #F87171;
+    border: none;
+    padding: 0.3rem 0.8rem;
+    border-radius: 6px;
+    cursor: pointer;
+}
+
+.error-message.warning button {
+    background: rgba(245, 158, 11, 0.2);
+    color: #FBBF24;
+}
+
+/* Table */
+.table-wrapper {
+    overflow-x: auto;
+    background: rgba(255, 255, 255, 0.04);
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.reports-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.9rem;
+    min-width: 800px;
+}
+
+.reports-table thead {
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.reports-table th {
+    padding: 0.75rem 1rem;
+    text-align: left;
+    color: rgba(255, 255, 255, 0.7);
+    font-weight: 600;
+    cursor: pointer;
+    user-select: none;
+    white-space: nowrap;
+    border-bottom: 2px solid rgba(255, 255, 255, 0.05);
+    position: sticky;
+    top: 0;
+    background: #1e293b;
+    z-index: 10;
+}
+
+.reports-table th:last-child {
+    text-align: center;
+}
+
+.reports-table th.sorted {
+    color: white;
+}
+
+.reports-table th .sort-arrow {
+    margin-left: 0.3rem;
+    font-size: 0.7rem;
+}
+
+.reports-table td {
+    padding: 0.7rem 1rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+    vertical-align: middle;
+}
+
+.reports-table td:last-child {
+    text-align: center;
+}
+
+.reports-table tbody tr {
+    transition: all 0.2s ease;
+}
+
+.reports-table tbody tr:hover {
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.selected-row {
+    background: rgba(79, 70, 229, 0.08) !important;
+}
+
+/* Status Badges */
+.status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.25rem 0.6rem;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 500;
+    white-space: nowrap;
+}
+
+.status-satisfactory {
+    background: rgba(16, 185, 129, 0.15);
+    color: #34D399;
+}
+
+.status-followup {
+    background: rgba(245, 158, 11, 0.15);
+    color: #FBBF24;
+}
+
+.status-attention {
+    background: rgba(239, 68, 68, 0.15);
+    color: #F87171;
+}
+
+.status-completed {
+    background: rgba(16, 185, 129, 0.15);
+    color: #34D399;
+}
+
+.status-inprogress {
+    background: rgba(59, 130, 246, 0.15);
+    color: #60A5FA;
+}
+
+.status-pending {
+    background: rgba(245, 158, 11, 0.15);
+    color: #FBBF24;
+}
+
+.status-default {
+    background: rgba(255, 255, 255, 0.05);
+    color: rgba(255, 255, 255, 0.6);
+}
+
+/* Action Buttons */
+.action-buttons {
+    display: flex;
+    gap: 0.4rem;
+    align-items: center;
+    justify-content: center;
+    flex-wrap: nowrap;
+}
+
+.action-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.3rem;
+    width: 34px;
+    height: 34px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    background: rgba(255, 255, 255, 0.06);
+    color: rgba(255, 255, 255, 0.5);
+    font-size: 0.85rem;
+    position: relative;
+}
+
+.action-btn:hover {
+    transform: translateY(-2px) scale(1.05);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.action-btn.view:hover {
+    background: rgba(59, 130, 246, 0.25);
+    color: #60A5FA;
+}
+
+.action-btn.edit:hover {
+    background: rgba(245, 158, 11, 0.25);
+    color: #FBBF24;
+}
+
+.action-btn.pdf:hover:not(:disabled) {
+    background: rgba(239, 68, 68, 0.25);
+    color: #F87171;
+}
+
+.action-btn.delete:hover {
+    background: rgba(239, 68, 68, 0.25);
+    color: #F87171;
+}
+
+.action-btn.pdf:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+/* Tooltips */
+.action-btn::after {
+    content: attr(title);
+    position: absolute;
+    bottom: calc(100% + 8px);
+    left: 50%;
+    transform: translateX(-50%) scale(0);
+    background: rgba(0, 0, 0, 0.85);
+    color: white;
+    padding: 4px 10px;
+    border-radius: 4px;
+    font-size: 11px;
+    white-space: nowrap;
+    pointer-events: none;
+    transition: all 0.2s ease;
+    opacity: 0;
+    z-index: 100;
+}
+
+.action-btn:hover::after {
+    transform: translateX(-50%) scale(1);
+    opacity: 1;
+}
+
+/* Checkbox */
+.select-checkbox {
+    width: 16px;
+    height: 16px;
+    cursor: pointer;
+    accent-color: #4F46E5;
+}
+
+/* Pagination */
+.pagination {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 1rem;
+    margin-top: 1.5rem;
+}
+
+.page-btn {
+    padding: 0.4rem 0.8rem;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 8px;
+    color: white;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.page-btn:hover:not(:disabled) {
+    background: rgba(255, 255, 255, 0.12);
+}
+
+.page-btn:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+}
+
+.page-info {
+    color: rgba(255, 255, 255, 0.6);
+    font-size: 0.9rem;
+}
+
+/* No Reports */
+.no-reports {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 4rem 2rem;
+    background: rgba(255, 255, 255, 0.03);
+    border-radius: 12px;
+    border: 2px dashed rgba(255, 255, 255, 0.06);
+}
+
+.no-reports-icon {
+    font-size: 4rem;
+    margin-bottom: 1rem;
+    opacity: 0.5;
+}
+
+.no-reports h3 {
+    color: white;
+    font-size: 1.5rem;
+    margin-bottom: 0.5rem;
+}
+
+.no-reports p {
+    color: rgba(255, 255, 255, 0.5);
+    margin-bottom: 1.5rem;
+}
+
+.create-first-btn {
+    padding: 0.75rem 2rem;
+    background: linear-gradient(135deg, #4F46E5, #7C3AED);
+    color: white;
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+    font-weight: 600;
+    transition: all 0.3s ease;
+}
+
+.create-first-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(79, 70, 229, 0.3);
+}
+
+/* Loading */
+.loading-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 400px;
+    gap: 1rem;
+}
+
+.spinner {
+    font-size: 2.5rem;
+    color: #60A5FA;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+/* Modal */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.7);
+    backdrop-filter: blur(8px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    animation: fadeIn 0.2s ease;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+.modal-content {
+    background: #1e293b;
+    border-radius: 16px;
+    max-width: 900px;
+    width: 95%;
+    max-height: 90vh;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+    animation: slideUp 0.3s ease;
+}
+
+@keyframes slideUp {
+    from { transform: translateY(20px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1.5rem 1.5rem 0.5rem;
+    flex-shrink: 0;
+}
+
+.modal-header h2 {
+    color: white;
+    font-size: 1.25rem;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.modal-close {
+    background: none;
+    border: none;
+    color: rgba(255, 255, 255, 0.5);
+    cursor: pointer;
+    font-size: 1.25rem;
+    padding: 0.5rem;
+    border-radius: 50%;
+    transition: all 0.2s ease;
+}
+
+.modal-close:hover {
+    color: white;
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.modal-body {
+    padding: 1.5rem;
+    overflow-y: auto;
+    flex: 1;
+}
+
+.modal-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.75rem;
+    padding: 1rem 1.5rem 1.5rem;
+    flex-shrink: 0;
+    border-top: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+/* Modal Buttons */
+.btn-cancel {
+    padding: 0.5rem 1.5rem;
+    background: rgba(255, 255, 255, 0.06);
+    color: white;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.btn-cancel:hover {
+    background: rgba(255, 255, 255, 0.12);
+}
+
+.btn-edit {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1.5rem;
+    background: linear-gradient(135deg, #F59E0B, #D97706);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.btn-edit:hover {
+    transform: scale(1.02);
+}
+
+.btn-pdf {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1.5rem;
+    background: linear-gradient(135deg, #EF4444, #DC2626);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.btn-pdf:hover:not(:disabled) {
+    transform: scale(1.02);
+}
+
+.btn-pdf:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.btn-delete {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1.5rem;
+    background: #EF4444;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.btn-delete:hover {
+    background: #DC2626;
+    transform: scale(1.02);
+}
+
+/* Delete Modal */
+.delete-modal {
+    max-width: 450px !important;
+}
+
+.delete-icon {
+    font-size: 3rem;
+    text-align: center;
+    margin-bottom: 0.5rem;
+}
+
+.warning-text {
+    color: #F87171 !important;
+    font-size: 0.85rem;
+    text-align: center;
+}
+
+.report-summary {
+    background: rgba(255, 255, 255, 0.05);
+    padding: 0.75rem 1rem;
+    border-radius: 8px;
+    margin: 0.5rem 0 1rem;
+}
+
+.report-summary p {
+    margin: 0.25rem 0;
+    font-size: 0.9rem;
+}
+
+/* View Modal */
+.view-modal {
+    max-width: 900px !important;
+}
+
+.view-modal-body {
+    padding: 1.5rem;
+}
+
+.view-section {
+    margin-bottom: 1.5rem;
+}
+
+.view-section-title {
+    color: white;
+    font-size: 16px;
+    font-weight: 600;
+    margin-bottom: 0.75rem;
+    border-bottom: 2px solid rgba(255, 255, 255, 0.08);
+    padding-bottom: 0.5rem;
+}
+
+.view-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+}
+
+.view-item {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.view-item.full-width {
+    grid-column: 1 / -1;
+}
+
+.view-item label {
+    font-size: 0.75rem;
+    color: rgba(255, 255, 255, 0.5);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    font-weight: 600;
+}
+
+.view-item span,
+.view-item p {
+    color: white;
+    font-size: 0.95rem;
+}
+
+.view-text {
+    color: rgba(255, 255, 255, 0.9);
+    line-height: 1.6;
+    font-size: 14px;
+    padding: 0.5rem 0;
+    margin: 0;
+}
+
+/* Checklists */
+.checklists-full {
+    overflow-x: auto;
+}
+
+.checklists-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+}
+
+.checklists-table thead {
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.checklists-table th {
+    padding: 0.5rem 0.75rem;
+    text-align: left;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.7);
+    border-bottom: 2px solid rgba(255, 255, 255, 0.05);
+}
+
+.checklists-table td {
+    padding: 0.5rem 0.75rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+    color: rgba(255, 255, 255, 0.8);
+}
+
+.checklists-table tbody tr:hover {
+    background: rgba(255, 255, 255, 0.03);
+}
+
+.checklist-status {
+    padding: 0.15rem 0.5rem;
+    border-radius: 12px;
+    font-size: 0.7rem;
+    font-weight: 600;
+}
+
+.checklist-status.pass {
+    background: rgba(16, 185, 129, 0.15);
+    color: #34D399;
+}
+
+.checklist-status.fail {
+    background: rgba(239, 68, 68, 0.15);
+    color: #F87171;
+}
+
+/* Responsive */
+@media (max-width: 1024px) {
+    .view-reports-container {
+        padding: 1.5rem;
+    }
+    
+    .reports-table {
+        font-size: 0.85rem;
+    }
+    
+    .action-btn {
+        width: 32px;
+        height: 32px;
+        font-size: 0.8rem;
+    }
+}
+
+@media (max-width: 768px) {
+    .view-reports-container {
+        padding: 1rem;
+    }
+
+    .reports-header {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 0.75rem;
+    }
+    
+    .header-actions {
+        flex-wrap: wrap;
+    }
+    
+    .bulk-pdf-btn,
+    .create-btn {
+        flex: 1;
+        justify-content: center;
+    }
+
+    .reports-controls {
+        flex-direction: column;
+        align-items: stretch;
+        padding: 0.75rem 1rem;
+    }
+
+    .search-wrapper {
+        max-width: 100%;
+    }
+    
+    .reports-table {
+        font-size: 0.75rem;
+        min-width: 600px;
+    }
+
+    .reports-table th,
+    .reports-table td {
+        padding: 0.4rem 0.5rem;
+    }
+
+    .action-btn {
+        width: 28px;
+        height: 28px;
+        font-size: 0.7rem;
+    }
+    
+    .action-buttons {
+        gap: 0.2rem;
+    }
+    
+    .view-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .modal-content {
+        width: 98%;
+        margin: 0.5rem;
+        max-height: 95vh;
+    }
+    
+    .view-modal {
+        max-width: 100% !important;
+    }
+}
+
+@media (max-width: 480px) {
+    .reports-table {
+        font-size: 0.7rem;
+        min-width: 500px;
+    }
+    
+    .reports-table th,
+    .reports-table td {
+        padding: 0.3rem 0.4rem;
+    }
+    
+    .action-btn {
+        width: 24px;
+        height: 24px;
+        font-size: 0.65rem;
+        border-radius: 4px;
+    }
+    
+    .action-btn::after {
+        display: none;
+    }
+}
+
+@media print {
+    .modal-overlay {
+        display: none !important;
+    }
+}
