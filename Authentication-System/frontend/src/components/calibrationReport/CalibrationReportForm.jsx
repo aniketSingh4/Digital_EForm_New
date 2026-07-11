@@ -1,8 +1,9 @@
+// src/components/CalibrationReportForm.jsx
 import React, { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { toast } from "react-toastify";
 import { validateCalibrationReport } from "../../utils/calibrationReportValidators";
-import {calibrationReportService} from "../../services/calibrationReportService";
+import { calibrationReportService } from "../../services/calibrationReportService";
 import "./CalibrationReportForm.css";
 
 // Summary items for checkbox/radio status
@@ -13,55 +14,78 @@ const CALIBRATION_SUMMARY_ITEMS = [
   { id: 4, fieldName: 'Sensor Requires Replacement', key: 'sensorRequiresReplacement' },
 ];
 
+// ✅ Default declaration text
+const DEFAULT_DECLARATION = `The calibration activity was carried out using a calibrated reference instrument traceable to applicable
+standards. The readings recorded above represent the observed values before and after calibration. Any
+observations and recommendations have been documented for necessary action.`;
+
+// ✅ Helper function to get today's date in YYYY-MM-DD format
+const getTodayDate = () => {
+  return new Date().toISOString().split('T')[0];
+};
+
+// ✅ Helper function to calculate date 90 days from today
+const getDatePlus90Days = (dateStr) => {
+  if (!dateStr) return '';
+  const date = new Date(dateStr);
+  date.setDate(date.getDate() + 90);
+  return date.toISOString().split('T')[0];
+};
+
+// ✅ Default form data - defined outside component
+const DEFAULT_FORM_DATA = {
+  reportDate: getTodayDate(),
+  clientName: '',
+  siteName: '',
+  siteAddress: '',
+  sensorId: '',
+  modelNo: '',
+  serialNo: '',
+  calibrationDate: getTodayDate(),
+  calibrationDueDate: getDatePlus90Days(getTodayDate()),
+  masterRefInstrument: {
+    refSerialNo: '',
+    calibrationCertificateNo: '',
+    certificateValidity: getDatePlus90Days(getTodayDate())
+  },
+  readingBeforeCalibration: {
+    pm25Value: '',
+    pm10Value: '',
+    temp: '',
+    humidity: ''
+  },
+  readingAfterCalibration: {
+    pm25Value: '',
+    pm10Value: '',
+    temp: '',
+    humidity: ''
+  },
+  calibrationSummary: {
+    calibrationSuccessful: false,
+    calibrationAdjustmentPerformed: false,
+    sensorWithinAcceptableLimits: false,
+    sensorRequiresReplacement: false
+  },
+  remarks: '',
+  declaration: DEFAULT_DECLARATION,
+  engineerDetails: {
+    engineerName: '',
+    signature: '',
+    date: getTodayDate()
+  }
+};
+
 const CalibrationReportForm = ({ onSuccess, onCancel, isEdit = false }) => {
   const navigate = useNavigate();
   const { id } = useParams();
   const isEditMode = !!id || isEdit;
 
-  const [formData, setFormData] = useState({
-    reportDate: new Date().toISOString().split('T')[0],
-    clientName: '',
-    siteName: '',
-    siteAddress: '',
-    sensorId: '',
-    modelNo: '',
-    calibrationDate: new Date().toISOString().split('T')[0],
-    calibrationDueDate: '',
-    masterRefInstrument: {
-      refSerialNo: '',
-      calibrationCertificateNo: '',
-      certificateValidity: ''
-    },
-    readingBeforeCalibration: {
-      pm25Value: '',
-      pm10Value: '',
-      temp: '',
-      humidity: ''
-    },
-    readingAfterCalibration: {
-      pm25Value: '',
-      pm10Value: '',
-      temp: '',
-      humidity: ''
-    },
-    calibrationSummary: {
-      calibrationSuccessful: false,
-      calibrationAdjustmentPerformed: false,
-      sensorWithinAcceptableLimits: false,
-      sensorRequiresReplacement: false
-    },
-    remarks: '',
-    engineerDetails: {
-      engineerName: '',
-      signature: '',
-      date: new Date().toISOString().split('T')[0]
-    }
-  });
-
+  const [formData, setFormData] = useState(DEFAULT_FORM_DATA);
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitStatus, setSubmitStatus] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [apiError, setApiError] = useState(null);
 
   // Load data for edit mode
   useEffect(() => {
@@ -73,36 +97,71 @@ const CalibrationReportForm = ({ onSuccess, onCancel, isEdit = false }) => {
   const fetchReportData = async () => {
     try {
       setLoading(true);
+      setApiError(null);
       const data = await calibrationReportService.getReportById(id);
-      
-      // Format dates
+
+      console.log('📥 Fetched report data:', data);
+
+      if (!data) {
+        toast.error('Report data not found');
+        navigate('/calibration-reports');
+        return;
+      }
+
       const formatDate = (dateStr) => {
         if (!dateStr) return '';
-        return new Date(dateStr).toISOString().split('T')[0];
+        try {
+          const date = new Date(dateStr);
+          if (isNaN(date.getTime())) return '';
+          return date.toISOString().split('T')[0];
+        } catch (e) {
+          return '';
+        }
       };
 
       setFormData({
-        reportDate: formatDate(data.reportDate),
+        reportDate: formatDate(data.reportDate) || getTodayDate(),
         clientName: data.clientName || '',
         siteName: data.siteName || '',
         siteAddress: data.siteAddress || '',
         sensorId: data.sensorId || '',
         modelNo: data.modelNo || '',
-        calibrationDate: formatDate(data.calibrationDate),
-        calibrationDueDate: formatDate(data.calibrationDueDate),
-        masterRefInstrument: data.masterRefInstrument || { refSerialNo: '', calibrationCertificateNo: '', certificateValidity: '' },
-        readingBeforeCalibration: data.readingBeforeCalibration || { pm25Value: '', pm10Value: '', temp: '', humidity: '' },
-        readingAfterCalibration: data.readingAfterCalibration || { pm25Value: '', pm10Value: '', temp: '', humidity: '' },
-        calibrationSummary: data.calibrationSummary || {
-          calibrationSuccessful: false,
-          calibrationAdjustmentPerformed: false,
-          sensorWithinAcceptableLimits: false,
-          sensorRequiresReplacement: false
+        serialNo: data.serialNo || '',
+        calibrationDate: formatDate(data.calibrationDate) || getTodayDate(),
+        calibrationDueDate: formatDate(data.calibrationDueDate) || getDatePlus90Days(getTodayDate()),
+        masterRefInstrument: {
+          refSerialNo: data.masterRefInstrument?.refSerialNo || '',
+          calibrationCertificateNo: data.masterRefInstrument?.calibrationCertificateNo || '',
+          certificateValidity: formatDate(data.masterRefInstrument?.certificateValidity) || getDatePlus90Days(getTodayDate())
+        },
+        readingBeforeCalibration: {
+          pm25Value: data.readingBeforeCalibration?.pm25Value || '',
+          pm10Value: data.readingBeforeCalibration?.pm10Value || '',
+          temp: data.readingBeforeCalibration?.temp || '',
+          humidity: data.readingBeforeCalibration?.humidity || ''
+        },
+        readingAfterCalibration: {
+          pm25Value: data.readingAfterCalibration?.pm25Value || '',
+          pm10Value: data.readingAfterCalibration?.pm10Value || '',
+          temp: data.readingAfterCalibration?.temp || '',
+          humidity: data.readingAfterCalibration?.humidity || ''
+        },
+        calibrationSummary: {
+          calibrationSuccessful: data.calibrationSummary?.calibrationSuccessful || false,
+          calibrationAdjustmentPerformed: data.calibrationSummary?.calibrationAdjustmentPerformed || false,
+          sensorWithinAcceptableLimits: data.calibrationSummary?.sensorWithinAcceptableLimits || false,
+          sensorRequiresReplacement: data.calibrationSummary?.sensorRequiresReplacement || false
         },
         remarks: data.remarks || '',
-        engineerDetails: data.engineerDetails || { engineerName: '', signature: '', date: new Date().toISOString().split('T')[0] }
+        declaration: data.declaration || DEFAULT_DECLARATION,
+        engineerDetails: {
+          engineerName: data.engineerDetails?.engineerName || '',
+          signature: data.engineerDetails?.signature || '',
+          date: formatDate(data.engineerDetails?.date) || getTodayDate()
+        }
       });
     } catch (error) {
+      console.error('Error fetching report:', error);
       toast.error('Failed to load report data');
       navigate('/calibration-reports');
     } finally {
@@ -112,8 +171,7 @@ const CalibrationReportForm = ({ onSuccess, onCancel, isEdit = false }) => {
 
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
-    
-    // Handle nested fields (e.g., masterRefInstrument.refSerialNo)
+
     if (name.includes('.')) {
       const [parent, child] = name.split('.');
       setFormData(prev => ({
@@ -130,7 +188,6 @@ const CalibrationReportForm = ({ onSuccess, onCancel, isEdit = false }) => {
       }));
     }
 
-    // Clear error for this field
     if (errors[name]) {
       setErrors(prev => {
         const newErrors = { ...prev };
@@ -140,7 +197,6 @@ const CalibrationReportForm = ({ onSuccess, onCancel, isEdit = false }) => {
     }
   };
 
-  // Handle nested object fields (for summary checkboxes)
   const handleSummaryChange = (key, value) => {
     setFormData(prev => ({
       ...prev,
@@ -154,46 +210,92 @@ const CalibrationReportForm = ({ onSuccess, onCancel, isEdit = false }) => {
   const handleCalibrationDateChange = (e) => {
     const date = e.target.value;
     if (date) {
-      const dueDate = new Date(date);
-      dueDate.setDate(dueDate.getDate() + 90);
+      const dueDate = getDatePlus90Days(date);
       setFormData(prev => ({
         ...prev,
         calibrationDate: date,
-        calibrationDueDate: dueDate.toISOString().split('T')[0]
+        calibrationDueDate: dueDate,
+        masterRefInstrument: {
+          ...prev.masterRefInstrument,
+          certificateValidity: dueDate
+        }
       }));
     } else {
+      const today = getTodayDate();
+      const dueDate = getDatePlus90Days(today);
       setFormData(prev => ({
         ...prev,
         calibrationDate: '',
-        calibrationDueDate: ''
+        calibrationDueDate: '',
+        masterRefInstrument: {
+          ...prev.masterRefInstrument,
+          certificateValidity: ''
+        }
       }));
     }
+  };
+
+  const handleReportDateChange = (e) => {
+    const date = e.target.value;
+    setFormData(prev => ({
+      ...prev,
+      reportDate: date
+    }));
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsSubmitting(true);
     setSubmitStatus(null);
+    setApiError(null);
 
-    // Prepare data for submission
+    // ✅ Use formData directly with fallback
+    const data = formData || DEFAULT_FORM_DATA;
+
     const submitData = {
-      reportDate: formData.reportDate,
-      clientName: formData.clientName,
-      siteName: formData.siteName,
-      siteAddress: formData.siteAddress,
-      sensorId: formData.sensorId,
-      modelNo: formData.modelNo,
-      calibrationDate: formData.calibrationDate,
-      calibrationDueDate: formData.calibrationDueDate,
-      masterRefInstrument: formData.masterRefInstrument,
-      readingBeforeCalibration: formData.readingBeforeCalibration,
-      readingAfterCalibration: formData.readingAfterCalibration,
-      calibrationSummary: formData.calibrationSummary,
-      remarks: formData.remarks,
-      engineerDetails: formData.engineerDetails
+      reportDate: data.reportDate || getTodayDate(),
+      clientName: data.clientName || '',
+      siteName: data.siteName || '',
+      siteAddress: data.siteAddress || '',
+      sensorId: data.sensorId || '',
+      modelNo: data.modelNo || '',
+      serialNo: data.serialNo || '',
+      calibrationDate: data.calibrationDate || getTodayDate(),
+      calibrationDueDate: data.calibrationDueDate || getDatePlus90Days(getTodayDate()),
+      masterRefInstrument: {
+        refSerialNo: data.masterRefInstrument?.refSerialNo || '',
+        calibrationCertificateNo: data.masterRefInstrument?.calibrationCertificateNo || '',
+        certificateValidity: data.masterRefInstrument?.certificateValidity || getDatePlus90Days(getTodayDate())
+      },
+      readingBeforeCalibration: {
+        pm25Value: data.readingBeforeCalibration?.pm25Value || '',
+        pm10Value: data.readingBeforeCalibration?.pm10Value || '',
+        temp: data.readingBeforeCalibration?.temp || '',
+        humidity: data.readingBeforeCalibration?.humidity || ''
+      },
+      readingAfterCalibration: {
+        pm25Value: data.readingAfterCalibration?.pm25Value || '',
+        pm10Value: data.readingAfterCalibration?.pm10Value || '',
+        temp: data.readingAfterCalibration?.temp || '',
+        humidity: data.readingAfterCalibration?.humidity || ''
+      },
+      calibrationSummary: {
+        calibrationSuccessful: data.calibrationSummary?.calibrationSuccessful || false,
+        calibrationAdjustmentPerformed: data.calibrationSummary?.calibrationAdjustmentPerformed || false,
+        sensorWithinAcceptableLimits: data.calibrationSummary?.sensorWithinAcceptableLimits || false,
+        sensorRequiresReplacement: data.calibrationSummary?.sensorRequiresReplacement || false
+      },
+      remarks: data.remarks || '',
+      declaration: data.declaration || DEFAULT_DECLARATION,
+      engineerDetails: {
+        engineerName: data.engineerDetails?.engineerName || '',
+        signature: data.engineerDetails?.signature || '',
+        date: data.engineerDetails?.date || getTodayDate()
+      }
     };
 
-    // Validate
+    console.log('📤 Submitting calibration report:', JSON.stringify(submitData, null, 2));
+
     const validation = validateCalibrationReport(submitData);
     if (!validation.isValid) {
       setErrors(validation.errors);
@@ -202,8 +304,6 @@ const CalibrationReportForm = ({ onSuccess, onCancel, isEdit = false }) => {
         type: 'error',
         message: 'Please fix all errors before submitting'
       });
-      
-      // Scroll to first error
       const firstError = document.querySelector('.field-error');
       if (firstError) {
         firstError.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -221,50 +321,65 @@ const CalibrationReportForm = ({ onSuccess, onCancel, isEdit = false }) => {
         toast.success('Report created successfully!');
       }
 
+      console.log('✅ Response received:', response);
+
+      // ✅ Response is the DTO directly
+      const reportData = response;
+
+      if (!reportData) {
+        console.warn('⚠️ No response data received');
+        setSubmitStatus({
+          type: 'success',
+          message: isEditMode ? 'Report updated successfully!' : 'Report created successfully!'
+        });
+        setTimeout(() => {
+          if (onSuccess) {
+            onSuccess(submitData);
+          } else {
+            navigate('/calibration-reports');
+          }
+        }, 1500);
+        setIsSubmitting(false);
+        return;
+      }
+
+      console.log('✅ Report date from response:', reportData.reportDate);
+
       setSubmitStatus({
         type: 'success',
         message: isEditMode ? 'Report updated successfully!' : 'Report created successfully!'
       });
 
-      // Reset form if not edit mode
       if (!isEditMode) {
         setTimeout(() => {
-          setFormData({
-            reportDate: new Date().toISOString().split('T')[0],
-            clientName: '',
-            siteName: '',
-            siteAddress: '',
-            sensorId: '',
-            modelNo: '',
-            calibrationDate: new Date().toISOString().split('T')[0],
-            calibrationDueDate: '',
-            masterRefInstrument: { refSerialNo: '', calibrationCertificateNo: '', certificateValidity: '' },
-            readingBeforeCalibration: { pm25Value: '', pm10Value: '', temp: '', humidity: '' },
-            readingAfterCalibration: { pm25Value: '', pm10Value: '', temp: '', humidity: '' },
-            calibrationSummary: {
-              calibrationSuccessful: false,
-              calibrationAdjustmentPerformed: false,
-              sensorWithinAcceptableLimits: false,
-              sensorRequiresReplacement: false
-            },
-            remarks: '',
-            engineerDetails: { engineerName: '', signature: '', date: new Date().toISOString().split('T')[0] }
-          });
+          setFormData(DEFAULT_FORM_DATA);
         }, 2000);
       }
 
-      // Navigate back after success
       setTimeout(() => {
         if (onSuccess) {
-          onSuccess(response);
+          onSuccess(reportData);
         } else {
           navigate('/calibration-reports');
         }
       }, 1500);
 
     } catch (error) {
-      console.error('Error saving report:', error);
-      const errorMessage = error.response?.data?.message || 'Failed to save report. Please try again.';
+      console.error('❌ Error saving report:', error);
+      console.error('❌ Error details:', error.response?.data);
+
+      let errorMessage = 'Failed to save report. Please try again.';
+      if (error.response?.data) {
+        if (typeof error.response.data === 'string') {
+          errorMessage = error.response.data;
+        } else if (error.response.data.message) {
+          errorMessage = error.response.data.message;
+        } else if (error.response.data.error) {
+          errorMessage = error.response.data.error;
+        }
+      }
+
+      setApiError(errorMessage);
       setSubmitStatus({
         type: 'error',
         message: errorMessage
@@ -284,6 +399,9 @@ const CalibrationReportForm = ({ onSuccess, onCancel, isEdit = false }) => {
     );
   }
 
+  // ✅ CRITICAL FIX: Use a safe reference for rendering
+  const f = formData && typeof formData === 'object' ? formData : DEFAULT_FORM_DATA;
+
   return (
     <div className="calibration-report-form">
       <h2>{isEditMode ? 'Edit Calibration Report' : 'New Calibration Report'}</h2>
@@ -291,6 +409,12 @@ const CalibrationReportForm = ({ onSuccess, onCancel, isEdit = false }) => {
       {submitStatus && (
         <div className={`status-message ${submitStatus.type}`}>
           {submitStatus.message}
+        </div>
+      )}
+
+      {apiError && (
+        <div className="api-error-message">
+          <strong>Server Error:</strong> {apiError}
         </div>
       )}
 
@@ -305,8 +429,8 @@ const CalibrationReportForm = ({ onSuccess, onCancel, isEdit = false }) => {
               <input
                 type="date"
                 name="reportDate"
-                value={formData.reportDate}
-                onChange={handleInputChange}
+                value={f.reportDate || ''}
+                onChange={handleReportDateChange}
                 className={errors.reportDate ? 'error' : ''}
               />
               {errors.reportDate && <span className="field-error">{errors.reportDate}</span>}
@@ -317,7 +441,7 @@ const CalibrationReportForm = ({ onSuccess, onCancel, isEdit = false }) => {
               <input
                 type="text"
                 name="clientName"
-                value={formData.clientName}
+                value={f.clientName || ''}
                 onChange={handleInputChange}
                 placeholder="Enter client name"
                 className={errors.clientName ? 'error' : ''}
@@ -332,7 +456,7 @@ const CalibrationReportForm = ({ onSuccess, onCancel, isEdit = false }) => {
               <input
                 type="text"
                 name="siteName"
-                value={formData.siteName}
+                value={f.siteName || ''}
                 onChange={handleInputChange}
                 placeholder="Enter site name"
                 className={errors.siteName ? 'error' : ''}
@@ -345,7 +469,7 @@ const CalibrationReportForm = ({ onSuccess, onCancel, isEdit = false }) => {
               <input
                 type="text"
                 name="siteAddress"
-                value={formData.siteAddress}
+                value={f.siteAddress || ''}
                 onChange={handleInputChange}
                 placeholder="Enter site address"
                 className={errors.siteAddress ? 'error' : ''}
@@ -360,7 +484,7 @@ const CalibrationReportForm = ({ onSuccess, onCancel, isEdit = false }) => {
               <input
                 type="text"
                 name="sensorId"
-                value={formData.sensorId}
+                value={f.sensorId || ''}
                 onChange={handleInputChange}
                 placeholder="Enter sensor ID"
                 className={errors.sensorId ? 'error' : ''}
@@ -373,7 +497,7 @@ const CalibrationReportForm = ({ onSuccess, onCancel, isEdit = false }) => {
               <input
                 type="text"
                 name="modelNo"
-                value={formData.modelNo}
+                value={f.modelNo || ''}
                 onChange={handleInputChange}
                 placeholder="Enter model number"
                 className={errors.modelNo ? 'error' : ''}
@@ -384,23 +508,38 @@ const CalibrationReportForm = ({ onSuccess, onCancel, isEdit = false }) => {
 
           <div className="form-row">
             <div className="form-group">
+              <label>Serial No <span className="required">*</span></label>
+              <input
+                type="text"
+                name="serialNo"
+                value={f.serialNo || ''}
+                onChange={handleInputChange}
+                placeholder="Enter serial number"
+                className={errors.serialNo ? 'error' : ''}
+              />
+              {errors.serialNo && <span className="field-error">{errors.serialNo}</span>}
+            </div>
+
+            <div className="form-group">
               <label>Calibration Date <span className="required">*</span></label>
               <input
                 type="date"
                 name="calibrationDate"
-                value={formData.calibrationDate}
+                value={f.calibrationDate || ''}
                 onChange={handleCalibrationDateChange}
                 className={errors.calibrationDate ? 'error' : ''}
               />
               {errors.calibrationDate && <span className="field-error">{errors.calibrationDate}</span>}
             </div>
+          </div>
 
+          <div className="form-row">
             <div className="form-group">
               <label>Calibration Due Date</label>
               <input
                 type="date"
                 name="calibrationDueDate"
-                value={formData.calibrationDueDate}
+                value={f.calibrationDueDate || ''}
                 readOnly
                 className="readonly"
               />
@@ -421,7 +560,7 @@ const CalibrationReportForm = ({ onSuccess, onCancel, isEdit = false }) => {
               <input
                 type="text"
                 name="masterRefInstrument.refSerialNo"
-                value={formData.masterRefInstrument.refSerialNo}
+                value={f.masterRefInstrument?.refSerialNo || ''}
                 onChange={handleInputChange}
                 placeholder="Enter reference serial number"
                 className={errors['masterRefInstrument.refSerialNo'] ? 'error' : ''}
@@ -434,7 +573,7 @@ const CalibrationReportForm = ({ onSuccess, onCancel, isEdit = false }) => {
               <input
                 type="text"
                 name="masterRefInstrument.calibrationCertificateNo"
-                value={formData.masterRefInstrument.calibrationCertificateNo}
+                value={f.masterRefInstrument?.calibrationCertificateNo || ''}
                 onChange={handleInputChange}
                 placeholder="Enter certificate number"
                 className={errors['masterRefInstrument.calibrationCertificateNo'] ? 'error' : ''}
@@ -445,14 +584,16 @@ const CalibrationReportForm = ({ onSuccess, onCancel, isEdit = false }) => {
             <div className="form-group">
               <label>Certificate Validity <span className="required">*</span></label>
               <input
-                type="text"
+                type="date"
                 name="masterRefInstrument.certificateValidity"
-                value={formData.masterRefInstrument.certificateValidity}
+                value={f.masterRefInstrument?.certificateValidity || ''}
                 onChange={handleInputChange}
-                placeholder="Enter certificate validity"
                 className={errors['masterRefInstrument.certificateValidity'] ? 'error' : ''}
               />
               {errors['masterRefInstrument.certificateValidity'] && <span className="field-error">{errors['masterRefInstrument.certificateValidity']}</span>}
+              <small style={{ color: '#6b7280', fontSize: '12px', display: 'block', marginTop: '4px' }}>
+                Auto-set to 90 days from calibration date
+              </small>
             </div>
           </div>
         </div>
@@ -470,7 +611,7 @@ const CalibrationReportForm = ({ onSuccess, onCancel, isEdit = false }) => {
                   type="number"
                   step="0.01"
                   name="readingBeforeCalibration.pm25Value"
-                  value={formData.readingBeforeCalibration.pm25Value}
+                  value={f.readingBeforeCalibration?.pm25Value || ''}
                   onChange={handleInputChange}
                   placeholder="0.00"
                   className={errors['readingBeforeCalibration.pm25Value'] ? 'error' : ''}
@@ -483,7 +624,7 @@ const CalibrationReportForm = ({ onSuccess, onCancel, isEdit = false }) => {
                   type="number"
                   step="0.01"
                   name="readingBeforeCalibration.pm10Value"
-                  value={formData.readingBeforeCalibration.pm10Value}
+                  value={f.readingBeforeCalibration?.pm10Value || ''}
                   onChange={handleInputChange}
                   placeholder="0.00"
                   className={errors['readingBeforeCalibration.pm10Value'] ? 'error' : ''}
@@ -496,7 +637,7 @@ const CalibrationReportForm = ({ onSuccess, onCancel, isEdit = false }) => {
                   type="number"
                   step="0.1"
                   name="readingBeforeCalibration.temp"
-                  value={formData.readingBeforeCalibration.temp}
+                  value={f.readingBeforeCalibration?.temp || ''}
                   onChange={handleInputChange}
                   placeholder="0.0"
                   className={errors['readingBeforeCalibration.temp'] ? 'error' : ''}
@@ -509,7 +650,7 @@ const CalibrationReportForm = ({ onSuccess, onCancel, isEdit = false }) => {
                   type="number"
                   step="0.1"
                   name="readingBeforeCalibration.humidity"
-                  value={formData.readingBeforeCalibration.humidity}
+                  value={f.readingBeforeCalibration?.humidity || ''}
                   onChange={handleInputChange}
                   placeholder="0.0"
                   className={errors['readingBeforeCalibration.humidity'] ? 'error' : ''}
@@ -526,7 +667,7 @@ const CalibrationReportForm = ({ onSuccess, onCancel, isEdit = false }) => {
                   type="number"
                   step="0.01"
                   name="readingAfterCalibration.pm25Value"
-                  value={formData.readingAfterCalibration.pm25Value}
+                  value={f.readingAfterCalibration?.pm25Value || ''}
                   onChange={handleInputChange}
                   placeholder="0.00"
                   className={errors['readingAfterCalibration.pm25Value'] ? 'error' : ''}
@@ -539,7 +680,7 @@ const CalibrationReportForm = ({ onSuccess, onCancel, isEdit = false }) => {
                   type="number"
                   step="0.01"
                   name="readingAfterCalibration.pm10Value"
-                  value={formData.readingAfterCalibration.pm10Value}
+                  value={f.readingAfterCalibration?.pm10Value || ''}
                   onChange={handleInputChange}
                   placeholder="0.00"
                   className={errors['readingAfterCalibration.pm10Value'] ? 'error' : ''}
@@ -552,7 +693,7 @@ const CalibrationReportForm = ({ onSuccess, onCancel, isEdit = false }) => {
                   type="number"
                   step="0.1"
                   name="readingAfterCalibration.temp"
-                  value={formData.readingAfterCalibration.temp}
+                  value={f.readingAfterCalibration?.temp || ''}
                   onChange={handleInputChange}
                   placeholder="0.0"
                   className={errors['readingAfterCalibration.temp'] ? 'error' : ''}
@@ -565,7 +706,7 @@ const CalibrationReportForm = ({ onSuccess, onCancel, isEdit = false }) => {
                   type="number"
                   step="0.1"
                   name="readingAfterCalibration.humidity"
-                  value={formData.readingAfterCalibration.humidity}
+                  value={f.readingAfterCalibration?.humidity || ''}
                   onChange={handleInputChange}
                   placeholder="0.0"
                   className={errors['readingAfterCalibration.humidity'] ? 'error' : ''}
@@ -586,7 +727,7 @@ const CalibrationReportForm = ({ onSuccess, onCancel, isEdit = false }) => {
                 <label className="checkbox-label">
                   <input
                     type="checkbox"
-                    checked={formData.calibrationSummary[item.key] || false}
+                    checked={f.calibrationSummary?.[item.key] || false}
                     onChange={(e) => handleSummaryChange(item.key, e.target.checked)}
                   />
                   <span>{item.fieldName}</span>
@@ -604,7 +745,7 @@ const CalibrationReportForm = ({ onSuccess, onCancel, isEdit = false }) => {
             <label>Remarks</label>
             <textarea
               name="remarks"
-              value={formData.remarks}
+              value={f.remarks || ''}
               onChange={handleInputChange}
               placeholder="Enter any additional remarks..."
               rows="3"
@@ -612,13 +753,21 @@ const CalibrationReportForm = ({ onSuccess, onCancel, isEdit = false }) => {
           </div>
         </div>
 
-        {/* Declaration */}
+        {/* Declaration Section */}
         <div className="form-section declaration">
           <h3>Declaration</h3>
-          <div className="declaration-text">
-            The calibration activity was carried out using a calibrated reference instrument traceable to applicable standards.
-            The readings recorded above represent the observed values before and after calibration.
-            Any observations and recommendations have been documented for necessary action.
+          <div className="form-group">
+            <label>Declaration Statement</label>
+            <textarea
+              name="declaration"
+              value={f.declaration || DEFAULT_DECLARATION}
+              onChange={handleInputChange}
+              rows="4"
+              style={{ backgroundColor: '#f9fafb' }}
+            />
+            <small style={{ color: '#6b7280', fontSize: '12px', display: 'block', marginTop: '4px' }}>
+              Default declaration is automatically included
+            </small>
           </div>
         </div>
 
@@ -632,7 +781,7 @@ const CalibrationReportForm = ({ onSuccess, onCancel, isEdit = false }) => {
               <input
                 type="text"
                 name="engineerDetails.engineerName"
-                value={formData.engineerDetails.engineerName}
+                value={f.engineerDetails?.engineerName || ''}
                 onChange={handleInputChange}
                 placeholder="Enter engineer name"
                 className={errors['engineerDetails.engineerName'] ? 'error' : ''}
@@ -645,7 +794,7 @@ const CalibrationReportForm = ({ onSuccess, onCancel, isEdit = false }) => {
               <input
                 type="text"
                 name="engineerDetails.signature"
-                value={formData.engineerDetails.signature}
+                value={f.engineerDetails?.signature || ''}
                 onChange={handleInputChange}
                 placeholder="Enter signature (text)"
                 className={errors['engineerDetails.signature'] ? 'error' : ''}
@@ -658,7 +807,7 @@ const CalibrationReportForm = ({ onSuccess, onCancel, isEdit = false }) => {
               <input
                 type="date"
                 name="engineerDetails.date"
-                value={formData.engineerDetails.date}
+                value={f.engineerDetails?.date || ''}
                 onChange={handleInputChange}
                 className={errors['engineerDetails.date'] ? 'error' : ''}
               />
