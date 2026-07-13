@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from "react";
+import { useNavigate, useParams } from "react-router-dom";
 import { validatePreVisitReport, validateEmail } from "../../utils/preVisitReportValidation";
 import preVisitReportService from "../../api/preVisitReportService";
 import "./PreVisitReport.css";
 import notificationService from '../../services/notificationService';
+import { toast } from 'react-toastify';
 
 const CHECKLIST_ITEMS = [
   { id: 1, fieldName: 'Confirm Availability of Stabilized power supply (230 V)' },
@@ -14,6 +16,10 @@ const CHECKLIST_ITEMS = [
 ];
 
 const PreVisitReportForm = ({ onSuccess, onCancel, initialData, isEdit = false }) => {
+  const navigate = useNavigate();
+  const { id } = useParams();
+  const isEditMode = !!id || isEdit;
+
   const [formData, setFormData] = useState({
     visitDate: new Date().toISOString().split('T')[0],
     companyName: '',
@@ -39,53 +45,128 @@ const PreVisitReportForm = ({ onSuccess, onCancel, initialData, isEdit = false }
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitStatus, setSubmitStatus] = useState(null);
   const [emailExists, setEmailExists] = useState(false);
+  const [loading, setLoading] = useState(false);
+  // 🔥 Store original email to check if it changed
+  const [originalEmail, setOriginalEmail] = useState('');
 
-  // Load initial data for edit mode
+  // Fetch data for edit mode
   useEffect(() => {
-    if (initialData && isEdit) {
-      setFormData({
-        ...initialData,
-        visitDate: initialData.visitDate || new Date().toISOString().split('T')[0],
-        customerSignature: initialData.customerSignature || '',
-        technicianSignature: initialData.technicianSignature || '',
-        checklist: initialData.checklist || CHECKLIST_ITEMS.map(item => ({
-          fieldName: item.fieldName,
-          status: null,
-          remark: '',
-          displayName: item.fieldName
-        }))
-      });
+    if (isEditMode && id) {
+      fetchReportData();
+    } else if (initialData && isEdit) {
+      loadInitialData(initialData);
     }
-  }, [initialData, isEdit]);
+  }, [id, isEditMode, initialData]);
 
-  // Check email existence
+  const fetchReportData = async () => {
+    try {
+      setLoading(true);
+      const response = await fetch(`http://localhost:8088/api/previsit-reports/${id}`, {
+        headers: { 'Content-Type': 'application/json' }
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch report data');
+      }
+
+      const data = await response.json();
+      console.log('📥 Fetched report data for edit:', data);
+      
+      // 🔥 Store original email
+      setOriginalEmail(data.emailId || '');
+      
+      loadInitialData(data);
+      toast.success('Report data loaded successfully');
+
+    } catch (error) {
+      console.error('Error fetching report:', error);
+      toast.error('Failed to load report data');
+      notificationService.error('Failed to load Pre-Visit Report');
+      navigate('/previsit/view-all');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const loadInitialData = (data) => {
+    // Map checklist data from API to form format
+    const checklist = CHECKLIST_ITEMS.map((item, index) => {
+      const apiItem = data.checklist?.find(c => 
+        c.fieldName === item.fieldName || 
+        c.fieldName?.toLowerCase() === item.fieldName?.toLowerCase()
+      );
+      
+      return {
+        fieldName: item.fieldName,
+        status: apiItem?.status !== undefined ? apiItem.status : null,
+        remark: apiItem?.remark || '',
+        displayName: item.fieldName
+      };
+    });
+
+    setFormData({
+      visitDate: data.visitDate || new Date().toISOString().split('T')[0],
+      companyName: data.companyName || '',
+      siteAddress: data.siteAddress || '',
+      sitePersonName: data.sitePersonName || '',
+      contactNo: data.contactNo || '',
+      emailId: data.emailId || '',
+      inspectedBy: data.inspectedBy || '',
+      notedIfAny: data.notedIfAny || '',
+      customerName: data.customerName || '',
+      customerSignature: data.customerSignature || '',
+      technicianName: data.technicianName || '',
+      technicianSignature: data.technicianSignature || '',
+      checklist: checklist
+    });
+  };
+
+  // 🔥 FIX: Check email existence excluding current report
   useEffect(() => {
     const checkEmail = async () => {
-      if (formData.emailId && validateEmail(formData.emailId)) {
-        try {
-          const exists = await preVisitReportService.checkEmailExists(formData.emailId);
-          setEmailExists(exists);
-          if (exists) {
-            setErrors(prev => ({
-              ...prev,
-              emailId: 'This email is already registered'
-            }));
-          } else {
-            setErrors(prev => {
-              const newErrors = { ...prev };
-              delete newErrors.emailId;
-              return newErrors;
-            });
-          }
-        } catch (error) {
-          console.error('Error checking email:', error);
+      const currentEmail = formData.emailId;
+      
+      // Skip if email is empty or invalid
+      if (!currentEmail || !validateEmail(currentEmail)) {
+        setEmailExists(false);
+        return;
+      }
+
+      // 🔥 If in edit mode and email hasn't changed, skip check
+      if (isEditMode && originalEmail && currentEmail === originalEmail) {
+        setEmailExists(false);
+        setErrors(prev => {
+          const newErrors = { ...prev };
+          delete newErrors.emailId;
+          return newErrors;
+        });
+        return;
+      }
+
+      try {
+        // 🔥 Check email existence with excludeId parameter
+        const exists = await preVisitReportService.checkEmailExists(currentEmail, isEditMode ? id : null);
+        setEmailExists(exists);
+        if (exists) {
+          setErrors(prev => ({
+            ...prev,
+            emailId: 'This email is already registered'
+          }));
+        } else {
+          setErrors(prev => {
+            const newErrors = { ...prev };
+            delete newErrors.emailId;
+            return newErrors;
+          });
         }
+      } catch (error) {
+        console.error('Error checking email:', error);
       }
     };
 
     const timeoutId = setTimeout(checkEmail, 500);
     return () => clearTimeout(timeoutId);
-  }, [formData.emailId]);
+  }, [formData.emailId, originalEmail, isEditMode, id]);
 
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -142,7 +223,8 @@ const PreVisitReportForm = ({ onSuccess, onCancel, initialData, isEdit = false }
       return;
     }
 
-    if (emailExists) {
+    // 🔥 FIX: Only check email exists if it's a new email (different from original)
+    if (emailExists && formData.emailId !== originalEmail) {
       setSubmitStatus({
         type: 'error',
         message: 'Email already exists. Please use a different email.'
@@ -152,20 +234,76 @@ const PreVisitReportForm = ({ onSuccess, onCancel, initialData, isEdit = false }
     }
 
     try {
+      const payload = {
+        companyName: formData.companyName.trim(),
+        siteAddress: formData.siteAddress.trim(),
+        sitePersonName: formData.sitePersonName.trim(),
+        contactNo: formData.contactNo.trim(),
+        emailId: formData.emailId.trim(),
+        inspectedBy: formData.inspectedBy.trim(),
+        visitDate: formData.visitDate,
+        checklist: formData.checklist.map(item => ({
+          fieldName: item.fieldName,
+          status: item.status || false,
+          remark: item.remark || ''
+        })),
+        notedIfAny: formData.notedIfAny.trim(),
+        customerName: formData.customerName.trim(),
+        customerSignature: formData.customerSignature.trim(),
+        technicianName: formData.technicianName.trim(),
+        technicianSignature: formData.technicianSignature.trim()
+      };
+
+      console.log('📦 Final Payload:', payload);
+
       let response;
-      if (isEdit && initialData?.id) {
-        response = await preVisitReportService.updateReport(initialData.id, formData);
-        setSubmitStatus({ type: 'success', message: 'Report updated successfully!' });
+      const apiUrl = 'http://localhost:8088/api/previsit-reports';
+      
+      if (isEditMode && id) {
+        response = await fetch(`${apiUrl}/${id}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(payload)
+        });
       } else {
-        response = await preVisitReportService.createReport(formData);
-        setSubmitStatus({ type: 'success', message: 'Report created successfully!' });
+        response = await fetch(apiUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(payload)
+        });
       }
+
+      if (!response.ok) {
+        let errorMessage = `Failed to ${isEditMode ? 'update' : 'save'} report: ${response.status}`;
+        try {
+          const errorData = await response.text();
+          if (errorData) {
+            errorMessage = errorData;
+          }
+        } catch (e) {
+          // Ignore parsing error
+        }
+        throw new Error(errorMessage);
+      }
+
+      const result = await response.json();
+
+      setSubmitStatus({
+        type: 'success',
+        message: isEditMode ? 'Report updated successfully!' : 'Report created successfully!'
+      });
+
+      notificationService.success(isEditMode ? 'Report updated successfully!' : 'Report created successfully!');
 
       setTimeout(() => {
         if (onSuccess) {
-          onSuccess(response);
+          onSuccess(result);
         }
-        if (!isEdit) {
+        if (!isEditMode) {
           setFormData({
             visitDate: new Date().toISOString().split('T')[0],
             companyName: '',
@@ -187,27 +325,66 @@ const PreVisitReportForm = ({ onSuccess, onCancel, initialData, isEdit = false }
             }))
           });
           setEmailExists(false);
+          setOriginalEmail('');
+        } else {
+          navigate('/previsit/view-all');
         }
         setSubmitStatus(null);
       }, 2000);
-      notificationService.success(isEdit ? 'Report updated successfully!' : 'Report created successfully!');
+
     } catch (error) {
-      //console.error('Error saving report:', error);
+      console.error('Error saving report:', error);
+      
+      let errorMessage = error.message || 'Failed to save report. Please try again.';
+      
+      if (errorMessage.includes('409') || errorMessage.includes('already exists')) {
+        errorMessage = 'A report with this data already exists. Please check your entries.';
+      } else if (errorMessage.includes('400')) {
+        errorMessage = 'Invalid data provided. Please check all fields.';
+      } else if (errorMessage.includes('500')) {
+        errorMessage = 'Server error. Please try again later.';
+      }
+      
       setSubmitStatus({
         type: 'error',
-        message: typeof error === 'string' ? error : 'Failed to save report. Please try again.'
+        message: errorMessage
       });
-      notificationService.error(error.message || 'Failed to save report. Please try again.');
+      notificationService.error(errorMessage);
     } finally {
       setIsSubmitting(false);
     }
   };
 
+  const handleBack = () => {
+    if (onCancel) {
+      onCancel();
+    } else {
+      navigate('/previsit/view-all');
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="loading-container">
+        <div className="loading-spinner"></div>
+        <p>Loading report data...</p>
+      </div>
+    );
+  }
+
   return (
     <div className="pre-visit-form-container">
       <div className="form-header">
-        <h2>{isEdit ? 'Edit Pre-Visit Report' : 'New Pre-Visit Report'}</h2>
-        <p>Fill in the details below to create a new pre-visit report.</p>
+        <button className="btn-back" onClick={handleBack}>
+          ← Back
+        </button>
+        <h2>{isEditMode ? 'Edit Pre-Visit Report' : 'New Pre-Visit Report'}</h2>
+        <p>{isEditMode ? 'Update the details of the pre-visit report.' : 'Fill in the details below to create a new pre-visit report.'}</p>
+        {isEditMode && (
+          <div className="edit-mode-banner">
+            ✏️ Editing Mode - Report ID: #{id}
+          </div>
+        )}
       </div>
 
       {submitStatus && (
@@ -300,7 +477,12 @@ const PreVisitReportForm = ({ onSuccess, onCancel, initialData, isEdit = false }
                 className={errors.emailId ? 'error' : ''}
               />
               {errors.emailId && <span className="field-error">{errors.emailId}</span>}
-              {emailExists && <span className="field-error">Email already registered</span>}
+              {emailExists && formData.emailId !== originalEmail && (
+                <span className="field-error">Email already registered</span>
+              )}
+              {isEditMode && formData.emailId === originalEmail && (
+                <span className="field-info">✓ Current email (unchanged)</span>
+              )}
             </div>
 
             <div className="form-group">
@@ -459,16 +641,77 @@ const PreVisitReportForm = ({ onSuccess, onCancel, initialData, isEdit = false }
 
         {/* Form Actions */}
         <div className="form-actions">
-          {onCancel && (
-            <button type="button" className="btn-cancel" onClick={onCancel}>
-              Cancel
-            </button>
-          )}
-          <button type="submit" disabled={isSubmitting || emailExists} className="btn-submit">
-            {isSubmitting ? 'Saving...' : (isEdit ? 'Update Report' : 'Submit Report')}
+          <button type="button" className="btn-cancel" onClick={handleBack}>
+            Cancel
+          </button>
+          <button type="submit" disabled={isSubmitting || (emailExists && formData.emailId !== originalEmail)} className="btn-submit">
+            {isSubmitting ? 'Saving...' : (isEditMode ? 'Update Report' : 'Submit Report')}
           </button>
         </div>
       </form>
+
+      <style>{`
+        .edit-mode-banner {
+          background: #e3f2fd;
+          border: 1px solid #2196f3;
+          border-radius: 6px;
+          padding: 8px 16px;
+          margin: 10px 0;
+          color: #0d47a1;
+          font-size: 14px;
+          font-weight: 500;
+          display: inline-block;
+        }
+        .btn-back {
+          background: none;
+          border: none;
+          color: #4F46E5;
+          cursor: pointer;
+          font-size: 14px;
+          font-weight: 500;
+          padding: 8px 0;
+          margin-bottom: 8px;
+        }
+        .btn-back:hover {
+          color: #4338CA;
+          text-decoration: underline;
+        }
+        .form-header {
+          margin-bottom: 24px;
+        }
+        .form-header h2 {
+          margin: 8px 0 4px 0;
+        }
+        .form-header p {
+          margin: 0;
+          color: #6b7280;
+        }
+        .loading-container {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          height: 50vh;
+        }
+        .loading-spinner {
+          width: 40px;
+          height: 40px;
+          border: 4px solid #e2e8f0;
+          border-top: 4px solid #4F46E5;
+          border-radius: 50%;
+          animation: spin 1s linear infinite;
+        }
+        .field-info {
+          color: #059669;
+          font-size: 12px;
+          margin-top: 4px;
+          display: block;
+        }
+        @keyframes spin {
+          from { transform: rotate(0deg); }
+          to { transform: rotate(360deg); }
+        }
+      `}</style>
     </div>
   );
 };

@@ -364,7 +364,7 @@ const PreVisitViewAll = () => {
             doc.setTextColor(79, 70, 229);
             doc.setFontSize(12);
             doc.setFont('helvetica', 'bold');
-            doc.text('CHECKLIST', 15, y + 5);
+            doc.text('CHECKLIST ITEM', 15, y + 5);
             y += 11;
 
             if (reportData.checklist && reportData.checklist.length > 0) {
@@ -403,7 +403,7 @@ const PreVisitViewAll = () => {
                         doc.setTextColor(79, 70, 229);
                         doc.setFontSize(12);
                         doc.setFont('helvetica', 'bold');
-                        doc.text('CHECKLIST (Continued)', 15, y + 5);
+                        doc.text('CHECKLIST ITEM', 15, y + 5);
                         y += 11;
 
                         // Table Header on new page
@@ -420,10 +420,10 @@ const PreVisitViewAll = () => {
                     }
 
                     // Row background (alternating)
-                    if (index % 2 === 0) {
-                        doc.setFillColor(248, 250, 252);
-                        doc.rect(15, y - 1, pageWidth - 30, 12, 'F');
-                    }
+                    // if (index % 2 === 0) {
+                    //     doc.setFillColor(248, 250, 252);
+                    //     doc.rect(15, y - 1, pageWidth - 30, 12, 'F');
+                    // }
 
                     const statusColor = item.status ? [16, 185, 129] : [239, 68, 68];
                     const statusText = item.status ? 'YES' : 'NO';
@@ -442,9 +442,9 @@ const PreVisitViewAll = () => {
                     doc.text(splitText, 25, y + 4);
 
                     // Status Badge
-                    doc.setFillColor(statusColor[0], statusColor[1], statusColor[2]);
-                    doc.roundedRect(pageWidth - 85, y, 18, 7, 3, 3, 'F');
-                    doc.setTextColor(255, 255, 255);
+                    //doc.setFillColor(statusColor[0], statusColor[1], statusColor[2]);
+                    //doc.roundedRect(pageWidth - 85, y, 18, 7, 3, 3, 'F');
+                    doc.setTextColor(30, 30, 50);
                     doc.setFontSize(6);
                     doc.setFont('helvetica', 'bold');
                     doc.text(statusText, pageWidth - 76, y + 5, { align: 'center' });
@@ -562,7 +562,7 @@ const PreVisitViewAll = () => {
 
             alert(`✅ PDF generated successfully!\n📄 ${fileName}`);
         } catch (error) {
-            console.error('PDF Generation Error:', error);
+            //console.error('PDF Generation Error:', error);
             alert(`❌ Failed to generate PDF: ${error.message}`);
         } finally {
             setActionLoading(null);

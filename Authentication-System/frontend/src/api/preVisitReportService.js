@@ -135,18 +135,57 @@ const preVisitReportService = {
     }
   },
 
-  // ✅ Check if email exists - GET /previsit-reports/exists?email=...
-  checkEmailExists: async (emailId) => {
+  /**
+   * Check if email exists (with optional exclude ID for edit mode)
+   * @param {string} email - Email to check
+   * @param {string|number} excludeId - ID to exclude from check (for edit mode)
+   * @returns {Promise<boolean>} - True if email exists
+   */
+  checkEmailExists: async (email, excludeId = null) => {
     try {
-      console.log('📧 [Pre-Visit] Checking email:', emailId);
-      const response = await preVisitApiClient.get(`/previsit-reports/exists?email=${encodeURIComponent(emailId)}`);
-      console.log('✅ [Pre-Visit] Email exists:', response.data);
-      return response.data || false;
+      const params = { email };
+      if (excludeId) {
+        params.excludeId = excludeId;
+      }
+
+      const response = await preVisitApiClient.get('/check-email', { params });
+      return response.data?.exists || false;
     } catch (error) {
       console.error('❌ [Pre-Visit] Error checking email:', error);
       return false;
     }
-  },
+  }
+};
+
+// src/api/preVisitReportService.js
+
+/**
+ * Check if email exists (with optional exclude ID for edit mode)
+ * @param {string} email - Email to check
+ * @param {string|number} excludeId - ID to exclude from check (for edit mode)
+ * @returns {Promise<boolean>} - True if email exists
+ */
+const checkEmailExists = async (email, excludeId = null) => {
+  try {
+    // Build URL with query parameters
+    let url = `${API_BASE_URL}/check-email?email=${encodeURIComponent(email)}`;
+    if (excludeId) {
+      url += `&excludeId=${excludeId}`;
+    }
+    
+    const response = await fetch(url);
+    if (response.status === 404) {
+      return false;
+    }
+    if (!response.ok) {
+      throw new Error('Failed to check email');
+    }
+    const data = await response.json();
+    return data.exists || false;
+  } catch (error) {
+    console.error('Error checking email:', error);
+    return false;
+  }
 };
 
 export default preVisitReportService;
