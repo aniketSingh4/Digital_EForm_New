@@ -149,9 +149,32 @@ const mapChecklistCategory = (category) => {
 };
 
 /**
- * Transforms form data to the exact API format required by backend
+ * 🔥 NEW: Remove immutable fields for update
+ * These fields cannot be changed after creation
  */
-export const transformDataForAPI = (formData) => {
+const removeImmutableFields = (payload) => {
+  // Create a copy to avoid mutating the original
+  const cleanPayload = { ...payload };
+  
+  // Remove immutable fields
+  delete cleanPayload.serviceReportNo;
+  delete cleanPayload.serviceVisitNo;
+  delete cleanPayload.sensorId;
+  
+  console.log('🔒 Immutable fields removed for update:', {
+    removed: ['serviceReportNo', 'serviceVisitNo', 'sensorId'],
+    remainingFields: Object.keys(cleanPayload)
+  });
+  
+  return cleanPayload;
+};
+
+/**
+ * Transforms form data to the exact API format required by backend
+ * @param {Object} formData - The form data
+ * @param {boolean} isEditMode - Whether this is an edit operation
+ */
+export const transformDataForAPI = (formData, isEditMode = false) => {
   console.log("🔍 Transforming form data:", formData);
 
   const { report, inspection, technical, summary, signoff } = formData;
@@ -224,13 +247,12 @@ export const transformDataForAPI = (formData) => {
   ]);
 
   // Build the final API payload
-  const apiPayload = {
+  let apiPayload = {
     serviceReportNo: report?.serviceReportNo || "",
     serviceVisitNo: report?.serviceVisitNo || "",
     clientName: report?.clientName || "",
     siteName: report?.siteName || "",
     sensorId: report?.sensorId || "",
-    // FIXED: Use pmVisitDate instead of pmDate
     pmVisitDate: report?.pmVisitDate || report?.pmDate || "",
     engineerName: report?.engineerName || "",
     observation: summary?.observation || "",
@@ -251,15 +273,20 @@ export const transformDataForAPI = (formData) => {
     }
   };
 
+  // 🔥 If in edit mode, remove immutable fields
+  if (isEditMode) {
+    apiPayload = removeImmutableFields(apiPayload);
+  }
+
   // Debug: Validate the payload
   console.log("📦 Final API Payload:", JSON.stringify(apiPayload, null, 2));
   console.log("📊 Number of checklists:", checklists.length);
 
   // Validate enum values
   const validStatuses = ["YES", "NO"];
-  const invalidStatuses = apiPayload.checklists.filter(
+  const invalidStatuses = apiPayload.checklists?.filter(
     item => !validStatuses.includes(item.status)
-  );
+  ) || [];
 
   if (invalidStatuses.length > 0) {
     console.warn("⚠️ Found invalid status values:", invalidStatuses);
@@ -269,11 +296,11 @@ export const transformDataForAPI = (formData) => {
 };
 
 /**
- * Submit PM Report to API
+ * Submit PM Report to API (CREATE)
  */
 export const submitPMReport = async (formData) => {
   try {
-    const payload = transformDataForAPI(formData);
+    const payload = transformDataForAPI(formData, false);
 
     console.log("📤 Submitting payload:", JSON.stringify(payload, null, 2));
 
@@ -307,16 +334,60 @@ export const submitPMReport = async (formData) => {
   }
 };
 
+/**
+ * 🔥 NEW: Update PM Report to API (UPDATE)
+ * @param {string|number} id - Report ID
+ * @param {Object} formData - Form data
+ * @param {Function} onProgress - Progress callback
+ */
+export const updatePMReport = async (id, formData, onProgress) => {
+  try {
+    // Transform data for API with edit mode = true
+    const payload = transformDataForAPI(formData, true);
 
-export const clearSensorCache = () => 
-  {
-    // Clear the sensor cache in Step1BasicInfo
-    // You can use an event or a global state
-    window.dispatchEvent(new CustomEvent('sensorCacheCleared'));
+    console.log(`📤 Updating report ${id} with payload:`, JSON.stringify(payload, null, 2));
+
+    const response = await apiClient.put(`/pm_reports/${id}`, payload, {
+      onUploadProgress: (progressEvent) => {
+        if (progressEvent.total && onProgress) {
+          const percentCompleted = Math.round(
+            (progressEvent.loaded * 100) / progressEvent.total
+          );
+          onProgress(percentCompleted);
+        }
+      }
+    });
+
+    console.log("✅ Update success:", response.data);
+    return {
+      success: true,
+      data: response.data,
+      error: null
+    };
+
+  } catch (error) {
+    console.error("❌ Update error:", error);
+
+    let errorMessage = error.message;
+    if (error.response) {
+      errorMessage = error.response.data?.message ||
+        error.response.data?.error ||
+        `Server error: ${error.response.status}`;
+      console.error("Response data:", error.response.data);
+    } else if (error.request) {
+      errorMessage = 'No response from server. Please check your network connection.';
+    }
+
+    return {
+      success: false,
+      data: null,
+      error: errorMessage
+    };
+  }
 };
 
 /**
- * Submit PM Report with progress tracking
+ * Submit PM Report with progress tracking (CREATE)
  */
 export const submitPMReportWithProgress = async (formData, onProgress) => {
   try {
@@ -324,7 +395,7 @@ export const submitPMReportWithProgress = async (formData, onProgress) => {
 
     // If it has a 'report' property, it's the raw form data
     if (formData.report) {
-      payload = transformDataForAPI(formData);
+      payload = transformDataForAPI(formData, false);
     }
 
     console.log("📤 Submitting payload:", JSON.stringify(payload, null, 2));
@@ -368,6 +439,82 @@ export const submitPMReportWithProgress = async (formData, onProgress) => {
       data: null,
       error: errorMessage
     };
+  }
+};
+
+/**
+ * 🔥 NEW: Update PM Report with progress tracking (UPDATE)
+ */
+export const updatePMReportWithProgress = async (id, formData, onProgress) => {
+  try {
+    let payload = formData;
+
+    // If it has a 'report' property, it's the raw form data
+    if (formData.report) {
+      payload = transformDataForAPI(formData, true); // Pass true for edit mode
+    }
+
+    console.log(`📤 Updating report ${id} with payload:`, JSON.stringify(payload, null, 2));
+    console.log("📊 Checklists in payload:", payload.checklists?.length || 0);
+
+    const response = await apiClient.put(`/pm_reports/${id}`, payload, {
+      onUploadProgress: (progressEvent) => {
+        if (progressEvent.total) {
+          const percentCompleted = Math.round(
+            (progressEvent.loaded * 100) / progressEvent.total
+          );
+          if (onProgress) {
+            onProgress(percentCompleted);
+          }
+        }
+      }
+    });
+
+    console.log("✅ Update success:", response.data);
+    return {
+      success: true,
+      data: response.data,
+      error: null
+    };
+
+  } catch (error) {
+    console.error("❌ Update error:", error);
+
+    let errorMessage = error.message;
+    if (error.response) {
+      errorMessage = error.response.data?.message ||
+        error.response.data?.error ||
+        `Server error: ${error.response.status}`;
+      console.error("Response data:", error.response.data);
+    } else if (error.request) {
+      errorMessage = 'No response from server. Please check your network connection.';
+    }
+
+    return {
+      success: false,
+      data: null,
+      error: errorMessage
+    };
+  }
+};
+
+/**
+ * Clear sensor cache
+ */
+export const clearSensorCache = () => {
+  window.dispatchEvent(new CustomEvent('sensorCacheCleared'));
+};
+
+/**
+ * Fetch Report by ID
+ */
+export const fetchPMReport = async (id) => {
+  try {
+    const response = await apiClient.get(`/pm_reports/${id}`);
+    return response.data;
+  } catch (error) {
+    console.error('❌ Fetch error:', error);
+    throw error;
   }
 };
 

@@ -1,6 +1,8 @@
 // src/components/pm/Step6Review.js
 import React, { useState, useRef } from "react";
 import { submitPMReport, submitPMReportWithProgress } from "../../api/pmReportService";
+// ADDED: Import update function for edit mode
+import { updatePMReportWithProgress } from "../../api/pmReportService";
 import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
 import notificationService from '../../services/notificationService';
@@ -10,7 +12,14 @@ export default function Step6Review({
     onEdit,
     onSubmit,
     onBackToDashboard
+    // ADDED: New props for edit mode support
+    // These are added as new parameters without modifying existing ones
 }) {
+    // ADDED: Check if we're in edit mode based on URL or passed prop
+    // This will be set by the parent component
+    const [isEditMode, setIsEditMode] = useState(false);
+    const [reportId, setReportId] = useState(null);
+    
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [submitError, setSubmitError] = useState(null);
     const [submitSuccess, setSubmitSuccess] = useState(false);
@@ -160,7 +169,7 @@ export default function Step6Review({
     };
 
     // ========================================
-    // HANDLE SUBMIT REPORT
+    // HANDLE SUBMIT REPORT - MODIFIED WITH EDIT SUPPORT
     // ========================================
     const handleSubmitReport = async () => {
         setIsSubmitting(true);
@@ -204,9 +213,30 @@ export default function Step6Review({
             //console.log("📤 Submitting data with checklists:", submitData);
             //console.log("📊 Number of checklists:", submitData.checklists.length);
 
-            const result = await submitPMReportWithProgress(submitData, (progress) => {
-                setUploadProgress(progress);
-            });
+            // ADDED: Check if we're in edit mode
+            let result;
+            
+            // ADDED: Determine if we should update or create
+            const shouldUpdate = isEditMode && reportId;
+            
+            if (shouldUpdate) {
+                // ADDED: UPDATE - Use the update function
+                console.log(`📝 Updating report ${reportId}`);
+                console.log("📤 Update data:", submitData);
+                
+                result = await updatePMReportWithProgress(
+                    reportId,
+                    submitData,
+                    (progress) => {
+                        setUploadProgress(progress);
+                    }
+                );
+            } else {
+                // CREATE - Use the create function (existing code)
+                result = await submitPMReportWithProgress(submitData, (progress) => {
+                    setUploadProgress(progress);
+                });
+            }
 
             if (result.success) {
                 setSubmitSuccess(true);
@@ -219,9 +249,13 @@ export default function Step6Review({
                         type: "final",
                         success: true,
                         data: result.data
+                        // ADDED: Pass edit mode status
+                        , isEditMode: isEditMode
                     });
                 }
-                notificationService.success("Report submitted successfully!");
+                // MODIFIED: Different success message for edit vs create
+                const successMessage = isEditMode ? "Report updated successfully!" : "Report submitted successfully!";
+                notificationService.success(successMessage);
             } else {
                 notificationService.error(result.error || "Failed to submit report");
                 setSubmitError(result.error || "Failed to submit report");
@@ -249,6 +283,13 @@ export default function Step6Review({
         } finally {
             setIsSubmitting(false);
         }
+    };
+
+    // ADDED: Function to set edit mode from parent component
+    // This allows the parent to pass edit mode status
+    const setEditMode = (mode, id) => {
+        setIsEditMode(mode);
+        setReportId(id);
     };
 
     // Handle modal close and navigate to dashboard
@@ -408,9 +449,32 @@ export default function Step6Review({
 
     return (
         <div className="review-container">
+            {/* ADDED: Edit Mode Banner */}
+            {isEditMode && (
+                <div className="edit-mode-banner" style={{
+                    background: '#e3f2fd',
+                    border: '1px solid #2196f3',
+                    borderRadius: '8px',
+                    padding: '12px 16px',
+                    marginBottom: '20px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '10px'
+                }}>
+                    <span style={{ fontSize: '20px' }}>✏️</span>
+                    <div>
+                        <strong style={{ color: '#0d47a1' }}>Edit Mode</strong>
+                        <span style={{ color: '#555', marginLeft: '8px' }}>
+                            - Service Report No, Visit No, and Sensor ID are locked and cannot be changed
+                        </span>
+                    </div>
+                </div>
+            )}
+
             {submitSuccess && (
                 <div className="alert alert-success">
-                    ✅ Report submitted successfully!
+                    {/* MODIFIED: Dynamic success message */}
+                    ✅ {isEditMode ? 'Report updated' : 'Report submitted'} successfully!
                 </div>
             )}
 
@@ -470,6 +534,8 @@ export default function Step6Review({
                         fontSize: '13px'
                     }}>
                         Report No: {report.serviceReportNo || 'N/A'} | Date: {new Date().toLocaleDateString()}
+                        {/* ADDED: Edit mode indicator in header */}
+                        {isEditMode && <span style={{ marginLeft: '10px' }}>✏️</span>}
                     </div>
                 </div>
 
@@ -1254,7 +1320,8 @@ export default function Step6Review({
                         opacity: (isSubmitting || submitSuccess) ? 0.6 : 1
                     }}
                 >
-                    {submitSuccess ? "✅ Submitted" : (isSubmitting ? `⏳ Submitting... ${uploadProgress}%` : "📤 Submit Report")}
+                    {/* MODIFIED: Dynamic button text based on edit mode */}
+                    {submitSuccess ? "✅ Submitted" : (isSubmitting ? `⏳ ${isEditMode ? 'Updating' : 'Submitting'}... ${uploadProgress}%` : (isEditMode ? "📤 Update Report" : "📤 Submit Report"))}
                 </button>
             </div>
 
@@ -1284,9 +1351,15 @@ export default function Step6Review({
                         animation: 'slideUp 0.3s ease'
                     }}>
                         <div style={{ fontSize: '64px', marginBottom: '16px' }}>✅</div>
-                        <h2 style={{ color: '#1a237e', marginBottom: '12px' }}>Report Submitted Successfully!</h2>
+                        {/* MODIFIED: Dynamic success message */}
+                        <h2 style={{ color: '#1a237e', marginBottom: '12px' }}>
+                            {isEditMode ? 'Report Updated Successfully!' : 'Report Submitted Successfully!'}
+                        </h2>
                         <p style={{ color: '#4b5563', marginBottom: '8px' }}>
-                            Your PM Service Report has been submitted successfully.
+                            {isEditMode 
+                                ? 'Your PM Service Report has been updated successfully.'
+                                : 'Your PM Service Report has been submitted successfully.'
+                            }
                         </p>
                         <p style={{ color: '#6b7280', fontSize: '14px', marginBottom: '20px' }}>
                             Report No: <strong>{submittedReportNo}</strong>
@@ -1403,7 +1476,7 @@ export default function Step6Review({
                 
                 /* Print styles */
                 @media print {
-                    .btn, .edit-btn, .footer-actions, .alert, .modal-overlay {
+                    .btn, .edit-btn, .footer-actions, .alert, .modal-overlay, .edit-mode-banner {
                         display: none !important;
                     }
                     .review-card {

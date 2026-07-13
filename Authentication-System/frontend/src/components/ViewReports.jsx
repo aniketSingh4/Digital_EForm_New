@@ -38,6 +38,7 @@ import {
 import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
 import "../assets/ViewReports.css";
+import { handleEditNavigation } from '../handlers/pmReportEditHandler';
 
 export default function ViewReports() {
     const navigate = useNavigate();
@@ -1289,7 +1290,7 @@ export default function ViewReports() {
             return;
         }
 
-        navigate(`/pm-report/view/${report.id}`);
+        navigate(`/pm-reports/view/${report.id}`);
 
         try {
             let fullDetails;
@@ -1312,7 +1313,7 @@ export default function ViewReports() {
     };
 
     const handleEdit = (report) => {
-        startEditing(report);
+        handleEditNavigation(report, navigate);
     };
 
     const handleDelete = async (id) => {
@@ -1369,7 +1370,7 @@ export default function ViewReports() {
                             <FaDownload /> Download PDFs ({selectedReports.length})
                         </button>
                     )}
-                    <button className="create-btn" onClick={() => navigate(config.createPath)}>
+                    <button className="create-btn" onClick={() => navigate("/pm-reports/new")}>
                         <FaPlusCircle /> Create New
                     </button>
                 </div>

@@ -39,18 +39,22 @@ function App() {
         <Route path="/login" element={<Login />} />
         <Route path="/signup" element={<Signup />} />
         <Route path="/dashboard" element={<Dashboard />} />
-        <Route path="/pm-report" element={<PMReportWizard />} />
-        <Route path="/pm-report/edit/:id" element={<PMReportWizard />} />
-        <Route path="/pm-report/view/:id" element={<PMReportView />} />
 
-        {/* ✅ Pre-Visit Report Routes - Clean version */}
+        {/* Preventive Maintenance Report Routes */}
+        <Route path="/pm-reports" element={<PMReportWizard />} />
+        <Route path="/pm-reports/new" element={<PMReportWizard />} />
+        <Route path="/pm-reports/edit/:id" element={<PMReportWizard />} />
+        <Route path="/pm-reports/view/:id" element={<PMReportView />} />
+        <Route path="/pm-reports/view-all" element={<ViewReports />} />
+
+        {/* Pre-Visit Report Routes - Clean version */}
         <Route path="/previsit" element={<PreVisitViewAll />} />
         <Route path="/previsit/new" element={<PreVisitReportForm />} />
         <Route path="/previsit/view-all" element={<PreVisitViewAll />} /> 
         <Route path="/previsit/edit/:id" element={<PreVisitReportForm />} />
         <Route path="/previsit/:id" element={<PreVisitReportDetail />} />
 
-        {/* ✅ Also support /previsit-checklist (redirect to /previsit) */}
+        {/* Also support /previsit-checklist (redirect to /previsit) */}
         <Route path="/previsit-checklist" element={<Navigate to="/previsit" replace />} />
         <Route path="/previsit-checklist/:id" element={<Navigate to="/previsit/:id" replace />} />
 

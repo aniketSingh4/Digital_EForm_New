@@ -58,7 +58,7 @@ const PMReportView = () => {
             console.error('Error fetching report:', error);
             toast.error('Failed to load report details');
             notificationService.error('Failed to load PM Report');
-            navigate('/view-reports/1');
+            navigate('/pm-reports/view-all');
         } finally {
             setLoading(false);
         }
@@ -109,11 +109,11 @@ const PMReportView = () => {
     };
 
     const handleEdit = () => {
-        navigate(`/pm-report/edit/${id}`);
+        navigate(`/pm-reports/edit/${id}`);
     };
 
     const handleBack = () => {
-        navigate('/view-reports/1');
+        navigate('/pm-reports/view-all');
     };
 
     if (loading) {

@@ -327,6 +327,8 @@ public class PreventiveMaintenanceServiceImpl implements PreventiveMaintenanceSe
         return mapper.toDTO(report);
     }
 
+ // In your Controller or Service, update the update method to skip validation for immutable fields
+
     @Override
     @Transactional
     public PMReportResponse updateReport(
@@ -334,34 +336,59 @@ public class PreventiveMaintenanceServiceImpl implements PreventiveMaintenanceSe
             PMReportRequest request) 
     {
         System.out.println("📝 Updating report ID: " + id);
-        System.out.println("📊 Checklists received: " + (request.getChecklists() != null ? request.getChecklists().size() : 0));
-
+        
         PreventiveMaintenanceReport report =
                 repository.findById(id)
                 .orElseThrow(() ->
                         new ResourceNotFoundException(
                                 "PM Report not found."));
 
-        // Update basic fields
-        report.setClientName(request.getClientName());
-        report.setSiteName(request.getSiteName());
-        report.setSensorId(request.getSensorId());
-        report.setEngineerName(request.getEngineerName());
-        report.setObservation(request.getObservation());
-        report.setRecommendation(request.getRecommendation());
-        report.setPmVisitDate(request.getPmVisitDate());
+        // 🔒 Store original immutable values
+        String originalServiceReportNo = report.getServiceReportNo();
+        String originalServiceVisitNo = report.getServiceVisitNo();
+        String originalSensorId = report.getSensorId();
         
-        // Update Status Enums
+        System.out.println("🔒 Immutable fields preserved:");
+        System.out.println("   - ServiceReportNo: " + originalServiceReportNo);
+        System.out.println("   - ServiceVisitNo: " + originalServiceVisitNo);
+        System.out.println("   - SensorId: " + originalSensorId);
+
+        // ✅ Update ONLY editable fields
+        // ❌ DO NOT update: serviceReportNo, serviceVisitNo, sensorId
+        if (request.getClientName() != null) {
+            report.setClientName(request.getClientName());
+        }
+        if (request.getSiteName() != null) {
+            report.setSiteName(request.getSiteName());
+        }
+        if (request.getEngineerName() != null) {
+            report.setEngineerName(request.getEngineerName());
+        }
+        if (request.getObservation() != null) {
+            report.setObservation(request.getObservation());
+        }
+        if (request.getRecommendation() != null) {
+            report.setRecommendation(request.getRecommendation());
+        }
+        if (request.getPmVisitDate() != null) {
+            report.setPmVisitDate(request.getPmVisitDate());
+        }
+        
+        // Update Status Enums if present
         if (request.getSummary() != null) {
-            report.setPreventiveMaintenanceStatus(
-                convertToPMStatus(request.getSummary().getPreventiveMaintenanceStatus())
-            );
-            report.setSiteConditionAfterPm(
-                convertToSiteCondition(request.getSummary().getSiteConditionAfterPm())
-            );
+            if (request.getSummary().getPreventiveMaintenanceStatus() != null) {
+                report.setPreventiveMaintenanceStatus(
+                    convertToPMStatus(request.getSummary().getPreventiveMaintenanceStatus())
+                );
+            }
+            if (request.getSummary().getSiteConditionAfterPm() != null) {
+                report.setSiteConditionAfterPm(
+                    convertToSiteCondition(request.getSummary().getSiteConditionAfterPm())
+                );
+            }
         }
 
-        // Update checklists - Manually convert
+        // Update checklists
         if (request.getChecklists() != null) {
             report.getChecklists().clear();
             
@@ -373,23 +400,23 @@ public class PreventiveMaintenanceServiceImpl implements PreventiveMaintenanceSe
                 }
                 
                 PreventiveMaintenanceChecklist entity = new PreventiveMaintenanceChecklist();
-                
                 entity.setCategory(convertToChecklistCategory(dto.getCategory()));
                 entity.setItemName(dto.getItemName());
                 entity.setStatus(convertToInspectionStatus(dto.getStatus()));
                 entity.setRemark(dto.getRemark());
                 entity.setReport(report);
-                
                 checklistList.add(entity);
             }
-            
             report.getChecklists().addAll(checklistList);
-            System.out.println("✅ Updated " + checklistList.size() + " checklists");
         }
 
         // Update sign off
         if (request.getSignOff() != null) {
-            PreventiveMaintenanceSignOff signOff = new PreventiveMaintenanceSignOff();
+            PreventiveMaintenanceSignOff signOff = report.getSignOff();
+            if (signOff == null) {
+                signOff = new PreventiveMaintenanceSignOff();
+                signOff.setReport(report);
+            }
             signOff.setServiceEngineerName(request.getSignOff().getServiceEngineerName());
             signOff.setServiceEngineerSignature(request.getSignOff().getServiceEngineerSignature());
             signOff.setServiceEngineerDate(request.getSignOff().getServiceEngineerDate());
@@ -397,12 +424,17 @@ public class PreventiveMaintenanceServiceImpl implements PreventiveMaintenanceSe
             signOff.setDesignation(request.getSignOff().getDesignation());
             signOff.setClientSignature(request.getSignOff().getClientSignature());
             signOff.setClientDate(request.getSignOff().getClientDate());
-            signOff.setReport(report);
             report.setSignOff(signOff);
         }
 
         PreventiveMaintenanceReport updatedReport = repository.save(report);
-        System.out.println("✅ Report updated with ID: " + updatedReport.getId());
+        
+        // Verify immutable fields were not changed
+        System.out.println("✅ Update successful:");
+        System.out.println("   - ID: " + updatedReport.getId());
+        System.out.println("   - ServiceReportNo: " + updatedReport.getServiceReportNo() + " (unchanged)");
+        System.out.println("   - ServiceVisitNo: " + updatedReport.getServiceVisitNo() + " (unchanged)");
+        System.out.println("   - SensorId: " + updatedReport.getSensorId() + " (unchanged)");
         
         return mapper.toDTO(updatedReport);
     }
