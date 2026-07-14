@@ -114,12 +114,12 @@ export const validateCalibrationReport = (formData) => {
   }
 
   // Debug: Log errors found
-  console.log('🔍 Validation errors found:', errors);
-  console.log('🔍 Number of errors:', Object.keys(errors).length);
+  //console.log('🔍 Validation errors found:', errors);
+  //console.log('🔍 Number of errors:', Object.keys(errors).length);
 
   // ✅ FIX: Return an object with isValid and errors properties
   const isValid = Object.keys(errors).length === 0;
-  console.log('🔍 Is valid?', isValid);
+  //console.log('🔍 Is valid?', isValid);
 
   return {
     isValid: isValid,

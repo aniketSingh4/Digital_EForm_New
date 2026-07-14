@@ -246,7 +246,7 @@ const CalibrationReportForm = ({ onSuccess, onCancel, isEdit = false }) => {
 
     // ✅ If validation passes, proceed with API call
     try {
-      console.log('📤 Submitting data to API...');
+      //console.log('📤 Submitting data to API...');
       let response;
 
       if (isEditMode && id) {
@@ -303,8 +303,8 @@ const CalibrationReportForm = ({ onSuccess, onCancel, isEdit = false }) => {
     );
   }
 
-  // ---------- SAFETY: Extract all values into local variables with fallbacks ----------
-  // ✅ FIXED: Check if formData exists and is an object
+  // SAFETY: Extract all values into local variables with fallbacks ----------
+  // FIXED: Check if formData exists and is an object
   const safe = (formData && typeof formData === 'object') ? formData : { ...DEFAULT_FORM_DATA };
 
   // Explicitly extract each field with fallback
