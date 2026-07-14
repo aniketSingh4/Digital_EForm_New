@@ -1,7 +1,12 @@
+// src/utils/calibrationReportValidators.js
+
 import { format, addDays, parseISO } from 'date-fns';
 
 export const validateCalibrationReport = (formData) => {
   const errors = {};
+
+  // Debug: Log what we're validating
+  console.log('🔍 Validating form data:', formData);
 
   // Report Header Validations
   if (!formData.reportDate) {
@@ -108,7 +113,18 @@ export const validateCalibrationReport = (formData) => {
     errors['engineerDetails.date'] = 'Date is required';
   }
 
-  return errors;
+  // Debug: Log errors found
+  console.log('🔍 Validation errors found:', errors);
+  console.log('🔍 Number of errors:', Object.keys(errors).length);
+
+  // ✅ FIX: Return an object with isValid and errors properties
+  const isValid = Object.keys(errors).length === 0;
+  console.log('🔍 Is valid?', isValid);
+
+  return {
+    isValid: isValid,
+    errors: errors
+  };
 };
 
 export const calculateCalibrationDueDate = (calibrationDate) => {

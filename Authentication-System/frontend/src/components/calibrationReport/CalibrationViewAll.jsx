@@ -7,23 +7,19 @@ import {
     FaFilePdf,
     FaTrash,
     FaSearch,
-    FaPrint,
-    FaDownload,
     FaChevronLeft,
     FaChevronRight,
     FaSort,
     FaSortUp,
     FaSortDown,
     FaArrowLeft,
-    FaPlus,
-    FaFileAlt,
     FaClock,
     FaTimes,
     FaCheckCircle,
     FaSpinner,
     FaSync,
-    FaFilter,
-    FaPlusCircle
+    FaPlusCircle,
+    FaTools
 } from "react-icons/fa";
 import { calibrationReportService } from "../../services/calibrationReportService";
 import notificationService from "../../services/notificationService";
@@ -44,7 +40,6 @@ const CalibrationViewAll = () => {
     const [selectedReports, setSelectedReports] = useState([]);
     const [selectAll, setSelectAll] = useState(false);
     const [actionLoading, setActionLoading] = useState(null);
-    const [showFilters, setShowFilters] = useState(false);
     const [filterOptions, setFilterOptions] = useState({
         status: 'all',
         dateRange: 'all',
@@ -53,7 +48,7 @@ const CalibrationViewAll = () => {
 
     const getReportId = (report) => {
         if (!report) return null;
-        return report.id || report.reportId || report._id || report.calibrationId || null;
+        return report.id || report._id || report.reportId || report.calibrationId || null;
     };
 
     useEffect(() => {
@@ -68,13 +63,63 @@ const CalibrationViewAll = () => {
         try {
             setLoading(true);
             setError(null);
-            const data = await calibrationReportService.getAllReports();
-            setReports(data);
-            setFilteredReports(data);
+
+            console.log('🔄 Fetching reports...');
+            let data = await calibrationReportService.getAllReports();
+
+            console.log('📦 Raw API Response:', data);
+
+            // Ensure data is an array
+            if (!Array.isArray(data)) {
+                console.warn('Data is not an array, converting...');
+                if (data && typeof data === 'object') {
+                    if (data.data && Array.isArray(data.data)) {
+                        data = data.data;
+                    } else if (data.reports && Array.isArray(data.reports)) {
+                        data = data.reports;
+                    } else if (data.results && Array.isArray(data.results)) {
+                        data = data.results;
+                    } else {
+                        data = [data];
+                    }
+                } else {
+                    data = [];
+                }
+            }
+
+            console.log('✅ Reports fetched:', data.length);
+
+            // Map the data to ensure consistent field names
+            const mappedData = data.map(report => ({
+                ...report,
+                id: report.id || report._id || report.reportId,
+                reportNo: report.reportNo || 'N/A',
+                clientName: report.clientName || 'N/A',
+                siteName: report.siteName || 'N/A',
+                sensorId: report.sensorId || 'N/A',
+                modelNo: report.modelNo || 'N/A',
+                calibrationDate: report.calibrationDate || report.reportDate,
+                reportDate: report.reportDate || new Date().toISOString(),
+                calibrationSummary: report.calibrationSummary || {
+                    calibrationSuccessful: false,
+                    sensorRequiresReplacement: false,
+                    calibrationAdjustmentPerformed: false,
+                    sensorWithinAcceptableLimits: false
+                }
+            }));
+
+            console.log('✅ Mapped data:', mappedData.length);
+            setReports(mappedData);
+            setFilteredReports(mappedData);
+
+            if (mappedData.length === 0) {
+                toast.info('No reports found. Create your first calibration report!');
+            }
+
         } catch (err) {
+            console.error('❌ Error fetching reports:', err);
             setError('Failed to load reports. Please try again.');
             toast.error('Failed to fetch reports');
-            console.error('Error fetching reports:', err);
         } finally {
             setLoading(false);
         }
@@ -250,7 +295,9 @@ const CalibrationViewAll = () => {
         navigate(`/calibration-reports/edit/${reportId}`);
     };
 
-    // PDF Generation - FIXED (removed setPdfProgress)
+    // [Keep your PDF generation function here - it's long so I'm omitting it for brevity]
+    // Make sure to keep the handlePDF function from your original code
+    // PDF Generation - FIXED to match working Previsit pattern
     const handlePDF = async (report) => {
         const reportId = getReportId(report);
         if (!reportId) {
@@ -260,17 +307,27 @@ const CalibrationViewAll = () => {
 
         try {
             setActionLoading(`pdf-${reportId}`);
+            console.log('📄 Generating PDF for report:', reportId);
 
-            // Fetch full report details
-            const fullReport = await calibrationReportService.getReportById(reportId);
+            // Fetch full report details - using the same pattern as Previsit
+            const response = await fetch(`http://localhost:8087/api/calibration-reports/${reportId}`, {
+                headers: {
+                    'Content-Type': 'application/json',
+                }
+            });
 
-            if (!fullReport) {
-                throw new Error('Could not load report details');
+            if (!response.ok) {
+                throw new Error('Failed to fetch report data');
             }
 
+            const fullReport = await response.json();
             console.log('📄 Full Report Data for PDF:', fullReport);
 
-            // Load images as base64
+            const doc = new jsPDF('p', 'mm', 'a4');
+            const pageWidth = doc.internal.pageSize.getWidth();
+            const pageHeight = doc.internal.pageSize.getHeight();
+
+            // Load images as base64 - SAME as working Previsit code
             const loadImageAsBase64 = async (url) => {
                 try {
                     const response = await fetch(url);
@@ -286,15 +343,14 @@ const CalibrationViewAll = () => {
                 }
             };
 
-            // Load both images
+            // Load both images - SAME as working Previsit code
             const [backgroundImage, headerImage] = await Promise.all([
                 loadImageAsBase64('/bg-img.webp'),
                 loadImageAsBase64('/header.webp')
             ]);
 
-            const doc = new jsPDF('p', 'mm', 'a4');
-            const pageWidth = doc.internal.pageSize.getWidth();
-            const pageHeight = doc.internal.pageSize.getHeight();
+            console.log('📄 Background image loaded:', backgroundImage ? '✅' : '❌');
+            console.log('📄 Header image loaded:', headerImage ? '✅' : '❌');
 
             // Helper function to safely convert any value to string
             const safeString = (value) => {
@@ -314,7 +370,7 @@ const CalibrationViewAll = () => {
                 }
             };
 
-            // Function to add background image, header, and footer
+            // Function to add background image, header, and footer - SAME as working Previsit code
             const addPageLayout = (pageNum) => {
                 // Add Background Image - Centered and Smaller (Watermark style)
                 if (backgroundImage) {
@@ -722,7 +778,6 @@ const CalibrationViewAll = () => {
                 doc.setLineWidth(2);
                 doc.line(17, y, 17, y + 20);
 
-                // Add a subtle padding by drawing a very light background or just text
                 doc.setTextColor(30, 30, 50);
                 doc.setFontSize(9);
                 doc.setFont('helvetica', 'normal');
@@ -765,9 +820,8 @@ const CalibrationViewAll = () => {
             // Draw green vertical line only - no box
             doc.setDrawColor(16, 185, 129);
             doc.setLineWidth(2);
-            doc.line(17, y, 17, y + 18); // Vertical line only
+            doc.line(17, y, 17, y + 18);
 
-            // Text without box
             doc.setTextColor(30, 30, 50);
             doc.setFontSize(8);
             doc.setFont('helvetica', 'bold');
@@ -857,11 +911,11 @@ const CalibrationViewAll = () => {
             const fileName = `Calibration_Report_${safeString(fullReport.reportNo || 'Report')}_${new Date().toISOString().split('T')[0]}.pdf`;
             doc.save(fileName);
 
+            toast.success('✅ PDF generated successfully!');
             notificationService.pdfGenerated(fullReport.reportNo || 'Calibration Report');
-            //toast.success('✅ PDF generated successfully!');
 
         } catch (error) {
-            //console.error("PDF Generation Error:", error);
+            console.error("PDF Generation Error:", error);
             toast.error(`❌ Failed to generate PDF: ${error.message}`);
             notificationService.error('Failed to generate PDF');
         } finally {
@@ -1042,8 +1096,8 @@ const CalibrationViewAll = () => {
                                 <th onClick={() => handleSort('sensorId')} className="sortable">
                                     Sensor ID {getSortIcon('sensorId')}
                                 </th>
-                                {/* <th>Status</th>
-                                <th style={{ width: '220px' }}>Actions</th> */}
+                                <th>Status</th>
+                                <th style={{ width: '220px' }}>Actions</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -1070,11 +1124,11 @@ const CalibrationViewAll = () => {
                                         <td>{report.siteName || '-'}</td>
                                         <td>{formatDate(report.calibrationDate)}</td>
                                         <td>{report.sensorId || '-'}</td>
-                                        {/* <td>
+                                        <td>
                                             <span className={`status-badge ${status.className}`}>
                                                 {status.icon} {status.label}
                                             </span>
-                                        </td> */}
+                                        </td>
                                         <td>
                                             <div className="action-buttons">
                                                 <button

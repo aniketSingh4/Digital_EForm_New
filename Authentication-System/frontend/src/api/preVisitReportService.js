@@ -157,8 +157,6 @@ const preVisitReportService = {
   }
 };
 
-// src/api/preVisitReportService.js
-
 /**
  * Check if email exists (with optional exclude ID for edit mode)
  * @param {string} email - Email to check

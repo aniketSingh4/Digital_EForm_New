@@ -13,9 +13,7 @@ const CALIBRATION_SUMMARY_ITEMS = [
   { id: 4, fieldName: 'Sensor Requires Replacement', key: 'sensorRequiresReplacement' },
 ];
 
-const DEFAULT_DECLARATION = `The calibration activity was carried out using a calibrated reference instrument traceable to applicable
-standards. The readings recorded above represent the observed values before and after calibration. Any
-observations and recommendations have been documented for necessary action.`;
+const DEFAULT_DECLARATION = `The calibration activity was carried out using a calibrated reference instrument traceable to applicable standards. The readings recorded above represent the observed values before and after calibration. Any observations and recommendations have been documented for necessary action.`;
 
 const getTodayDate = () => new Date().toISOString().split('T')[0];
 const getDatePlus90Days = (dateStr) => {
@@ -112,18 +110,29 @@ const CalibrationReportForm = ({ onSuccess, onCancel, isEdit = false }) => {
     }
   };
 
+  // ✅ FIXED: Safer input change handler
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
     const val = type === 'checkbox' ? checked : value;
-    if (name.includes('.')) {
-      const [parent, child] = name.split('.');
-      setFormData(prev => ({
-        ...prev,
-        [parent]: { ...prev[parent], [child]: val },
-      }));
-    } else {
-      setFormData(prev => ({ ...prev, [name]: val }));
-    }
+
+    setFormData(prev => {
+      // If prev is undefined or null, use DEFAULT_FORM_DATA
+      const current = prev && typeof prev === 'object' ? prev : { ...DEFAULT_FORM_DATA };
+
+      if (name.includes('.')) {
+        const [parent, child] = name.split('.');
+        return {
+          ...current,
+          [parent]: { ...current[parent], [child]: val },
+        };
+      } else {
+        return {
+          ...current,
+          [name]: val,
+        };
+      }
+    });
+
     // Clear error
     if (errors[name]) {
       const newErrors = { ...errors };
@@ -162,51 +171,124 @@ const CalibrationReportForm = ({ onSuccess, onCancel, isEdit = false }) => {
     setSubmitStatus(null);
     setApiError(null);
 
-    const submitData = {
-      reportDate: formData.reportDate,
-      clientName: formData.clientName,
-      siteName: formData.siteName,
-      siteAddress: formData.siteAddress,
-      sensorId: formData.sensorId,
-      modelNo: formData.modelNo,
-      serialNo: formData.serialNo,
-      calibrationDate: formData.calibrationDate,
-      calibrationDueDate: formData.calibrationDueDate,
-      masterRefInstrument: formData.masterRefInstrument,
-      readingBeforeCalibration: formData.readingBeforeCalibration,
-      readingAfterCalibration: formData.readingAfterCalibration,
-      calibrationSummary: formData.calibrationSummary,
-      remarks: formData.remarks,
-      declaration: formData.declaration || DEFAULT_DECLARATION,
-      engineerDetails: formData.engineerDetails,
-    };
-
-    const validation = validateCalibrationReport(submitData);
-    if (!validation.isValid) {
-      setErrors(validation.errors);
+    // Check if formData exists
+    if (!formData || typeof formData !== 'object') {
+      setSubmitStatus({
+        type: 'error',
+        message: 'Form data is not initialized. Please refresh the page.'
+      });
       setIsSubmitting(false);
-      setSubmitStatus({ type: 'error', message: 'Please fix errors' });
       return;
     }
 
+    const submitData = {
+      reportDate: formData.reportDate || getTodayDate(),
+      clientName: formData.clientName || '',
+      siteName: formData.siteName || '',
+      siteAddress: formData.siteAddress || '',
+      sensorId: formData.sensorId || '',
+      modelNo: formData.modelNo || '',
+      serialNo: formData.serialNo || '',
+      calibrationDate: formData.calibrationDate || getTodayDate(),
+      calibrationDueDate: formData.calibrationDueDate || getDatePlus90Days(getTodayDate()),
+      masterRefInstrument: {
+        refSerialNo: formData.masterRefInstrument?.refSerialNo || '',
+        calibrationCertificateNo: formData.masterRefInstrument?.calibrationCertificateNo || '',
+        certificateValidity: formData.masterRefInstrument?.certificateValidity || getDatePlus90Days(getTodayDate()),
+      },
+      readingBeforeCalibration: {
+        pm25Value: formData.readingBeforeCalibration?.pm25Value || '',
+        pm10Value: formData.readingBeforeCalibration?.pm10Value || '',
+        temp: formData.readingBeforeCalibration?.temp || '',
+        humidity: formData.readingBeforeCalibration?.humidity || '',
+      },
+      readingAfterCalibration: {
+        pm25Value: formData.readingAfterCalibration?.pm25Value || '',
+        pm10Value: formData.readingAfterCalibration?.pm10Value || '',
+        temp: formData.readingAfterCalibration?.temp || '',
+        humidity: formData.readingAfterCalibration?.humidity || '',
+      },
+      calibrationSummary: {
+        calibrationSuccessful: formData.calibrationSummary?.calibrationSuccessful || false,
+        calibrationAdjustmentPerformed: formData.calibrationSummary?.calibrationAdjustmentPerformed || false,
+        sensorWithinAcceptableLimits: formData.calibrationSummary?.sensorWithinAcceptableLimits || false,
+        sensorRequiresReplacement: formData.calibrationSummary?.sensorRequiresReplacement || false,
+      },
+      remarks: formData.remarks || '',
+      declaration: formData.declaration || DEFAULT_DECLARATION,
+      engineerDetails: {
+        engineerName: formData.engineerDetails?.engineerName || '',
+        signature: formData.engineerDetails?.signature || '',
+        date: formData.engineerDetails?.date || getTodayDate(),
+      },
+    };
+
+    // ✅ Get validation result
+    const validationResult = validateCalibrationReport(submitData);
+    console.log('🔍 Validation Result:', validationResult);
+
+    if (!validationResult.isValid) {
+      const errorMessages = validationResult.errors || {};
+      console.log('❌ Validation Errors:', errorMessages);
+      setErrors(errorMessages);
+
+      const errorList = Object.entries(errorMessages)
+        .map(([field, message]) => `${field}: ${message}`)
+        .join('; ');
+
+      setSubmitStatus({
+        type: 'error',
+        message: `Please fix the following errors: ${errorList}`
+      });
+      setIsSubmitting(false);
+      return;
+    }
+
+    // ✅ If validation passes, proceed with API call
     try {
+      console.log('📤 Submitting data to API...');
       let response;
+
       if (isEditMode && id) {
+        console.log('✏️ Updating report with ID:', id);
         response = await calibrationReportService.updateReport(id, submitData);
-        toast.success('Updated!');
+        toast.success('✅ Report updated successfully!');
       } else {
+        console.log('🆕 Creating new report...');
         response = await calibrationReportService.createReport(submitData);
-        toast.success('Created!');
+        toast.success('✅ Report created successfully!');
       }
-      setSubmitStatus({ type: 'success', message: isEditMode ? 'Updated!' : 'Created!' });
-      if (!isEditMode) setTimeout(() => setFormData({ ...DEFAULT_FORM_DATA }), 2000);
-      setTimeout(() => (onSuccess ? onSuccess(response) : navigate('/calibration-reports')), 1500);
+
+      console.log('✅ API Response:', response);
+
+      setSubmitStatus({
+        type: 'success',
+        message: isEditMode ? 'Report updated successfully!' : 'Report created successfully!'
+      });
+
+      // Reset form for new reports
+      if (!isEditMode) {
+        setTimeout(() => setFormData({ ...DEFAULT_FORM_DATA }), 2000);
+      }
+
+      // Navigate back to reports list
+      setTimeout(() => {
+        if (onSuccess) {
+          onSuccess(response);
+        } else {
+          navigate('/calibration-reports');
+        }
+      }, 1500);
+
     } catch (error) {
-      console.error(error);
-      const msg = error.response?.data?.message || 'Failed to save';
-      setApiError(msg);
-      setSubmitStatus({ type: 'error', message: msg });
-      toast.error(msg);
+      console.error('❌ Submit error:', error);
+      const errorMessage = error.response?.data?.message || error.message || 'Failed to save report';
+      setApiError(errorMessage);
+      setSubmitStatus({
+        type: 'error',
+        message: errorMessage
+      });
+      toast.error(`❌ ${errorMessage}`);
     } finally {
       setIsSubmitting(false);
     }
@@ -222,9 +304,8 @@ const CalibrationReportForm = ({ onSuccess, onCancel, isEdit = false }) => {
   }
 
   // ---------- SAFETY: Extract all values into local variables with fallbacks ----------
-  // This is the key: we never access a property directly from an object that might be undefined.
-  // We use the DEFAULT_FORM_DATA as the ultimate fallback.
-  const safe = formData && typeof formData === 'object' ? formData : { ...DEFAULT_FORM_DATA };
+  // ✅ FIXED: Check if formData exists and is an object
+  const safe = (formData && typeof formData === 'object') ? formData : { ...DEFAULT_FORM_DATA };
 
   // Explicitly extract each field with fallback
   const reportDate = safe.reportDate || getTodayDate();
@@ -236,18 +317,36 @@ const CalibrationReportForm = ({ onSuccess, onCancel, isEdit = false }) => {
   const serialNo = safe.serialNo || '';
   const calibrationDate = safe.calibrationDate || getTodayDate();
   const calibrationDueDate = safe.calibrationDueDate || getDatePlus90Days(getTodayDate());
-  const masterRef = safe.masterRefInstrument || { refSerialNo: '', calibrationCertificateNo: '', certificateValidity: getDatePlus90Days(getTodayDate()) };
-  const readingBefore = safe.readingBeforeCalibration || { pm25Value: '', pm10Value: '', temp: '', humidity: '' };
-  const readingAfter = safe.readingAfterCalibration || { pm25Value: '', pm10Value: '', temp: '', humidity: '' };
-  const calibrationSummary = safe.calibrationSummary || { calibrationSuccessful: false, calibrationAdjustmentPerformed: false, sensorWithinAcceptableLimits: false, sensorRequiresReplacement: false };
+  const masterRef = safe.masterRefInstrument || {
+    refSerialNo: '',
+    calibrationCertificateNo: '',
+    certificateValidity: getDatePlus90Days(getTodayDate())
+  };
+  const readingBefore = safe.readingBeforeCalibration || {
+    pm25Value: '',
+    pm10Value: '',
+    temp: '',
+    humidity: ''
+  };
+  const readingAfter = safe.readingAfterCalibration || {
+    pm25Value: '',
+    pm10Value: '',
+    temp: '',
+    humidity: ''
+  };
+  const calibrationSummary = safe.calibrationSummary || {
+    calibrationSuccessful: false,
+    calibrationAdjustmentPerformed: false,
+    sensorWithinAcceptableLimits: false,
+    sensorRequiresReplacement: false
+  };
   const remarks = safe.remarks || '';
   const declaration = safe.declaration || DEFAULT_DECLARATION;
-  const engineer = safe.engineerDetails || { engineerName: '', signature: '', date: getTodayDate() };
-
-  // Debug: log to confirm all values exist
-  console.log('🔍 reportDate:', reportDate);
-  console.log('🔍 clientName:', clientName);
-  // ... you can add more logs if needed
+  const engineer = safe.engineerDetails || {
+    engineerName: '',
+    signature: '',
+    date: getTodayDate()
+  };
 
   return (
     <div className="calibration-report-form">
@@ -593,9 +692,6 @@ const CalibrationReportForm = ({ onSuccess, onCancel, isEdit = false }) => {
               rows="4"
               style={{ backgroundColor: '#f9fafb' }}
             />
-            <small style={{ color: '#6b7280', fontSize: '12px', display: 'block', marginTop: '4px' }}>
-              Default declaration is automatically included
-            </small>
           </div>
         </div>
 
