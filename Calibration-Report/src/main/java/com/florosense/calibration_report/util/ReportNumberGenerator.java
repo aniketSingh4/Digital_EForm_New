@@ -16,7 +16,7 @@ public class ReportNumberGenerator
     
     private final CalibrationReportRepository reportRepository;
     
-    private static final String REPORT_PREFIX = "FLO_CAL";
+    private static final String REPORT_PREFIX = "FLO_CAL_";
     private static final String SERIAL_PREFIX = "FLO_SER_";
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyyMMdd");
     
