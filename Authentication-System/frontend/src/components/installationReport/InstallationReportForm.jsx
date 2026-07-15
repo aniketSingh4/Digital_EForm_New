@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import axios from 'axios';
 import './InstallationReportForm.css';
+import notificationService from "../../services/notificationService";
 
 const API_BASE_URL = 'http://localhost:8086/api/reports';
 
@@ -83,7 +84,8 @@ const InstallationReportForm = () => {
           : [{ modelNo: '', serialNo: '', quantity: 1 }],
       });
     } catch (error) {
-      toast.error('Error fetching report data');
+      //toast.error('Error fetching report data');
+      notificationService.error('Failed to fetch report data');
       navigate('/reports');
     } finally {
       setLoading(false);
@@ -132,7 +134,8 @@ const InstallationReportForm = () => {
         equipmentDetails: updatedEquipment,
       });
     } else {
-      toast.warning('At least one equipment detail is required');
+      //toast.warning('At least one equipment detail is required');
+      notificationService.warning('At least one equipment detail is required');
     }
   };
 
@@ -141,14 +144,16 @@ const InstallationReportForm = () => {
     
     // Validate required fields
     if (!formData.customerName || !formData.installedBy || !formData.companyName) {
-      toast.error('Please fill in all required fields');
+      //toast.error('Please fill in all required fields');
+      notificationService.error('Please fill in all required fields');
       return;
     }
 
     // Validate equipment details
     for (const equipment of formData.equipmentDetails) {
       if (!equipment.modelNo || !equipment.serialNo) {
-        toast.error('Please fill in all equipment details (Model No and Serial No are required)');
+        //toast.error('Please fill in all equipment details (Model No and Serial No are required)');
+        notificationService.error('Please fill in all equipment details (Model No and Serial No are required)');
         return;
       }
     }
@@ -163,16 +168,19 @@ const InstallationReportForm = () => {
       let response;
       if (isEditMode) {
         response = await axios.put(`${API_BASE_URL}/${id}`, submitData);
-        toast.success('Report updated successfully!');
+        //.success('Report updated successfully!');
+        notificationService.success('Report updated successfully!');
       } else {
         response = await axios.post(API_BASE_URL, submitData);
-        toast.success('Report created successfully!');
+        //toast.success('Report created successfully!');
+        notificationService.success('Report created successfully!');
       }
 
       navigate('/reports');
     } catch (error) {
       console.error('Error saving report:', error);
-      toast.error(error.response?.data?.message || 'Error saving report');
+      //toast.error(error.response?.data?.message || 'Error saving report');
+      notificationService.error(error.response?.data?.message || 'Error saving report');
     } finally {
       setLoading(false);
     }
