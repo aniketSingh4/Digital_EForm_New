@@ -173,11 +173,12 @@ export default function PMReportWizard() {
 
             console.log('✅ Form data populated successfully');
             console.log('📋 Form checklists:', transformedChecklists.length);
-            toast.success('Report data loaded successfully');
+            notificationService.success('Report data loaded successfully', { type: 'REPORT_VIEWED', identifier: id, reportName: data.serviceReportNo || '' });
+            //toast.success('Report data loaded successfully');
 
         } catch (error) {
             console.error('Error fetching report:', error);
-            toast.error('Failed to load report data');
+            //toast.error('Failed to load report data');
             notificationService.error('Failed to load PM Report');
             navigate('/pm-reports/view-all');
         } finally {
@@ -312,10 +313,10 @@ export default function PMReportWizard() {
             
             if (isEditMode) {
                 notificationService.reportUpdated('PM Report', id);
-                toast.success('✅ Report updated successfully!');
+                //toast.success('✅ Report updated successfully!');
             } else {
                 notificationService.reportCreated('PM Report', result.id);
-                toast.success('✅ Report created successfully!');
+                //toast.success('✅ Report created successfully!');
             }
 
             // Navigate back to reports list
@@ -338,7 +339,7 @@ export default function PMReportWizard() {
             }
             
             notificationService.error(errorMessage);
-            toast.error(`❌ ${errorMessage}`);
+            //toast.error(`❌ ${errorMessage}`);
         } finally {
             setSaving(false);
         }
