@@ -56,7 +56,7 @@ const PMReportView = () => {
             setReport(data);
         } catch (error) {
             console.error('Error fetching report:', error);
-            toast.error('Failed to load report details');
+            //toast.error('Failed to load report details');
             notificationService.error('Failed to load PM Report');
             navigate('/pm-reports/view-all');
         } finally {
@@ -95,10 +95,10 @@ const PMReportView = () => {
             setActionLoading('pdf');
             // Add PDF generation logic here
             notificationService.pdfGenerated(report?.serviceReportNo || 'PM Report');
-            toast.success('PDF generated successfully!');
+            //toast.success('PDF generated successfully!');
         } catch (error) {
             notificationService.error('Failed to generate PDF');
-            toast.error('Failed to generate PDF');
+            //toast.error('Failed to generate PDF');
         } finally {
             setActionLoading(null);
         }
