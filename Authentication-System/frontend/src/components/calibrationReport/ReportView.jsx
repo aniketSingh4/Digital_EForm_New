@@ -4,6 +4,7 @@ import { toast } from "react-toastify";
 import { FaArrowLeft, FaFilePdf, FaPrint, FaEdit, FaDownload } from "react-icons/fa";
 import { calibrationReportService } from "../../services/calibrationReportService";
 import "./ReportView.css";
+import notificationService from "../../services/notificationService";
 
 const ReportView = () => {
     const navigate = useNavigate();
@@ -26,7 +27,7 @@ const ReportView = () => {
             setReport(data);
         } catch (err) {
             setError('Failed to load report details');
-            toast.error('Failed to fetch report');
+            notificationService.error('Failed to fetch report');
             console.error('Error fetching report:', err);
         } finally {
             setLoading(false);
