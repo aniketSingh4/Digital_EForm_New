@@ -19,19 +19,16 @@ const NOTIFICATION_TYPES = {
   REPORT_CREATED: 'report_created',
   REPORT_UPDATED: 'report_updated',
   REPORT_DELETED: 'report_deleted',
-  REPORT_VIEWED: 'report_viewed',
-  PDF_GENERATED: 'pdf_generated',
   BULK_DELETED: 'bulk_deleted',
+  // Removed REPORT_VIEWED and PDF_GENERATED as they're not needed for CRUD operations
 };
 
-// Report action messages
+// Report action messages - only for CRUD operations
 const getReportMessage = (action, reportName = '') => {
   const messages = {
     [NOTIFICATION_TYPES.REPORT_CREATED]: `📄 ${reportName} created successfully!`,
     [NOTIFICATION_TYPES.REPORT_UPDATED]: `✏️ ${reportName} updated successfully!`,
     [NOTIFICATION_TYPES.REPORT_DELETED]: `🗑️ ${reportName} deleted successfully!`,
-    [NOTIFICATION_TYPES.REPORT_VIEWED]: `👁️ ${reportName} viewed`,
-    [NOTIFICATION_TYPES.PDF_GENERATED]: `📄 PDF generated successfully!`,
     [NOTIFICATION_TYPES.BULK_DELETED]: `🗑️ ${reportName} reports deleted successfully!`,
   };
   return messages[action] || 'Action completed successfully!';
@@ -40,18 +37,19 @@ const getReportMessage = (action, reportName = '') => {
 // Professional notification service
 class NotificationService {
   constructor() {
-    this.hasShownWelcome = false;
-    this.notificationHistory = [];
+    this.notificationHistory = new Map(); // Using Map for better performance
     this.maxHistory = 50;
+    // Increased cooldown to prevent too frequent notifications
+    this.cooldownPeriod = 30000; // 30 seconds cooldown between same notifications
   }
 
-  // Check if notification should be shown
+  // Check if notification should be shown with improved rate limiting
   shouldShowNotification(type, identifier) {
-    // Always show if no identifier (like PDF generation, bulk actions)
+    // Always show if no identifier (like bulk actions)
     if (!identifier) return true;
     
     const key = `${type}_${identifier}`;
-    const lastShown = this.notificationHistory.find(n => n.key === key);
+    const lastShown = this.notificationHistory.get(key);
     
     // If not shown before, show it
     if (!lastShown) {
@@ -59,9 +57,9 @@ class NotificationService {
       return true;
     }
     
-    // Check if 5 minutes have passed since last notification
-    const fiveMinutesAgo = Date.now() - 5 * 60 * 1000;
-    if (lastShown.timestamp < fiveMinutesAgo) {
+    // Check if cooldown period has passed
+    const cooldownTime = Date.now() - this.cooldownPeriod;
+    if (lastShown.timestamp < cooldownTime) {
       this.updateHistory(key);
       return true;
     }
@@ -70,36 +68,52 @@ class NotificationService {
   }
 
   addToHistory(key) {
-    this.notificationHistory.push({ key, timestamp: Date.now() });
-    if (this.notificationHistory.length > this.maxHistory) {
-      this.notificationHistory.shift();
+    this.notificationHistory.set(key, { 
+      timestamp: Date.now(),
+      count: 1 
+    });
+    
+    // Clean up old entries if exceeding max
+    if (this.notificationHistory.size > this.maxHistory) {
+      const oldestKey = this.notificationHistory.keys().next().value;
+      this.notificationHistory.delete(oldestKey);
     }
   }
 
   updateHistory(key) {
-    const entry = this.notificationHistory.find(n => n.key === key);
+    const entry = this.notificationHistory.get(key);
     if (entry) {
       entry.timestamp = Date.now();
+      entry.count = (entry.count || 0) + 1;
     }
   }
 
-  // Success notification - with rate limiting
+  // Check if action is a CRUD operation (not fetch)
+  isCRUDOperation(type) {
+    const crudTypes = [
+      NOTIFICATION_TYPES.REPORT_CREATED,
+      NOTIFICATION_TYPES.REPORT_UPDATED,
+      NOTIFICATION_TYPES.REPORT_DELETED,
+      NOTIFICATION_TYPES.BULK_DELETED
+    ];
+    return crudTypes.includes(type);
+  }
+
+  // Success notification with improved filtering
   success(message, options = {}) {
     const { type, identifier, reportName = '' } = options;
     
-    // For report actions, check if we should show notification
-    if (type && identifier) {
-      if (!this.shouldShowNotification(type, identifier)) {
-        return; // Don't show duplicate notification
-      }
-    }
-    
-    // Show welcome message only once per session
-    if (type === 'welcome' && this.hasShownWelcome) {
+    // Skip if it's not a CRUD operation (like REPORT_VIEWED, PDF_GENERATED, etc.)
+    if (type && !this.isCRUDOperation(type)) {
       return;
     }
-    if (type === 'welcome') {
-      this.hasShownWelcome = true;
+    
+    // Rate limiting for report actions
+    if (type && identifier) {
+      if (!this.shouldShowNotification(type, identifier)) {
+        console.log(`Notification suppressed for ${type} - ${identifier} (rate limited)`);
+        return;
+      }
     }
 
     const finalMessage = type ? getReportMessage(type, reportName) : message;
@@ -121,15 +135,15 @@ class NotificationService {
       progressStyle: {
         background: 'white',
       },
-      autoClose: options.noAutoClose ? false : 5000,
+      autoClose: options.noAutoClose ? false : 3000, // Reduced autoClose time
     });
   }
 
-  // Error notification
+  // Error notification with rate limiting
   error(message, options = {}) {
     const { type, identifier } = options;
     
-    // For error, always show but rate limit
+    // For errors, still rate limit but show important ones
     if (type && identifier) {
       if (!this.shouldShowNotification(`error_${type}`, identifier)) {
         return;
@@ -153,6 +167,7 @@ class NotificationService {
       progressStyle: {
         background: 'white',
       },
+      autoClose: 5000, // Errors stay longer
     });
   }
 
@@ -178,11 +193,16 @@ class NotificationService {
     });
   }
 
-  // Info notification
+  // Info notification - only for important info (not fetch operations)
   info(message, options = {}) {
     const { type, identifier } = options;
     
-    // For info, check rate limiting
+    // Skip info notifications for fetch/view operations
+    if (type && (type === 'welcome' || type.includes('view'))) {
+      return;
+    }
+
+    // Rate limiting for info notifications
     if (type && identifier) {
       if (!this.shouldShowNotification(`info_${type}`, identifier)) {
         return;
@@ -206,15 +226,17 @@ class NotificationService {
       progressStyle: {
         background: 'white',
       },
-      autoClose: options.noAutoClose ? false : 5000,
+      autoClose: options.noAutoClose ? false : 3000,
     });
   }
 
+  // --- CRUD Operation Notifications ---
+  
   // Report creation notification
   reportCreated(reportName, identifier) {
     this.success(getReportMessage(NOTIFICATION_TYPES.REPORT_CREATED, reportName), {
       type: NOTIFICATION_TYPES.REPORT_CREATED,
-      identifier: identifier,
+      identifier: identifier || `create_${Date.now()}`,
       reportName: reportName,
     });
   }
@@ -223,7 +245,7 @@ class NotificationService {
   reportUpdated(reportName, identifier) {
     this.success(getReportMessage(NOTIFICATION_TYPES.REPORT_UPDATED, reportName), {
       type: NOTIFICATION_TYPES.REPORT_UPDATED,
-      identifier: identifier,
+      identifier: identifier || `update_${Date.now()}`,
       reportName: reportName,
     });
   }
@@ -232,7 +254,7 @@ class NotificationService {
   reportDeleted(reportName, identifier) {
     this.success(getReportMessage(NOTIFICATION_TYPES.REPORT_DELETED, reportName), {
       type: NOTIFICATION_TYPES.REPORT_DELETED,
-      identifier: identifier,
+      identifier: identifier || `delete_${Date.now()}`,
       reportName: reportName,
     });
   }
@@ -246,84 +268,7 @@ class NotificationService {
     });
   }
 
-  // PDF generation notification
-  pdfGenerated(reportName) {
-    this.success(getReportMessage(NOTIFICATION_TYPES.PDF_GENERATED), {
-      type: NOTIFICATION_TYPES.PDF_GENERATED,
-      identifier: `pdf_${reportName}`,
-      reportName: reportName,
-    });
-  }
-
-  // Welcome notification (shown only once per session)
-  welcome(userName = '') {
-    this.info(`👋 Welcome${userName ? ` ${userName}` : ''}! Your reports are loading...`, {
-      type: 'welcome',
-      noAutoClose: true,
-      autoClose: 5000,
-    });
-  }
-
-  // Login success notification (shown only on first login)
-  loginSuccess(userName = '') {
-    if (this.hasShownWelcome) return;
-    this.info(`🔐 Welcome back${userName ? ` ${userName}` : ''}!`, {
-      type: 'welcome',
-      noAutoClose: true,
-      autoClose: 4000,
-    });
-  }
-
-  // Custom notification with specific style
-  custom(message, type = 'info', options = {}) {
-    const styles = {
-      success: {
-        background: 'linear-gradient(135deg, #10b981, #059669)',
-        icon: '✅',
-      },
-      error: {
-        background: 'linear-gradient(135deg, #ef4444, #dc2626)',
-        icon: '❌',
-      },
-      warning: {
-        background: 'linear-gradient(135deg, #f59e0b, #d97706)',
-        icon: '⚠️',
-      },
-      info: {
-        background: 'linear-gradient(135deg, #3b82f6, #2563eb)',
-        icon: 'ℹ️',
-      },
-    };
-
-    const style = styles[type] || styles.info;
-    
-    // Check rate limiting for custom notifications
-    const { identifier } = options;
-    if (identifier) {
-      if (!this.shouldShowNotification(`custom_${type}`, identifier)) {
-        return;
-      }
-    }
-
-    toast(message, {
-      ...toastConfig,
-      ...options,
-      icon: style.icon,
-      style: {
-        background: style.background,
-        color: 'white',
-        borderRadius: '12px',
-        boxShadow: '0 10px 40px rgba(0, 0, 0, 0.2)',
-        fontWeight: '500',
-        padding: '14px 20px',
-        fontSize: '14px',
-        border: '1px solid rgba(255,255,255,0.1)',
-      },
-      progressStyle: {
-        background: 'white',
-      },
-    });
-  }
+  // --- Utility Methods ---
 
   // Silent notification (for background actions)
   silent(message, options = {}) {
@@ -345,7 +290,7 @@ class NotificationService {
       progressStyle: {
         background: 'white',
       },
-      autoClose: 3000,
+      autoClose: 2000, // Quick dismiss for silent notifications
     });
   }
 
@@ -354,15 +299,29 @@ class NotificationService {
     toast.dismiss();
   }
 
-  // Reset welcome state (for testing)
-  resetWelcomeState() {
-    this.hasShownWelcome = false;
-    this.notificationHistory = [];
+  // Reset notification state
+  resetState() {
+    this.notificationHistory.clear();
   }
 
   // Get notification history (for debugging)
   getHistory() {
-    return this.notificationHistory;
+    return Array.from(this.notificationHistory.entries());
+  }
+
+  // Get stats about notifications
+  getStats() {
+    const stats = {
+      total: this.notificationHistory.size,
+      types: {}
+    };
+    
+    this.notificationHistory.forEach((value, key) => {
+      const type = key.split('_')[0];
+      stats.types[type] = (stats.types[type] || 0) + 1;
+    });
+    
+    return stats;
   }
 }
 
