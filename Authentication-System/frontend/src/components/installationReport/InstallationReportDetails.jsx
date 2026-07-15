@@ -47,7 +47,7 @@ const InstallationReportDetails = () => {
             const response = await axios.get(`${API_BASE_URL}/${id}`);
             setReport(response.data);
         } catch (error) {
-            toast.error('Error fetching report details');
+            //toast.error('Error fetching report details');
             notificationService.error('Failed to load Installation Report');
             navigate('/installation-reports');
         } finally {
@@ -82,10 +82,10 @@ const InstallationReportDetails = () => {
             setActionLoading('pdf');
             await new Promise(resolve => setTimeout(resolve, 1500));
             notificationService.pdfGenerated(report?.reportNo || 'Installation Report');
-            toast.success('PDF generated successfully!');
+            //toast.success('PDF generated successfully!');
         } catch (error) {
             notificationService.error('Failed to generate PDF');
-            toast.error('Failed to generate PDF');
+            //toast.error('Failed to generate PDF');
         } finally {
             setActionLoading(null);
         }
