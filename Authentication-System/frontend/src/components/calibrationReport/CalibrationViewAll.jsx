@@ -463,70 +463,63 @@ const CalibrationViewAll = () => {
 
             y += 15;
 
-            // === SECTION 1: Report Header Details ===
+            // ===== SECTION 1: Report Details =====
             doc.setDrawColor(79, 70, 229);
-            doc.setLineWidth(0.5);
-            doc.line(15, y, pageWidth - 15, y);
-            y += 4;
+            doc.setLineWidth(0.3);
+            doc.line(14, y, pageWidth - 14, y);
+            y += 3;
 
             doc.setTextColor(79, 70, 229);
-            doc.setFontSize(12);
+            doc.setFontSize(11);
             doc.setFont('helvetica', 'bold');
-            doc.text('1. Report Details', 15, y + 5);
-            y += 11;
+            doc.text('1. Report Details', 14, y + 4);
+            y += 9;
 
-            // Report details in two columns
-            const reportDetailsLeft = [
-                ['Report No', safeString(fullReport.reportNo)],
-                ['Client Name', safeString(fullReport.clientName)],
-                ['Site Name', safeString(fullReport.siteName)],
-                ['Sensor ID', safeString(fullReport.sensorId)],
-                ['Model No', safeString(fullReport.modelNo)]
+            // Two column layout with consistent spacing
+            const leftLabels = ['Report No', 'Client Name', 'Site Name', 'Site Address'];
+            const leftValues = [
+                safeString(fullReport.reportNo),
+                safeString(fullReport.clientName),
+                safeString(fullReport.siteName),
+                safeString(fullReport.siteAddress)
             ];
 
-            const reportDetailsRight = [
-                ['Report Date', formatDate(fullReport.reportDate)],
-                ['Site Address', safeString(fullReport.siteAddress)],
-                ['Calibration Date', formatDate(fullReport.calibrationDate)],
-                ['Calibration Due Date', formatDate(fullReport.calibrationDueDate)],
-                ['']
+            const rightLabels = ['Report Date', 'Calibration Date', 'Calibration Due Date', 'Sensor ID'];
+            const rightValues = [
+                formatDate(fullReport.reportDate),
+                formatDate(fullReport.calibrationDate),
+                formatDate(fullReport.calibrationDueDate),
+                safeString(fullReport.sensorId)
             ];
 
-            // Left column
-            reportDetailsLeft.forEach(([label, value]) => {
-                doc.setFontSize(9);
+            // Left column - aligned properly
+            leftLabels.forEach((label, index) => {
+                doc.setFontSize(8);
                 doc.setFont('helvetica', 'bold');
                 doc.setTextColor(80, 80, 100);
-                doc.text(label + ':', 17, y + 4);
-
+                doc.text(label + ':', 16, y + 3);
                 doc.setFont('helvetica', 'normal');
                 doc.setTextColor(30, 30, 50);
-                const splitValue = doc.splitTextToSize(value || 'N/A', 60);
-                doc.text(splitValue, 65, y + 4);
-                y += 8;
+                const splitVal = doc.splitTextToSize(leftValues[index] || '-', 55);
+                doc.text(splitVal, 50, y + 3);
+                y += 7;
             });
 
-            // Reset y for right column
-            y = y - 40;
-            let rightY1 = y + 4;
-
-            // Right column
-            reportDetailsRight.forEach(([label, value]) => {
-                if (label) {
-                    doc.setFontSize(9);
-                    doc.setFont('helvetica', 'bold');
-                    doc.setTextColor(80, 80, 100);
-                    doc.text(label + ':', pageWidth / 2 + 10, rightY1);
-
-                    doc.setFont('helvetica', 'normal');
-                    doc.setTextColor(30, 30, 50);
-                    const splitValue = doc.splitTextToSize(value || 'N/A', 55);
-                    doc.text(splitValue, pageWidth / 2 + 55, rightY1);
-                }
-                rightY1 += 8;
+            // Right column - aligned properly
+            let rightY = y - (leftLabels.length * 7);
+            rightLabels.forEach((label, index) => {
+                doc.setFontSize(8);
+                doc.setFont('helvetica', 'bold');
+                doc.setTextColor(80, 80, 100);
+                doc.text(label + ':', pageWidth / 2 + 8, rightY + 3);
+                doc.setFont('helvetica', 'normal');
+                doc.setTextColor(30, 30, 50);
+                const splitVal = doc.splitTextToSize(rightValues[index] || '-', 50);
+                doc.text(splitVal, pageWidth / 2 + 45, rightY + 3);
+                rightY += 7;
             });
 
-            y = rightY1 + 5;
+            y = Math.max(y, rightY) + 5;
 
             // === SECTION 2: Master Reference Instrument ===
             if (y > pageHeight - 40) {
@@ -557,12 +550,12 @@ const CalibrationViewAll = () => {
             doc.setTextColor(79, 70, 229);
             doc.setFontSize(12);
             doc.setFont('helvetica', 'bold');
-            doc.text('2. Master Reference Instrument', 15, y + 5);
+            doc.text('2. Certificate Details', 15, y + 5);
             y += 11;
 
             const masterRef = fullReport.masterRefInstrument || {};
             const masterDetails = [
-                ['Ref Serial No', safeString(masterRef.refSerialNo)],
+                //['Ref Serial No', safeString(masterRef.refSerialNo)],
                 ['Calibration Certificate No', safeString(masterRef.calibrationCertificateNo)],
                 ['Certificate Validity', safeString(masterRef.certificateValidity)]
             ];
@@ -638,10 +631,10 @@ const CalibrationViewAll = () => {
 
             readingData.forEach((item, index) => {
                 // Row background (alternating)
-                if (index % 2 === 0) {
-                    doc.setFillColor(248, 250, 252);
-                    doc.rect(15, y - 1, pageWidth - 30, 8, 'F');
-                }
+                // if (index % 2 === 0) {
+                //     doc.setFillColor(248, 250, 252);
+                //     doc.rect(15, y - 1, pageWidth - 30, 8, 'F');
+                // }
 
                 // Parameter
                 doc.setFontSize(8);

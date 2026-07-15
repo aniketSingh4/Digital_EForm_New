@@ -137,7 +137,7 @@ const InstallationReportDetails = () => {
 
     const rightInfo = [
         { label: 'Installation Date', value: formatDate(report.date) },
-        { label: 'Site Name', value: report.siteName },
+        //{ label: 'Site Name', value: report.siteName },
         { label: 'Site Address', value: report.siteAddress },
         { label: 'Status', value: report.workConfirmation }
     ];

@@ -329,7 +329,7 @@ const InstallationReportList = () => {
       const reportDetailsLeft = [
         ['Report No', reportData.reportNo || 'N/A'],
         ['Company Name', reportData.companyName || 'N/A'],
-        ['Site Name', reportData.siteName || 'N/A'],
+        //['Site Name', reportData.siteName || 'N/A'],
         ['Customer Name', reportData.customerName || 'N/A']
       ];
 
@@ -662,14 +662,6 @@ const InstallationReportList = () => {
       );
       doc.text(confirmation, 25, y + 6);
 
-      // Confirmation status
-      // const statusColor = reportData.workConfirmation ? [16, 185, 129] : [239, 68, 68];
-      // const statusText = reportData.workConfirmation ? '✅ Confirmed' : '❌ Not Confirmed';
-      // doc.setTextColor(statusColor[0], statusColor[1], statusColor[2]);
-      // doc.setFontSize(9);
-      // doc.setFont('helvetica', 'bold');
-      // doc.text(statusText, pageWidth - 45, y + 14, { align: 'center' });
-
       y += 25;
 
       // === SECTION 6: Sign-Off ===
@@ -963,8 +955,8 @@ const InstallationReportList = () => {
                 <th onClick={() => handleSort('companyName')} className="sortable">
                   Company {getSortIcon('companyName')}
                 </th>
-                <th onClick={() => handleSort('siteName')} className="sortable">
-                  Site {getSortIcon('siteName')}
+                <th onClick={() => handleSort('siteAddress')} className="sortable">
+                  Site Address {getSortIcon('siteAddress')}
                 </th>
                 <th onClick={() => handleSort('date')} className="sortable">
                   Date {getSortIcon('date')}
@@ -995,7 +987,7 @@ const InstallationReportList = () => {
                     <td className="company-name">
                       <span className="company-text">{report.companyName || '-'}</span>
                     </td>
-                    <td>{report.siteName || '-'}</td>
+                    <td>{report.siteAddress || '-'}</td>
                     <td>{formatDate(report.date)}</td>
                     <td>{report.installedBy || '-'}</td>
                     <td>

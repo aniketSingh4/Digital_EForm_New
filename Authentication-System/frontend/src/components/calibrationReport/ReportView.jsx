@@ -107,6 +107,9 @@ const ReportView = () => {
     const summary = report.calibrationSummary || {};
     const engineer = report.engineerDetails || {};
 
+    // ✅ Get the certificate number (or report number as fallback)
+    const certificateNo = masterRef.calibrationCertificateNo || report.reportNo || 'N/A';
+
     return (
         <div className="report-view-container">
             {/* Header */}
@@ -140,12 +143,8 @@ const ReportView = () => {
                 </div>
                 <div className="details-grid">
                     <div className="detail-item">
-                        <label>Report No</label>
-                        <span>{report.reportNo || 'N/A'}</span>
-                    </div>
-                    <div className="detail-item">
-                        <label>Serial No</label>
-                        <span>{report.serialNo || 'N/A'}</span>
+                        <label>Report No / Certificate No</label>
+                        <span className="highlight-value">{certificateNo}</span>
                     </div>
                     <div className="detail-item">
                         <label>Report Date</label>
@@ -182,24 +181,23 @@ const ReportView = () => {
                 </div>
             </div>
 
-            {/* Master Reference Instrument Section */}
+            {/* Certificate Details Section */}
             <div className="report-section">
                 <div className="section-title">
-                    <h2>Master Reference Instrument Details</h2>
+                    <h2>Certificate Details</h2>
                 </div>
                 <div className="details-grid">
-                    <div className="detail-item">
-                        <label>Ref Serial No</label>
-                        <span>{masterRef.refSerialNo || 'N/A'}</span>
-                    </div>
-                    <div className="detail-item">
-                        <label>Calibration Certificate No</label>
-                        <span>{masterRef.calibrationCertificateNo || 'N/A'}</span>
+                    <div className="detail-item highlight-item">
+                        <label>Certificate No</label>
+                        <span className="highlight-value">{certificateNo}</span>
                     </div>
                     <div className="detail-item">
                         <label>Certificate Validity</label>
                         <span>{masterRef.certificateValidity || 'N/A'}</span>
                     </div>
+                </div>
+                <div className="certificate-note">
+                    <small>⚠️ Note: Report No and Certificate No are the same</small>
                 </div>
             </div>
 

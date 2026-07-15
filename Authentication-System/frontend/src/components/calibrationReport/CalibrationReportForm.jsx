@@ -23,6 +23,33 @@ const getDatePlus90Days = (dateStr) => {
   return d.toISOString().split('T')[0];
 };
 
+// ✅ Generate unique ID with timestamp
+const generateUniqueId = () => {
+  const now = new Date();
+  const date = now.toISOString().slice(0, 10).replace(/-/g, '');
+  const time = now.toTimeString().slice(0, 8).replace(/:/g, '');
+  return `${date}${time}`;
+};
+
+// ✅ Generate Certificate No with sequential count - FESPL_CAL format
+const generateCertificateNo = (count) => {
+  const datePart = new Date().toISOString().slice(0, 10).replace(/-/g, '');
+  const sequence = String(count).padStart(4, '0');
+  return `FESPL_CAL_${datePart}_${sequence}`;
+};
+
+// ✅ Helper function to generate model number
+const generateModelNo = (sensorId) => {
+  if (!sensorId) return '';
+  return `FESPL_MN_${sensorId}`;
+};
+
+// ✅ Helper function to generate reference serial number (hidden)
+const generateRefSerialNo = (sensorId) => {
+  if (!sensorId) return '';
+  return `FESPL_RSN_${sensorId}`;
+};
+
 // ✅ Guaranteed complete default object
 const DEFAULT_FORM_DATA = {
   reportDate: getTodayDate(),
@@ -77,17 +104,33 @@ const CalibrationReportForm = ({ onSuccess, onCancel, isEdit = false }) => {
   const [submitStatus, setSubmitStatus] = useState(null);
   const [loading, setLoading] = useState(false);
   const [apiError, setApiError] = useState(null);
+  const [reportCount, setReportCount] = useState(0);
 
   useEffect(() => {
-    if (isEditMode && id) fetchReportData();
+    if (isEditMode && id) {
+      fetchReportData();
+    } else {
+      fetchReportCount();
+    }
   }, [id, isEditMode]);
+
+  const fetchReportCount = async () => {
+    try {
+      const response = await calibrationReportService.getAllReports();
+      if (Array.isArray(response)) {
+        setReportCount(response.length);
+        console.log('📊 Current report count:', response.length);
+      }
+    } catch (error) {
+      console.error('❌ Error fetching report count:', error);
+    }
+  };
 
   const fetchReportData = async () => {
     try {
       setLoading(true);
       const data = await calibrationReportService.getReportById(id);
       if (data) {
-        // Merge with defaults
         setFormData({
           ...DEFAULT_FORM_DATA,
           ...data,
@@ -110,14 +153,33 @@ const CalibrationReportForm = ({ onSuccess, onCancel, isEdit = false }) => {
     }
   };
 
-  // ✅ FIXED: Safer input change handler
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
     const val = type === 'checkbox' ? checked : value;
 
     setFormData(prev => {
-      // If prev is undefined or null, use DEFAULT_FORM_DATA
       const current = prev && typeof prev === 'object' ? prev : { ...DEFAULT_FORM_DATA };
+
+      if (name === 'sensorId') {
+        const newModelNo = generateModelNo(val);
+        const newRefSerialNo = generateRefSerialNo(val);
+        const newCount = reportCount + 1;
+        // ✅ Generate Certificate No with FESPL_CAL format
+        const newCertificateNo = generateCertificateNo(newCount);
+
+        let updated = {
+          ...current,
+          sensorId: val,
+          modelNo: newModelNo,
+          serialNo: newCertificateNo, // ✅ Hidden field, same as certificate no
+          masterRefInstrument: {
+            ...current.masterRefInstrument,
+            refSerialNo: newRefSerialNo,
+            calibrationCertificateNo: newCertificateNo, // ✅ Same as serial no
+          }
+        };
+        return updated;
+      }
 
       if (name.includes('.')) {
         const [parent, child] = name.split('.');
@@ -133,7 +195,6 @@ const CalibrationReportForm = ({ onSuccess, onCancel, isEdit = false }) => {
       }
     });
 
-    // Clear error
     if (errors[name]) {
       const newErrors = { ...errors };
       delete newErrors[name];
@@ -171,7 +232,6 @@ const CalibrationReportForm = ({ onSuccess, onCancel, isEdit = false }) => {
     setSubmitStatus(null);
     setApiError(null);
 
-    // Check if formData exists
     if (!formData || typeof formData !== 'object') {
       setSubmitStatus({
         type: 'error',
@@ -181,19 +241,24 @@ const CalibrationReportForm = ({ onSuccess, onCancel, isEdit = false }) => {
       return;
     }
 
+    const sensorId = formData.sensorId || '';
+    const nextCount = reportCount + 1;
+    // ✅ Generate Certificate No with FESPL_CAL format
+    const certificateNo = formData.masterRefInstrument?.calibrationCertificateNo || generateCertificateNo(nextCount);
+
     const submitData = {
       reportDate: formData.reportDate || getTodayDate(),
       clientName: formData.clientName || '',
       siteName: formData.siteName || '',
       siteAddress: formData.siteAddress || '',
-      sensorId: formData.sensorId || '',
-      modelNo: formData.modelNo || '',
-      serialNo: formData.serialNo || '',
+      sensorId: sensorId,
+      modelNo: formData.modelNo || generateModelNo(sensorId),
+      serialNo: certificateNo, // ✅ Hidden field, same as certificate no
       calibrationDate: formData.calibrationDate || getTodayDate(),
       calibrationDueDate: formData.calibrationDueDate || getDatePlus90Days(getTodayDate()),
       masterRefInstrument: {
-        refSerialNo: formData.masterRefInstrument?.refSerialNo || '',
-        calibrationCertificateNo: formData.masterRefInstrument?.calibrationCertificateNo || '',
+        refSerialNo: formData.masterRefInstrument?.refSerialNo || generateRefSerialNo(sensorId),
+        calibrationCertificateNo: certificateNo, // ✅ FESPL_CAL format
         certificateValidity: formData.masterRefInstrument?.certificateValidity || getDatePlus90Days(getTodayDate()),
       },
       readingBeforeCalibration: {
@@ -223,7 +288,6 @@ const CalibrationReportForm = ({ onSuccess, onCancel, isEdit = false }) => {
       },
     };
 
-    // ✅ Get validation result
     const validationResult = validateCalibrationReport(submitData);
     console.log('🔍 Validation Result:', validationResult);
 
@@ -244,9 +308,7 @@ const CalibrationReportForm = ({ onSuccess, onCancel, isEdit = false }) => {
       return;
     }
 
-    // ✅ If validation passes, proceed with API call
     try {
-      //console.log('📤 Submitting data to API...');
       let response;
 
       if (isEditMode && id) {
@@ -257,6 +319,7 @@ const CalibrationReportForm = ({ onSuccess, onCancel, isEdit = false }) => {
         console.log('🆕 Creating new report...');
         response = await calibrationReportService.createReport(submitData);
         toast.success('✅ Report created successfully!');
+        setReportCount(prev => prev + 1);
       }
 
       console.log('✅ API Response:', response);
@@ -266,12 +329,13 @@ const CalibrationReportForm = ({ onSuccess, onCancel, isEdit = false }) => {
         message: isEditMode ? 'Report updated successfully!' : 'Report created successfully!'
       });
 
-      // Reset form for new reports
       if (!isEditMode) {
-        setTimeout(() => setFormData({ ...DEFAULT_FORM_DATA }), 2000);
+        setTimeout(() => {
+          setFormData({ ...DEFAULT_FORM_DATA });
+          fetchReportCount();
+        }, 2000);
       }
 
-      // Navigate back to reports list
       setTimeout(() => {
         if (onSuccess) {
           onSuccess(response);
@@ -303,23 +367,22 @@ const CalibrationReportForm = ({ onSuccess, onCancel, isEdit = false }) => {
     );
   }
 
-  // SAFETY: Extract all values into local variables with fallbacks ----------
-  // FIXED: Check if formData exists and is an object
   const safe = (formData && typeof formData === 'object') ? formData : { ...DEFAULT_FORM_DATA };
 
-  // Explicitly extract each field with fallback
   const reportDate = safe.reportDate || getTodayDate();
   const clientName = safe.clientName || '';
   const siteName = safe.siteName || '';
   const siteAddress = safe.siteAddress || '';
   const sensorId = safe.sensorId || '';
-  const modelNo = safe.modelNo || '';
-  const serialNo = safe.serialNo || '';
+  const modelNo = safe.modelNo || generateModelNo(sensorId);
+  const nextCount = reportCount + 1;
+  // ✅ Generate certificate no with FESPL_CAL format
+  const certificateNo = safe.masterRefInstrument?.calibrationCertificateNo || generateCertificateNo(nextCount);
   const calibrationDate = safe.calibrationDate || getTodayDate();
   const calibrationDueDate = safe.calibrationDueDate || getDatePlus90Days(getTodayDate());
   const masterRef = safe.masterRefInstrument || {
-    refSerialNo: '',
-    calibrationCertificateNo: '',
+    refSerialNo: generateRefSerialNo(sensorId),
+    calibrationCertificateNo: certificateNo,
     certificateValidity: getDatePlus90Days(getTodayDate())
   };
   const readingBefore = safe.readingBeforeCalibration || {
@@ -356,9 +419,9 @@ const CalibrationReportForm = ({ onSuccess, onCancel, isEdit = false }) => {
       {apiError && <div className="api-error-message"><strong>Server Error:</strong> {apiError}</div>}
 
       <form onSubmit={handleSubmit}>
-        {/* Report Header */}
+        {/* Basic Details */}
         <div className="form-section">
-          <h3>Report Header</h3>
+          <h3>Basic Details</h3>
           <div className="form-row">
             <div className="form-group">
               <label>Report Date <span className="required">*</span></label>
@@ -424,33 +487,9 @@ const CalibrationReportForm = ({ onSuccess, onCancel, isEdit = false }) => {
                 className={errors.sensorId ? 'error' : ''}
               />
               {errors.sensorId && <span className="field-error">{errors.sensorId}</span>}
-            </div>
-            <div className="form-group">
-              <label>Model No <span className="required">*</span></label>
-              <input
-                type="text"
-                name="modelNo"
-                value={modelNo}
-                onChange={handleInputChange}
-                placeholder="Enter model number"
-                className={errors.modelNo ? 'error' : ''}
-              />
-              {errors.modelNo && <span className="field-error">{errors.modelNo}</span>}
-            </div>
-          </div>
-
-          <div className="form-row">
-            <div className="form-group">
-              <label>Serial No <span className="required">*</span></label>
-              <input
-                type="text"
-                name="serialNo"
-                value={serialNo}
-                onChange={handleInputChange}
-                placeholder="Enter serial number"
-                className={errors.serialNo ? 'error' : ''}
-              />
-              {errors.serialNo && <span className="field-error">{errors.serialNo}</span>}
+              <small style={{ color: '#6b7280', fontSize: '12px', display: 'block', marginTop: '4px' }}>
+                Auto-generates Model No, Certificate No & Serial No
+              </small>
             </div>
             <div className="form-group">
               <label>Calibration Date <span className="required">*</span></label>
@@ -482,32 +521,23 @@ const CalibrationReportForm = ({ onSuccess, onCancel, isEdit = false }) => {
           </div>
         </div>
 
-        {/* Master Reference Instrument */}
+        {/* Certificate Details */}
         <div className="form-section">
-          <h3>Master Reference Instrument Details</h3>
+          <h3>Certificate Details</h3>
           <div className="form-row">
-            <div className="form-group">
-              <label>Ref Serial No <span className="required">*</span></label>
-              <input
-                type="text"
-                name="masterRefInstrument.refSerialNo"
-                value={masterRef.refSerialNo}
-                onChange={handleInputChange}
-                placeholder="Enter reference serial number"
-                className={errors['masterRefInstrument.refSerialNo'] ? 'error' : ''}
-              />
-              {errors['masterRefInstrument.refSerialNo'] && <span className="field-error">{errors['masterRefInstrument.refSerialNo']}</span>}
-            </div>
-            <div className="form-group">
+            <div className="form-group" style={{ flex: 2 }}>
               <label>Calibration Certificate No <span className="required">*</span></label>
               <input
                 type="text"
                 name="masterRefInstrument.calibrationCertificateNo"
                 value={masterRef.calibrationCertificateNo}
-                onChange={handleInputChange}
-                placeholder="Enter certificate number"
-                className={errors['masterRefInstrument.calibrationCertificateNo'] ? 'error' : ''}
+                readOnly
+                className="readonly"
+                style={{ backgroundColor: '#f3f4f6' }}
               />
+              <small style={{ color: '#6b7280', fontSize: '12px', display: 'block', marginTop: '4px' }}>
+                Format: FESPL_CAL_YYYYMMDD_XXXX (Auto-generated)
+              </small>
               {errors['masterRefInstrument.calibrationCertificateNo'] && <span className="field-error">{errors['masterRefInstrument.calibrationCertificateNo']}</span>}
             </div>
             <div className="form-group">

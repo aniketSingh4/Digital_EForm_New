@@ -77,6 +77,10 @@ const InstallationReportForm = () => {
       setFormData({
         ...data,
         date: formattedDate,
+        // Ensure equipmentDetails is always an array
+        equipmentDetails: data.equipmentDetails && data.equipmentDetails.length > 0 
+          ? data.equipmentDetails 
+          : [{ modelNo: '', serialNo: '', quantity: 1 }],
       });
     } catch (error) {
       toast.error('Error fetching report data');
@@ -139,6 +143,14 @@ const InstallationReportForm = () => {
     if (!formData.customerName || !formData.installedBy || !formData.companyName) {
       toast.error('Please fill in all required fields');
       return;
+    }
+
+    // Validate equipment details
+    for (const equipment of formData.equipmentDetails) {
+      if (!equipment.modelNo || !equipment.serialNo) {
+        toast.error('Please fill in all equipment details (Model No and Serial No are required)');
+        return;
+      }
     }
 
     try {
@@ -280,11 +292,33 @@ const InstallationReportForm = () => {
           </div>
         </div>
 
-        {/* Equipment Details */}
+        {/* Equipment Details with Add/Remove Buttons */}
         <div className="form-section">
-          <h3>Equipment Details</h3>
+          <div className="section-header">
+            <h3>Equipment Details</h3>
+            <button
+              type="button"
+              className="btn-add-equipment"
+              onClick={addEquipmentRow}
+            >
+              + Add Equipment
+            </button>
+          </div>
+          
           {formData.equipmentDetails.map((equipment, index) => (
             <div key={index} className="equipment-row">
+              <div className="equipment-row-header">
+                <span className="equipment-number">Equipment #{index + 1}</span>
+                {formData.equipmentDetails.length > 1 && (
+                  <button
+                    type="button"
+                    className="btn-remove-equipment"
+                    onClick={() => removeEquipmentRow(index)}
+                  >
+                    × Remove
+                  </button>
+                )}
+              </div>
               <div className="form-row">
                 <div className="form-group">
                   <label>Model No *</label>
@@ -321,26 +355,6 @@ const InstallationReportForm = () => {
                     min="1"
                     required
                   />
-                </div>
-                <div className="form-group action-buttons">
-                  {index === formData.equipmentDetails.length - 1 && (
-                    <button
-                      type="button"
-                      className="btn-add"
-                      onClick={addEquipmentRow}
-                    >
-                      +
-                    </button>
-                  )}
-                  {formData.equipmentDetails.length > 1 && (
-                    <button
-                      type="button"
-                      className="btn-remove"
-                      onClick={() => removeEquipmentRow(index)}
-                    >
-                      ×
-                    </button>
-                  )}
                 </div>
               </div>
             </div>
