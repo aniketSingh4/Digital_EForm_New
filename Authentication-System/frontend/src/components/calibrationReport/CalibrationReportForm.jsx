@@ -5,6 +5,8 @@ import { toast } from "react-toastify";
 import { validateCalibrationReport } from "../../utils/calibrationReportValidators";
 import { calibrationReportService } from "../../services/calibrationReportService";
 import "./CalibrationReportForm.css";
+import notificationService from "../../services/notificationService";
+
 
 const CALIBRATION_SUMMARY_ITEMS = [
   { id: 1, fieldName: 'Calibration Successful', key: 'calibrationSuccessful' },
@@ -141,12 +143,14 @@ const CalibrationReportForm = ({ onSuccess, onCancel, isEdit = false }) => {
           engineerDetails: { ...DEFAULT_FORM_DATA.engineerDetails, ...(data.engineerDetails || {}) },
         });
       } else {
-        toast.error('Report not found');
+        //toast.error('Report not found');
+        notificationService.error('Report not found');
         navigate('/calibration-reports');
       }
     } catch (error) {
       console.error(error);
-      toast.error('Failed to load report');
+      //toast.error('Failed to load report');
+      notificationService.error('Failed to load report');
       navigate('/calibration-reports');
     } finally {
       setLoading(false);
@@ -314,11 +318,13 @@ const CalibrationReportForm = ({ onSuccess, onCancel, isEdit = false }) => {
       if (isEditMode && id) {
         console.log('✏️ Updating report with ID:', id);
         response = await calibrationReportService.updateReport(id, submitData);
-        toast.success('✅ Report updated successfully!');
+        //toast.success('✅ Report updated successfully!');
+        notificationService.success('✅ Report updated successfully!');
       } else {
         console.log('🆕 Creating new report...');
         response = await calibrationReportService.createReport(submitData);
-        toast.success('✅ Report created successfully!');
+        //toast.success('✅ Report created successfully!');
+        notificationService.success('✅ Report created successfully!');
         setReportCount(prev => prev + 1);
       }
 
@@ -352,7 +358,8 @@ const CalibrationReportForm = ({ onSuccess, onCancel, isEdit = false }) => {
         type: 'error',
         message: errorMessage
       });
-      toast.error(`❌ ${errorMessage}`);
+      //toast.error(`❌ ${errorMessage}`);
+      notificationService.error(`❌ ${errorMessage}`);
     } finally {
       setIsSubmitting(false);
     }
