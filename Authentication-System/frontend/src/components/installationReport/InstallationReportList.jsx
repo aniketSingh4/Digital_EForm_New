@@ -69,7 +69,8 @@ const InstallationReportList = () => {
       setFilteredReports(response.data);
     } catch (err) {
       setError('Failed to load reports. Please try again.');
-      toast.error('Failed to fetch reports');
+      //.error('Failed to fetch reports');
+      notificationService.error('Failed to fetch Installation Reports');
       console.error('Error fetching reports:', err);
     } finally {
       setLoading(false);
@@ -116,11 +117,13 @@ const InstallationReportList = () => {
         setActionLoading(id);
         await axios.delete(`${API_BASE_URL}/${id}`);
         setSelectedReports(selectedReports.filter(reportId => reportId !== id));
-        notificationService.reportDeleted('Installation Report', id);
-        toast.success('✅ Report deleted successfully!');
+        //notificationService.reportDeleted('Installation Report', id);
+        //toast.success('✅ Report deleted successfully!');
+        notificationService.success('Installation Report deleted successfully!');
+
         fetchReports();
       } catch (error) {
-        toast.error('❌ Failed to delete report');
+        //toast.error('❌ Failed to delete report');
         notificationService.error('Failed to delete Installation Report');
       } finally {
         setActionLoading(null);
@@ -130,7 +133,8 @@ const InstallationReportList = () => {
 
   const handleBulkDelete = async () => {
     if (selectedReports.length === 0) {
-      toast.warning('Please select at least one report to delete.');
+      //.warning('Please select at least one report to delete.');
+      notificationService.warning('Please select at least one report to delete.');
       return;
     }
 
@@ -142,11 +146,12 @@ const InstallationReportList = () => {
         }
         setSelectedReports([]);
         setSelectAll(false);
-        notificationService.bulkDeleted(selectedReports.length);
-        toast.success(`✅ ${selectedReports.length} report(s) deleted successfully!`);
+        //notificationService.bulkDeleted(selectedReports.length);
+        //toast.success(`✅ ${selectedReports.length} report(s) deleted successfully!`);
+        notificationService.success(`✅ ${selectedReports.length} Installation Report(s) deleted successfully!`);
         fetchReports();
       } catch (error) {
-        toast.error('❌ Failed to delete selected reports');
+        //toast.error('❌ Failed to delete selected reports');
         notificationService.error('Failed to delete selected reports');
       } finally {
         setActionLoading(null);
