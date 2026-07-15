@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
+
 import {
     FaEye,
     FaEdit,
@@ -113,13 +114,15 @@ const CalibrationViewAll = () => {
             setFilteredReports(mappedData);
 
             if (mappedData.length === 0) {
-                toast.info('No reports found. Create your first calibration report!');
+                //toast.info('No reports found. Create your first calibration report!');
+                notificationService.info('No reports found. Create your first calibration report!');
             }
 
         } catch (err) {
             console.error('❌ Error fetching reports:', err);
             setError('Failed to load reports. Please try again.');
-            toast.error('Failed to fetch reports');
+            //toast.error('Failed to fetch reports');
+            notificationService.error('Failed to fetch reports');
         } finally {
             setLoading(false);
         }
@@ -207,7 +210,8 @@ const CalibrationViewAll = () => {
     const handleDelete = async (report) => {
         const reportId = getReportId(report);
         if (!reportId) {
-            toast.error('Could not find report ID');
+            //toast.error('Could not find report ID');
+            notificationService.error('Could not find report ID');
             return;
         }
 
@@ -218,10 +222,11 @@ const CalibrationViewAll = () => {
             await calibrationReportService.deleteReport(reportId);
             setSelectedReports(selectedReports.filter(id => id !== reportId));
             notificationService.reportDeleted('Calibration Report', reportId);
-            toast.success('✅ Report deleted successfully!');
+            //toast.success('✅ Report deleted successfully!');
+            notificationService.success('✅ Report deleted successfully!');
             fetchReports();
         } catch (error) {
-            toast.error('❌ Failed to delete report');
+            //toast.error('❌ Failed to delete report');
             notificationService.error('Failed to delete Calibration Report');
         } finally {
             setActionLoading(null);
@@ -230,7 +235,8 @@ const CalibrationViewAll = () => {
 
     const handleBulkDelete = async () => {
         if (selectedReports.length === 0) {
-            toast.warning('Please select at least one report to delete.');
+            //toast.warning('Please select at least one report to delete.');
+            notificationService.warning('Please select at least one report to delete.');
             return;
         }
 
@@ -244,10 +250,10 @@ const CalibrationViewAll = () => {
             setSelectedReports([]);
             setSelectAll(false);
             notificationService.bulkDeleted(selectedReports.length);
-            toast.success(`✅ ${selectedReports.length} report(s) deleted successfully!`);
+           //toast.success(`✅ ${selectedReports.length} report(s) deleted successfully!`);
             fetchReports();
         } catch (error) {
-            toast.error('❌ Failed to delete selected reports');
+            //toast.error('❌ Failed to delete selected reports');
             notificationService.error('Failed to delete selected reports');
         } finally {
             setActionLoading(null);
@@ -280,7 +286,8 @@ const CalibrationViewAll = () => {
     const handleView = (report) => {
         const reportId = getReportId(report);
         if (!reportId) {
-            toast.error('Could not find report ID');
+            //toast.error('Could not find report ID');
+            notificationService.error('Could not find report ID');
             return;
         }
         navigate(`/calibration-reports/view/${reportId}`);
@@ -289,7 +296,8 @@ const CalibrationViewAll = () => {
     const handleEdit = (report) => {
         const reportId = getReportId(report);
         if (!reportId) {
-            toast.error('Could not find report ID');
+            //toast.error('Could not find report ID');
+            notificationService.error('Could not find report ID');
             return;
         }
         navigate(`/calibration-reports/edit/${reportId}`);
@@ -301,7 +309,8 @@ const CalibrationViewAll = () => {
     const handlePDF = async (report) => {
         const reportId = getReportId(report);
         if (!reportId) {
-            toast.error('Could not find report ID');
+            //toast.error('Could not find report ID');
+            notificationService.error('Could not find report ID');
             return;
         }
 
@@ -904,12 +913,12 @@ const CalibrationViewAll = () => {
             const fileName = `Calibration_Report_${safeString(fullReport.reportNo || 'Report')}_${new Date().toISOString().split('T')[0]}.pdf`;
             doc.save(fileName);
 
-            toast.success('✅ PDF generated successfully!');
+            //toast.success('✅ PDF generated successfully!');
             notificationService.pdfGenerated(fullReport.reportNo || 'Calibration Report');
 
         } catch (error) {
             console.error("PDF Generation Error:", error);
-            toast.error(`❌ Failed to generate PDF: ${error.message}`);
+            //toast.error(`❌ Failed to generate PDF: ${error.message}`);
             notificationService.error('Failed to generate PDF');
         } finally {
             setActionLoading(null);

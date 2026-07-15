@@ -20,7 +20,6 @@ const NOTIFICATION_TYPES = {
   REPORT_UPDATED: 'report_updated',
   REPORT_DELETED: 'report_deleted',
   BULK_DELETED: 'bulk_deleted',
-  // Removed REPORT_VIEWED and PDF_GENERATED as they're not needed for CRUD operations
 };
 
 // Report action messages - only for CRUD operations
@@ -37,27 +36,24 @@ const getReportMessage = (action, reportName = '') => {
 // Professional notification service
 class NotificationService {
   constructor() {
-    this.notificationHistory = new Map(); // Using Map for better performance
+    this.hasShownWelcome = false;
+    this.notificationHistory = new Map();
     this.maxHistory = 50;
-    // Increased cooldown to prevent too frequent notifications
-    this.cooldownPeriod = 30000; // 30 seconds cooldown between same notifications
+    this.cooldownPeriod = 30000; // 30 seconds cooldown
   }
 
-  // Check if notification should be shown with improved rate limiting
+  // Check if notification should be shown
   shouldShowNotification(type, identifier) {
-    // Always show if no identifier (like bulk actions)
     if (!identifier) return true;
     
     const key = `${type}_${identifier}`;
     const lastShown = this.notificationHistory.get(key);
     
-    // If not shown before, show it
     if (!lastShown) {
       this.addToHistory(key);
       return true;
     }
     
-    // Check if cooldown period has passed
     const cooldownTime = Date.now() - this.cooldownPeriod;
     if (lastShown.timestamp < cooldownTime) {
       this.updateHistory(key);
@@ -73,7 +69,6 @@ class NotificationService {
       count: 1 
     });
     
-    // Clean up old entries if exceeding max
     if (this.notificationHistory.size > this.maxHistory) {
       const oldestKey = this.notificationHistory.keys().next().value;
       this.notificationHistory.delete(oldestKey);
@@ -88,7 +83,6 @@ class NotificationService {
     }
   }
 
-  // Check if action is a CRUD operation (not fetch)
   isCRUDOperation(type) {
     const crudTypes = [
       NOTIFICATION_TYPES.REPORT_CREATED,
@@ -99,16 +93,14 @@ class NotificationService {
     return crudTypes.includes(type);
   }
 
-  // Success notification with improved filtering
+  // Success notification
   success(message, options = {}) {
     const { type, identifier, reportName = '' } = options;
     
-    // Skip if it's not a CRUD operation (like REPORT_VIEWED, PDF_GENERATED, etc.)
     if (type && !this.isCRUDOperation(type)) {
       return;
     }
     
-    // Rate limiting for report actions
     if (type && identifier) {
       if (!this.shouldShowNotification(type, identifier)) {
         console.log(`Notification suppressed for ${type} - ${identifier} (rate limited)`);
@@ -135,15 +127,14 @@ class NotificationService {
       progressStyle: {
         background: 'white',
       },
-      autoClose: options.noAutoClose ? false : 3000, // Reduced autoClose time
+      autoClose: options.noAutoClose ? false : 3000,
     });
   }
 
-  // Error notification with rate limiting
+  // Error notification
   error(message, options = {}) {
     const { type, identifier } = options;
     
-    // For errors, still rate limit but show important ones
     if (type && identifier) {
       if (!this.shouldShowNotification(`error_${type}`, identifier)) {
         return;
@@ -167,7 +158,7 @@ class NotificationService {
       progressStyle: {
         background: 'white',
       },
-      autoClose: 5000, // Errors stay longer
+      autoClose: 5000,
     });
   }
 
@@ -193,12 +184,39 @@ class NotificationService {
     });
   }
 
-  // Info notification - only for important info (not fetch operations)
+  // Info notification - with welcome support
   info(message, options = {}) {
     const { type, identifier } = options;
     
+    // Special handling for welcome notification
+    if (type === 'welcome') {
+      if (this.hasShownWelcome) return;
+      this.hasShownWelcome = true;
+      
+      toast.info(message, {
+        ...toastConfig,
+        ...options,
+        icon: '👋',
+        style: {
+          background: 'linear-gradient(135deg, #8b5cf6, #7c3aed)',
+          color: 'white',
+          borderRadius: '12px',
+          boxShadow: '0 10px 40px rgba(139, 92, 246, 0.3)',
+          fontWeight: '500',
+          padding: '14px 20px',
+          fontSize: '14px',
+          border: '1px solid rgba(255,255,255,0.1)',
+        },
+        progressStyle: {
+          background: 'white',
+        },
+        autoClose: options.noAutoClose ? false : 4000,
+      });
+      return;
+    }
+    
     // Skip info notifications for fetch/view operations
-    if (type && (type === 'welcome' || type.includes('view'))) {
+    if (type && (type.includes('view') || type === 'dashboard_load')) {
       return;
     }
 
@@ -230,9 +248,27 @@ class NotificationService {
     });
   }
 
+  // Welcome notification (shown only once per session)
+  welcome(userName = '') {
+    this.info(`👋 Welcome${userName ? ` ${userName}` : ''}! Your reports are loading...`, {
+      type: 'welcome',
+      noAutoClose: true,
+      autoClose: 4000,
+    });
+  }
+
+  // Login success notification (shown only on first login)
+  loginSuccess(userName = '') {
+    if (this.hasShownWelcome) return;
+    this.info(`🔐 Welcome back${userName ? ` ${userName}` : ''}!`, {
+      type: 'welcome',
+      noAutoClose: true,
+      autoClose: 4000,
+    });
+  }
+
   // --- CRUD Operation Notifications ---
   
-  // Report creation notification
   reportCreated(reportName, identifier) {
     this.success(getReportMessage(NOTIFICATION_TYPES.REPORT_CREATED, reportName), {
       type: NOTIFICATION_TYPES.REPORT_CREATED,
@@ -241,7 +277,6 @@ class NotificationService {
     });
   }
 
-  // Report update notification
   reportUpdated(reportName, identifier) {
     this.success(getReportMessage(NOTIFICATION_TYPES.REPORT_UPDATED, reportName), {
       type: NOTIFICATION_TYPES.REPORT_UPDATED,
@@ -250,7 +285,6 @@ class NotificationService {
     });
   }
 
-  // Report delete notification
   reportDeleted(reportName, identifier) {
     this.success(getReportMessage(NOTIFICATION_TYPES.REPORT_DELETED, reportName), {
       type: NOTIFICATION_TYPES.REPORT_DELETED,
@@ -259,7 +293,6 @@ class NotificationService {
     });
   }
 
-  // Bulk delete notification
   bulkDeleted(count) {
     this.success(getReportMessage(NOTIFICATION_TYPES.BULK_DELETED, count), {
       type: NOTIFICATION_TYPES.BULK_DELETED,
@@ -267,8 +300,6 @@ class NotificationService {
       reportName: count,
     });
   }
-
-  // --- Utility Methods ---
 
   // Silent notification (for background actions)
   silent(message, options = {}) {
@@ -290,7 +321,7 @@ class NotificationService {
       progressStyle: {
         background: 'white',
       },
-      autoClose: 2000, // Quick dismiss for silent notifications
+      autoClose: 2000,
     });
   }
 
@@ -299,8 +330,9 @@ class NotificationService {
     toast.dismiss();
   }
 
-  // Reset notification state
+  // Reset state
   resetState() {
+    this.hasShownWelcome = false;
     this.notificationHistory.clear();
   }
 
@@ -309,7 +341,7 @@ class NotificationService {
     return Array.from(this.notificationHistory.entries());
   }
 
-  // Get stats about notifications
+  // Get stats
   getStats() {
     const stats = {
       total: this.notificationHistory.size,
