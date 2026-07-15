@@ -40,6 +40,26 @@ class NotificationService {
     this.notificationHistory = new Map();
     this.maxHistory = 50;
     this.cooldownPeriod = 30000; // 30 seconds cooldown
+    this.notificationCallback = null; // Callback to add notifications to context
+  }
+
+  // Set callback for adding notifications to context
+  setNotificationCallback(callback) {
+    this.notificationCallback = callback;
+  }
+
+  // Add notification to context (dropdown)
+  addToContext(type, text, metadata = {}) {
+    if (this.notificationCallback) {
+      this.notificationCallback({
+        id: Date.now().toString(),
+        type: type,
+        text: text,
+        timestamp: new Date().toISOString(),
+        read: false,
+        ...metadata
+      });
+    }
   }
 
   // Check if notification should be shown
@@ -110,6 +130,7 @@ class NotificationService {
 
     const finalMessage = type ? getReportMessage(type, reportName) : message;
 
+    // Show toast notification
     toast.success(finalMessage, {
       ...toastConfig,
       ...options,
@@ -129,6 +150,9 @@ class NotificationService {
       },
       autoClose: options.noAutoClose ? false : 3000,
     });
+
+    // Add to context (dropdown notifications)
+    this.addToContext('success', finalMessage, { type, identifier, reportName });
   }
 
   // Error notification
@@ -141,6 +165,7 @@ class NotificationService {
       }
     }
 
+    // Show toast notification
     toast.error(message, {
       ...toastConfig,
       ...options,
@@ -160,6 +185,9 @@ class NotificationService {
       },
       autoClose: 5000,
     });
+
+    // Add to context (dropdown notifications)
+    this.addToContext('error', message, { type, identifier });
   }
 
   // Warning notification
@@ -182,6 +210,8 @@ class NotificationService {
         background: 'white',
       },
     });
+
+    this.addToContext('warning', message, options);
   }
 
   // Info notification - with welcome support
@@ -212,6 +242,8 @@ class NotificationService {
         },
         autoClose: options.noAutoClose ? false : 4000,
       });
+
+      this.addToContext('info', message, { type: 'welcome' });
       return;
     }
     
@@ -246,6 +278,8 @@ class NotificationService {
       },
       autoClose: options.noAutoClose ? false : 3000,
     });
+
+    this.addToContext('info', message, options);
   }
 
   // Welcome notification (shown only once per session)
@@ -253,11 +287,11 @@ class NotificationService {
     this.info(`👋 Welcome${userName ? ` ${userName}` : ''}! Your reports are loading...`, {
       type: 'welcome',
       noAutoClose: true,
-      autoClose: 4000,
+      autoClose: 2000,
     });
   }
 
-  // Login success notification (shown only on first login)
+  // Login success notification
   loginSuccess(userName = '') {
     if (this.hasShownWelcome) return;
     this.info(`🔐 Welcome back${userName ? ` ${userName}` : ''}!`, {
@@ -323,6 +357,8 @@ class NotificationService {
       },
       autoClose: 2000,
     });
+
+    this.addToContext('info', message, { ...options, silent: true });
   }
 
   // Dismiss all notifications

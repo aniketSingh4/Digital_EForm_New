@@ -29,6 +29,16 @@ export const NotificationProvider = ({ children }) => {
                 console.error('Error loading notifications:', e);
             }
         }
+
+        // Register the callback with notificationService
+        notificationService.setNotificationCallback((notification) => {
+            addNotification(notification);
+        });
+
+        // Cleanup on unmount
+        return () => {
+            notificationService.setNotificationCallback(null);
+        };
     }, []);
 
     // Save notifications to localStorage whenever they change
@@ -48,20 +58,13 @@ export const NotificationProvider = ({ children }) => {
         
         setNotifications(prev => [newNotification, ...prev]);
         
-        // Show toast notification for real-time alerts
-        switch (notification.type) {
-            case 'success':
-                notificationService.success(notification.text);
-                break;
-            case 'error':
-                notificationService.error(notification.text);
-                break;
-            case 'warning':
-                notificationService.warning(notification.text);
-                break;
-            default:
-                notificationService.info(notification.text);
-        }
+        // Limit notifications to 100
+        setNotifications(prev => {
+            if (prev.length > 100) {
+                return prev.slice(0, 100);
+            }
+            return prev;
+        });
     };
 
     const dismissNotification = (id) => {
