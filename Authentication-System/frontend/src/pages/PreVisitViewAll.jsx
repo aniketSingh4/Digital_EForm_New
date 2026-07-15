@@ -29,6 +29,7 @@ import {
 import { jsPDF } from 'jspdf';
 import 'jspdf-autotable';
 import "../assets/PreVisitViewAll.css";
+import notificationService from "../services/notificationService";
 
 const PreVisitViewAll = () => {
     const navigate = useNavigate();
@@ -96,9 +97,9 @@ const PreVisitViewAll = () => {
                 setActionLoading(id);
                 await deleteReport(id);
                 setSelectedReports(selectedReports.filter(reportId => reportId !== id));
-                alert('✅ Report deleted successfully!');
+                notificationService.success('Report deleted successfully!', { type: 'REPORT_DELETED', identifier: id });
             } catch (error) {
-                alert('❌ Failed to delete report. Please try again.');
+                notificationService.error('Failed to delete report. Please try again.', { type: 'REPORT_DELETION_FAILED', identifier: id });
             } finally {
                 setActionLoading(null);
             }
@@ -120,9 +121,9 @@ const PreVisitViewAll = () => {
                 }
                 setSelectedReports([]);
                 setSelectAll(false);
-                alert(`✅ ${selectedReports.length} report(s) deleted successfully!`);
+                notificationService.success(`✅ ${selectedReports.length} report(s) deleted successfully!`, { type: 'REPORTS_DELETED', identifier: selectedReports });
             } catch (error) {
-                alert('❌ Failed to delete selected reports. Please try again.');
+                notificationService.error('❌ Failed to delete selected reports. Please try again.', { type: 'REPORTS_DELETION_FAILED', identifier: selectedReports });
             } finally {
                 setActionLoading(null);
             }
@@ -560,10 +561,10 @@ const PreVisitViewAll = () => {
             const fileName = generateFileName(reportData);
             doc.save(fileName);
 
-            alert(`✅ PDF generated successfully!\n📄 ${fileName}`);
+            notificationService.success(`✅ PDF generated successfully!\n📄 ${fileName}`);
         } catch (error) {
             //console.error('PDF Generation Error:', error);
-            alert(`❌ Failed to generate PDF: ${error.message}`);
+            notificationService.error(`❌ Failed to generate PDF: ${error.message}`);
         } finally {
             setActionLoading(null);
         }
