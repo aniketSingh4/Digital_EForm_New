@@ -22,15 +22,102 @@ const NOTIFICATION_TYPES = {
   BULK_DELETED: 'bulk_deleted',
 };
 
-// Report action messages - only for CRUD operations
-const getReportMessage = (action, reportName = '') => {
-  const messages = {
-    [NOTIFICATION_TYPES.REPORT_CREATED]: `📄 ${reportName} created successfully!`,
-    [NOTIFICATION_TYPES.REPORT_UPDATED]: `✏️ ${reportName} updated successfully!`,
-    [NOTIFICATION_TYPES.REPORT_DELETED]: `🗑️ ${reportName} deleted successfully!`,
-    [NOTIFICATION_TYPES.BULK_DELETED]: `🗑️ ${reportName} reports deleted successfully!`,
-  };
-  return messages[action] || 'Action completed successfully!';
+// Report type identifiers
+const REPORT_TYPES = {
+  PM: 'PM Report',
+  PRE_VISIT: 'Pre-Visit Checklist',
+  CALIBRATION: 'Calibration Report',
+  INSTALLATION: 'Installation & Commissioning Report'
+};
+
+// Get report type from URL or context
+const getReportType = (path = '') => {
+  if (path.includes('pm-reports')) return REPORT_TYPES.PM;
+  if (path.includes('previsit')) return REPORT_TYPES.PRE_VISIT;
+  if (path.includes('calibration')) return REPORT_TYPES.CALIBRATION;
+  if (path.includes('installation')) return REPORT_TYPES.INSTALLATION;
+  return 'Report';
+};
+
+// Get detailed report message with all identifying information
+const getDetailedReportMessage = (action, reportData = {}) => {
+  const {
+    reportName = '',
+    reportId = '',
+    reportType = '',
+    location = '',
+    date = '',
+    customerName = '',
+    equipment = '',
+    status = '',
+    createdBy = '',
+    additionalInfo = {}
+  } = reportData;
+
+  // Build the message with available data
+  let message = '';
+
+  // Report type and name
+  const typeLabel = reportType || 'Report';
+  const namePart = reportName ? `"${reportName}"` : `#${reportId || 'Unknown'}`;
+
+  switch (action) {
+    case NOTIFICATION_TYPES.REPORT_CREATED:
+      message = `📄 ${typeLabel} ${namePart} created successfully`;
+      break;
+    case NOTIFICATION_TYPES.REPORT_UPDATED:
+      message = `✏️ ${typeLabel} ${namePart} updated successfully`;
+      break;
+    case NOTIFICATION_TYPES.REPORT_DELETED:
+      message = `🗑️ ${typeLabel} ${namePart} deleted successfully`;
+      break;
+    case NOTIFICATION_TYPES.BULK_DELETED:
+      message = `🗑️ ${reportName} ${typeLabel}s deleted successfully`;
+      break;
+    default:
+      message = `${action} completed successfully!`;
+  }
+
+  // Add additional details if available
+  const details = [];
+  
+  if (customerName) {
+    details.push(`Customer: ${customerName}`);
+  }
+  if (location) {
+    details.push(`Location: ${location}`);
+  }
+  if (equipment) {
+    details.push(`Equipment: ${equipment}`);
+  }
+  if (date) {
+    const formattedDate = new Date(date).toLocaleDateString('en-IN', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric'
+    });
+    details.push(`Date: ${formattedDate}`);
+  }
+  if (status) {
+    details.push(`Status: ${status}`);
+  }
+  if (createdBy) {
+    details.push(`Created by: ${createdBy}`);
+  }
+
+  // Add any additional info
+  Object.entries(additionalInfo).forEach(([key, value]) => {
+    if (value) {
+      details.push(`${key}: ${value}`);
+    }
+  });
+
+  // Combine message with details
+  if (details.length > 0) {
+    message += `\n${details.join(' • ')}`;
+  }
+
+  return message;
 };
 
 // Professional notification service
@@ -40,12 +127,26 @@ class NotificationService {
     this.notificationHistory = new Map();
     this.maxHistory = 50;
     this.cooldownPeriod = 30000; // 30 seconds cooldown
-    this.notificationCallback = null; // Callback to add notifications to context
+    this.notificationCallback = null;
+    this.currentReportContext = {}; // Store current report context
   }
 
   // Set callback for adding notifications to context
   setNotificationCallback(callback) {
     this.notificationCallback = callback;
+  }
+
+  // Set current report context for detailed notifications
+  setReportContext(context) {
+    this.currentReportContext = {
+      ...this.currentReportContext,
+      ...context
+    };
+  }
+
+  // Clear report context
+  clearReportContext() {
+    this.currentReportContext = {};
   }
 
   // Add notification to context (dropdown)
@@ -113,9 +214,9 @@ class NotificationService {
     return crudTypes.includes(type);
   }
 
-  // Success notification
+  // Success notification with detailed information
   success(message, options = {}) {
-    const { type, identifier, reportName = '' } = options;
+    const { type, identifier, reportData = {}, reportName = '' } = options;
     
     if (type && !this.isCRUDOperation(type)) {
       return;
@@ -128,7 +229,10 @@ class NotificationService {
       }
     }
 
-    const finalMessage = type ? getReportMessage(type, reportName) : message;
+    // Get detailed message
+    const finalMessage = type 
+      ? getDetailedReportMessage(type, { ...this.currentReportContext, ...reportData, reportName })
+      : message;
 
     // Show toast notification
     toast.success(finalMessage, {
@@ -148,11 +252,11 @@ class NotificationService {
       progressStyle: {
         background: 'white',
       },
-      autoClose: options.noAutoClose ? false : 3000,
+      autoClose: options.noAutoClose ? false : 4000,
     });
 
     // Add to context (dropdown notifications)
-    this.addToContext('success', finalMessage, { type, identifier, reportName });
+    this.addToContext('success', finalMessage, { type, identifier, reportData: { ...this.currentReportContext, ...reportData, reportName } });
   }
 
   // Error notification
@@ -165,7 +269,6 @@ class NotificationService {
       }
     }
 
-    // Show toast notification
     toast.error(message, {
       ...toastConfig,
       ...options,
@@ -186,7 +289,6 @@ class NotificationService {
       autoClose: 5000,
     });
 
-    // Add to context (dropdown notifications)
     this.addToContext('error', message, { type, identifier });
   }
 
@@ -214,7 +316,7 @@ class NotificationService {
     this.addToContext('warning', message, options);
   }
 
-  // Info notification - with welcome support
+  // Info notification
   info(message, options = {}) {
     const { type, identifier } = options;
     
@@ -252,7 +354,6 @@ class NotificationService {
       return;
     }
 
-    // Rate limiting for info notifications
     if (type && identifier) {
       if (!this.shouldShowNotification(`info_${type}`, identifier)) {
         return;
@@ -282,12 +383,12 @@ class NotificationService {
     this.addToContext('info', message, options);
   }
 
-  // Welcome notification (shown only once per session)
+  // Welcome notification
   welcome(userName = '') {
     this.info(`👋 Welcome${userName ? ` ${userName}` : ''}! Your reports are loading...`, {
       type: 'welcome',
       noAutoClose: true,
-      autoClose: 2000,
+      autoClose: 4000,
     });
   }
 
@@ -301,41 +402,97 @@ class NotificationService {
     });
   }
 
-  // --- CRUD Operation Notifications ---
-  
-  reportCreated(reportName, identifier) {
-    this.success(getReportMessage(NOTIFICATION_TYPES.REPORT_CREATED, reportName), {
+  // --- CRUD Operation Notifications with detailed data ---
+
+  // Report created
+  reportCreated(reportName, reportData = {}, identifier = null) {
+    const data = {
+      reportName: reportName,
+      reportId: reportData.id || reportData._id || identifier,
+      reportType: reportData.reportType || this.currentReportContext.reportType || 'Report',
+      location: reportData.location || reportData.site || this.currentReportContext.location,
+      date: reportData.date || reportData.serviceDate || this.currentReportContext.date,
+      customerName: reportData.customerName || reportData.customer || this.currentReportContext.customerName,
+      equipment: reportData.equipment || reportData.equipmentName || this.currentReportContext.equipment,
+      status: reportData.status || this.currentReportContext.status,
+      createdBy: reportData.createdBy || this.currentReportContext.createdBy,
+      ...reportData
+    };
+
+    this.success(getDetailedReportMessage(NOTIFICATION_TYPES.REPORT_CREATED, data), {
       type: NOTIFICATION_TYPES.REPORT_CREATED,
-      identifier: identifier || `create_${Date.now()}`,
+      identifier: identifier || data.reportId || `create_${Date.now()}`,
+      reportData: data,
       reportName: reportName,
     });
   }
 
-  reportUpdated(reportName, identifier) {
-    this.success(getReportMessage(NOTIFICATION_TYPES.REPORT_UPDATED, reportName), {
+  // Report updated
+  reportUpdated(reportName, reportData = {}, identifier = null) {
+    const data = {
+      reportName: reportName,
+      reportId: reportData.id || reportData._id || identifier,
+      reportType: reportData.reportType || this.currentReportContext.reportType || 'Report',
+      location: reportData.location || reportData.site || this.currentReportContext.location,
+      date: reportData.date || reportData.serviceDate || this.currentReportContext.date,
+      customerName: reportData.customerName || reportData.customer || this.currentReportContext.customerName,
+      equipment: reportData.equipment || reportData.equipmentName || this.currentReportContext.equipment,
+      status: reportData.status || this.currentReportContext.status,
+      updatedBy: reportData.updatedBy || this.currentReportContext.updatedBy,
+      ...reportData
+    };
+
+    this.success(getDetailedReportMessage(NOTIFICATION_TYPES.REPORT_UPDATED, data), {
       type: NOTIFICATION_TYPES.REPORT_UPDATED,
-      identifier: identifier || `update_${Date.now()}`,
+      identifier: identifier || data.reportId || `update_${Date.now()}`,
+      reportData: data,
       reportName: reportName,
     });
   }
 
-  reportDeleted(reportName, identifier) {
-    this.success(getReportMessage(NOTIFICATION_TYPES.REPORT_DELETED, reportName), {
+  // Report deleted
+  reportDeleted(reportName, reportData = {}, identifier = null) {
+    const data = {
+      reportName: reportName,
+      reportId: reportData.id || reportData._id || identifier,
+      reportType: reportData.reportType || this.currentReportContext.reportType || 'Report',
+      location: reportData.location || reportData.site || this.currentReportContext.location,
+      customerName: reportData.customerName || reportData.customer || this.currentReportContext.customerName,
+      ...reportData
+    };
+
+    this.success(getDetailedReportMessage(NOTIFICATION_TYPES.REPORT_DELETED, data), {
       type: NOTIFICATION_TYPES.REPORT_DELETED,
-      identifier: identifier || `delete_${Date.now()}`,
+      identifier: identifier || data.reportId || `delete_${Date.now()}`,
+      reportData: data,
       reportName: reportName,
     });
   }
 
-  bulkDeleted(count) {
-    this.success(getReportMessage(NOTIFICATION_TYPES.BULK_DELETED, count), {
+  // Bulk delete
+  bulkDeleted(count, reportType = 'Report') {
+    const data = {
+      reportName: count,
+      reportType: reportType,
+    };
+
+    this.success(getDetailedReportMessage(NOTIFICATION_TYPES.BULK_DELETED, data), {
       type: NOTIFICATION_TYPES.BULK_DELETED,
       identifier: 'bulk',
+      reportData: data,
       reportName: count,
     });
   }
 
-  // Silent notification (for background actions)
+  // Set context for a specific report type
+  setReportTypeContext(type, additionalData = {}) {
+    this.setReportContext({
+      reportType: type,
+      ...additionalData
+    });
+  }
+
+  // Silent notification
   silent(message, options = {}) {
     toast(message, {
       ...toastConfig,
@@ -370,14 +527,13 @@ class NotificationService {
   resetState() {
     this.hasShownWelcome = false;
     this.notificationHistory.clear();
+    this.currentReportContext = {};
   }
 
-  // Get notification history (for debugging)
   getHistory() {
     return Array.from(this.notificationHistory.entries());
   }
 
-  // Get stats
   getStats() {
     const stats = {
       total: this.notificationHistory.size,
@@ -394,6 +550,6 @@ class NotificationService {
 }
 
 // Export the notification types for use in components
-export { NOTIFICATION_TYPES };
+export { NOTIFICATION_TYPES, REPORT_TYPES };
 
 export default new NotificationService();
