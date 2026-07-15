@@ -43,7 +43,8 @@ import {
     FaQuestionCircle,
     FaLightbulb,
     FaDownload,
-    FaPrint
+    FaPrint,
+    FaSync
 } from "react-icons/fa";
 import { useNotification } from '../context/NotificationContext';
 import notificationService from '../services/notificationService';
@@ -74,6 +75,7 @@ export default function Dashboard() {
     const [currentTime, setCurrentTime] = useState(new Date());
     const [showNotifications, setShowNotifications] = useState(false);
     const [notificationFilter, setNotificationFilter] = useState('all');
+    const [isRefreshing, setIsRefreshing] = useState(false);
     
     // Modal states
     const [showSupportModal, setShowSupportModal] = useState(false);
@@ -94,69 +96,82 @@ export default function Dashboard() {
         return () => clearInterval(timer);
     }, []);
 
-    useEffect(() => {
-        const fetchReportCounts = async () => {
+    // Fetch report counts with real notifications
+    const fetchReportCounts = async (showLoading = true) => {
+        if (showLoading) {
             setLoading(true);
-            setError(null);
+        }
+        setError(null);
 
-            try {
-                const results = await Promise.allSettled([
-                    fetch('http://localhost:8090/api/pm_reports/count', {
-                        headers: { 'Content-Type': 'application/json' }
-                    }).then(res => res.ok ? res.json() : 0).catch(() => 0),
-                    fetch('http://localhost:8088/api/previsit-reports/count', {
-                        headers: { 'Content-Type': 'application/json' }
-                    }).then(res => res.ok ? res.json() : 0).catch(() => 0),
-                    fetch('http://localhost:8087/api/calibration-reports/count', {
-                        headers: { 'Content-Type': 'application/json' }
-                    }).then(res => res.ok ? res.json() : 0).catch(() => 0),
-                    fetch('http://localhost:8086/api/reports', {
-                        headers: { 'Content-Type': 'application/json' }
-                    }).then(res => res.ok ? res.json() : [])
-                        .then(data => Array.isArray(data) ? data.length : 0)
-                        .catch(() => 0)
-                ]);
+        try {
+            const results = await Promise.allSettled([
+                fetch('http://localhost:8090/api/pm_reports/count', {
+                    headers: { 'Content-Type': 'application/json' }
+                }).then(res => res.ok ? res.json() : 0).catch(() => 0),
+                fetch('http://localhost:8088/api/previsit-reports/count', {
+                    headers: { 'Content-Type': 'application/json' }
+                }).then(res => res.ok ? res.json() : 0).catch(() => 0),
+                fetch('http://localhost:8087/api/calibration-reports/count', {
+                    headers: { 'Content-Type': 'application/json' }
+                }).then(res => res.ok ? res.json() : 0).catch(() => 0),
+                fetch('http://localhost:8086/api/reports', {
+                    headers: { 'Content-Type': 'application/json' }
+                }).then(res => res.ok ? res.json() : [])
+                    .then(data => Array.isArray(data) ? data.length : 0)
+                    .catch(() => 0)
+            ]);
 
-                const counts = results.map(result =>
-                    result.status === 'fulfilled' ? result.value : 0
-                );
+            const counts = results.map(result =>
+                result.status === 'fulfilled' ? result.value : 0
+            );
 
-                setReportCounts({
-                    pmReports: typeof counts[0] === 'object' ? counts[0].count || 0 : counts[0] || 0,
-                    preVisitChecklists: typeof counts[1] === 'object' ? counts[1].count || 0 : counts[1] || 0,
-                    calibrationReports: typeof counts[2] === 'object' ? counts[2].count || 0 : counts[2] || 0,
-                    installationReports: typeof counts[3] === 'number' ? counts[3] : 0
+            const newCounts = {
+                pmReports: typeof counts[0] === 'object' ? counts[0].count || 0 : counts[0] || 0,
+                preVisitChecklists: typeof counts[1] === 'object' ? counts[1].count || 0 : counts[1] || 0,
+                calibrationReports: typeof counts[2] === 'object' ? counts[2].count || 0 : counts[2] || 0,
+                installationReports: typeof counts[3] === 'number' ? counts[3] : 0
+            };
+
+            setReportCounts(newCounts);
+
+            // Show real success notification only for manual refresh
+            if (!showLoading) {
+                notificationService.success('Dashboard data refreshed successfully', {
+                    autoClose: 3000,
+                    identifier: 'dashboard_refresh'
                 });
+            }
 
-                // Use the notification service for success
-                notificationService.success('Dashboard data loaded successfully', {
-                    type: 'dashboard_load',
-                    identifier: 'dashboard',
-                    autoClose: 3000
-                });
-
-            } catch (error) {
-                console.error("Error fetching report counts:", error);
-                setError("Failed to load report counts. Please refresh the page.");
-                
-                // Use notification service for error
-                notificationService.error('Failed to load dashboard data', {
-                    identifier: 'dashboard_error'
-                });
-                
-                setReportCounts({
-                    pmReports: 0,
-                    preVisitChecklists: 0,
-                    calibrationReports: 0,
-                    installationReports: 0
-                });
-            } finally {
+        } catch (error) {
+            console.error("Error fetching report counts:", error);
+            setError("Failed to load report counts. Please refresh the page.");
+            
+            notificationService.error('Failed to load dashboard data', {
+                identifier: 'dashboard_error'
+            });
+            
+            setReportCounts({
+                pmReports: 0,
+                preVisitChecklists: 0,
+                calibrationReports: 0,
+                installationReports: 0
+            });
+        } finally {
+            if (showLoading) {
                 setLoading(false);
             }
-        };
+            setIsRefreshing(false);
+        }
+    };
 
-        fetchReportCounts();
+    useEffect(() => {
+        fetchReportCounts(true);
     }, []);
+
+    const handleRefresh = async () => {
+        setIsRefreshing(true);
+        await fetchReportCounts(false);
+    };
 
     const handleLogout = () => {
         notificationService.info('Logging out...', { autoClose: 2000 });
@@ -356,6 +371,18 @@ export default function Dashboard() {
     const closeDocsModal = () => {
         setShowDocsModal(false);
         document.body.style.overflow = 'auto';
+    };
+
+    // Function to add real notification (can be called from child components)
+    const addRealNotification = (type, text, metadata = {}) => {
+        addNotification({
+            id: Date.now().toString(),
+            type: type,
+            text: text,
+            timestamp: new Date().toISOString(),
+            read: false,
+            ...metadata
+        });
     };
 
     return (
@@ -579,6 +606,16 @@ export default function Dashboard() {
                         <div className="welcome-stat">
                             <div className="stat-value">{totalReports}</div>
                             <div className="stat-label">Total Reports</div>
+                        </div>
+                        <div className="welcome-stat">
+                            <button 
+                                className="refresh-btn" 
+                                onClick={handleRefresh}
+                                disabled={isRefreshing}
+                            >
+                                <FaSync className={isRefreshing ? 'spinning' : ''} />
+                            </button>
+                            <div className="stat-label">Refresh</div>
                         </div>
                         <div className="welcome-stat">
                             <div className="stat-value">{currentTime.toLocaleTimeString()}</div>

@@ -1,94 +1,104 @@
-// src/context/NotificationContext.jsx
+// src/context/NotificationContext.js
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { toast } from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css';
+import notificationService from '../services/notificationService';
 
 const NotificationContext = createContext();
 
 export const useNotification = () => {
-  const context = useContext(NotificationContext);
-  if (!context) {
-    throw new Error('useNotification must be used within NotificationProvider');
-  }
-  return context;
+    const context = useContext(NotificationContext);
+    if (!context) {
+        throw new Error('useNotification must be used within NotificationProvider');
+    }
+    return context;
 };
 
 export const NotificationProvider = ({ children }) => {
-  const [notifications, setNotifications] = useState([
-    { id: 1, text: "3 reports pending review", type: "warning", timestamp: new Date(Date.now() - 5 * 60000), read: false },
-    { id: 2, text: "New PM report submitted by John", type: "info", timestamp: new Date(Date.now() - 30 * 60000), read: false },
-    { id: 3, text: "System update v2.4.0 available", type: "success", timestamp: new Date(Date.now() - 2 * 3600000), read: false },
-    { id: 4, text: "Calibration certificate expiring soon", type: "warning", timestamp: new Date(Date.now() - 24 * 3600000), read: true },
-    { id: 5, text: "Weekly report generated successfully", type: "success", timestamp: new Date(Date.now() - 48 * 3600000), read: true }
-  ]);
+    const [notifications, setNotifications] = useState([]);
+    const [unreadCount, setUnreadCount] = useState(0);
 
-  const unreadCount = notifications.filter(n => !n.read).length;
+    // Load notifications from localStorage on mount
+    useEffect(() => {
+        const savedNotifications = localStorage.getItem('notifications');
+        if (savedNotifications) {
+            try {
+                const parsed = JSON.parse(savedNotifications);
+                setNotifications(parsed);
+                const unread = parsed.filter(n => !n.read).length;
+                setUnreadCount(unread);
+            } catch (e) {
+                console.error('Error loading notifications:', e);
+            }
+        }
+    }, []);
 
-  const addNotification = (text, type = 'info', duration = 5000) => {
-    const newNotification = {
-      id: Date.now(),
-      text,
-      type,
-      timestamp: new Date(),
-      read: false,
+    // Save notifications to localStorage whenever they change
+    useEffect(() => {
+        localStorage.setItem('notifications', JSON.stringify(notifications));
+        const unread = notifications.filter(n => !n.read).length;
+        setUnreadCount(unread);
+    }, [notifications]);
+
+    const addNotification = (notification) => {
+        const newNotification = {
+            id: Date.now().toString(),
+            timestamp: new Date().toISOString(),
+            read: false,
+            ...notification
+        };
+        
+        setNotifications(prev => [newNotification, ...prev]);
+        
+        // Show toast notification for real-time alerts
+        switch (notification.type) {
+            case 'success':
+                notificationService.success(notification.text);
+                break;
+            case 'error':
+                notificationService.error(notification.text);
+                break;
+            case 'warning':
+                notificationService.warning(notification.text);
+                break;
+            default:
+                notificationService.info(notification.text);
+        }
     };
 
-    setNotifications(prev => [newNotification, ...prev]);
-
-    // Show toast notification
-    const toastConfig = {
-      position: "top-right",
-      autoClose: duration,
-      hideProgressBar: false,
-      closeOnClick: true,
-      pauseOnHover: true,
-      draggable: true,
-      progress: undefined,
-      theme: "colored",
+    const dismissNotification = (id) => {
+        setNotifications(prev => prev.filter(n => n.id !== id));
     };
 
-    switch(type) {
-      case 'success':
-        toast.success(text, toastConfig);
-        break;
-      case 'error':
-        toast.error(text, toastConfig);
-        break;
-      case 'warning':
-        toast.warning(text, toastConfig);
-        break;
-      default:
-        toast.info(text, toastConfig);
-    }
-  };
+    const markAsRead = (id) => {
+        setNotifications(prev => 
+            prev.map(n => 
+                n.id === id ? { ...n, read: true } : n
+            )
+        );
+    };
 
-  const dismissNotification = (id) => {
-    setNotifications(prev => prev.filter(n => n.id !== id));
-  };
+    const markAllAsRead = () => {
+        setNotifications(prev => 
+            prev.map(n => ({ ...n, read: true }))
+        );
+    };
 
-  const markAllAsRead = () => {
-    setNotifications(prev => prev.map(n => ({ ...n, read: true })));
-  };
+    const clearAllNotifications = () => {
+        setNotifications([]);
+    };
 
-  const clearAllNotifications = () => {
-    setNotifications([]);
-    toast.dismiss();
-  };
+    const value = {
+        notifications,
+        unreadCount,
+        addNotification,
+        dismissNotification,
+        markAsRead,
+        markAllAsRead,
+        clearAllNotifications
+    };
 
-  const value = {
-    notifications,
-    unreadCount,
-    addNotification,
-    dismissNotification,
-    markAllAsRead,
-    clearAllNotifications,
-  };
-
-  return (
-    <NotificationContext.Provider value={value}>
-      {children}
-    </NotificationContext.Provider>
-  );
+    return (
+        <NotificationContext.Provider value={value}>
+            {children}
+        </NotificationContext.Provider>
+    );
 };
-
-export default NotificationContext;
