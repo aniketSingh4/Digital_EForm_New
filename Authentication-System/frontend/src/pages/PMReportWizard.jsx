@@ -460,7 +460,7 @@ export default function PMReportWizard() {
                             disabled={saving}
                         >
                             {saving ? <FaSpinner className="spinning" /> : null}
-                            {isEditMode ? 'Update Report' : 'Submit Report'}
+                            {isEditMode ? 'Update Report' : 'Done'}
                         </button>
                     )}
                 </div>
