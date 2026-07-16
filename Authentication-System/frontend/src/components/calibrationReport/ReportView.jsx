@@ -295,7 +295,7 @@ const ReportView = () => {
                     </div>
                     <div className={`summary-item ${summary.sensorRequiresReplacement ? 'needs-replacement' : 'ok'}`}>
                         <label>Sensor Requires Replacement</label>
-                        <span>{summary.sensorRequiresReplacement ? '⚠️ Yes' : '✅ No'}</span>
+                        <span>{summary.sensorRequiresReplacement ? '✅ Yes' : '❌ No'}</span>
                     </div>
                 </div>
             </div>
