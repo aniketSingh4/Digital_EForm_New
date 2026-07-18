@@ -1,15 +1,18 @@
 // src/components/PreVisitReport/PreVisitReportList.jsx
 import React, { useState, useEffect } from 'react';
-import { FaEye, FaEdit, FaTrash, FaFilePdf, FaSpinner } from 'react-icons/fa';
+import { useNavigate } from 'react-router-dom';
+import { FaEye, FaEdit, FaTrash, FaFilePdf, FaSpinner, FaImage, FaCheckCircle } from 'react-icons/fa';
 import preVisitReportService from '../../api/preVisitReportService';
 import './PreVisitReportList.css';
 import notificationService from '../../services/notificationService';
 
 const PreVisitReportList = ({ onEdit, refreshTrigger }) => {
+  const navigate = useNavigate();
   const [reports, setReports] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [actionLoading, setActionLoading] = useState(null);
+  const [imageCounts, setImageCounts] = useState({});
 
   useEffect(() => {
     fetchReports();
@@ -21,11 +24,31 @@ const PreVisitReportList = ({ onEdit, refreshTrigger }) => {
       const data = await preVisitReportService.getAllReports();
       setReports(data);
       setError(null);
+      
+      // Fetch image counts for each report
+      await fetchAllImageCounts(data);
     } catch (err) {
       console.error('Error fetching reports:', err);
       setError('Failed to load reports');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchAllImageCounts = async (reportsData) => {
+    try {
+      const counts = {};
+      for (const report of reportsData) {
+        try {
+          const images = await preVisitReportService.getImagesByReport(report.id);
+          counts[report.id] = images ? images.length : 0;
+        } catch (error) {
+          counts[report.id] = 0;
+        }
+      }
+      setImageCounts(counts);
+    } catch (error) {
+      console.error('Error fetching image counts:', error);
     }
   };
 
@@ -35,10 +58,8 @@ const PreVisitReportList = ({ onEdit, refreshTrigger }) => {
       setActionLoading(id);
       await preVisitReportService.deleteReport(id);
       await fetchReports();
-      //alert('✅ Report deleted successfully!');
       notificationService.success('Report deleted successfully!');
     } catch (error) {
-      //alert('❌ Failed to delete report');
       notificationService.error(error.message || 'Failed to delete report');
     } finally {
       setActionLoading(null);
@@ -46,12 +67,12 @@ const PreVisitReportList = ({ onEdit, refreshTrigger }) => {
   };
 
   const handleView = (report) => {
-    // Navigate to view page
-    window.location.href = `/previsit/${report.id}`;
+    navigate(`/previsit/${report.id}`);
   };
 
   const handlePDF = async (report) => {
     // PDF generation logic
+    notificationService.info('PDF generation coming soon...');
   };
 
   const formatDate = (dateString) => {
@@ -61,6 +82,20 @@ const PreVisitReportList = ({ onEdit, refreshTrigger }) => {
       month: 'short',
       year: 'numeric'
     });
+  };
+
+  const getStatusBadge = (report) => {
+    if (!report.checklist || report.checklist.length === 0) {
+      return <span className="status-badge status-pending">Pending</span>;
+    }
+    const completed = report.checklist.filter(item => item.status === true).length;
+    const total = report.checklist.length;
+    if (completed === total) {
+      return <span className="status-badge status-complete">Complete</span>;
+    } else if (completed > 0) {
+      return <span className="status-badge status-progress">In Progress</span>;
+    }
+    return <span className="status-badge status-pending">Pending</span>;
   };
 
   if (loading) {
@@ -93,17 +128,23 @@ const PreVisitReportList = ({ onEdit, refreshTrigger }) => {
 
   return (
     <div className="pre-visit-list-container">
+      <div className="list-header">
+        <h2>Pre-Visit Reports</h2>
+        <span className="report-count">{reports.length} Reports</span>
+      </div>
+
       <div className="table-wrapper">
         <table className="reports-table">
           <thead>
             <tr>
-              <th style={{ width: '60px' }}>#</th>
-              <th>ID</th>
+              <th style={{ width: '50px' }}>#</th>
+              <th style={{ width: '70px' }}>ID</th>
               <th>Company Name</th>
               <th>Site Person</th>
               <th>Visit Date</th>
-              <th>Email</th>
-              <th style={{ width: '220px' }}>Actions</th>
+              <th>Status</th>
+              <th style={{ width: '90px' }}>Images</th>
+              <th style={{ width: '240px' }}>Actions</th>
             </tr>
           </thead>
           <tbody>
@@ -111,16 +152,27 @@ const PreVisitReportList = ({ onEdit, refreshTrigger }) => {
               <tr key={report.id}>
                 <td>{index + 1}</td>
                 <td className="report-id">#{String(report.id).padStart(3, '0')}</td>
-                <td className="company-name">{report.companyName || '-'}</td>
+                <td className="company-name">
+                  <span className="company-text">{report.companyName || '-'}</span>
+                </td>
                 <td>{report.sitePersonName || '-'}</td>
                 <td>{formatDate(report.visitDate)}</td>
-                <td className="email-cell">{report.emailId || '-'}</td>
+                <td>{getStatusBadge(report)}</td>
+                <td>
+                  <div className="image-count-badge">
+                    <FaImage className="image-icon" />
+                    <span>{imageCounts[report.id] || 0}</span>
+                    {imageCounts[report.id] > 0 && (
+                      <FaCheckCircle className="image-check" />
+                    )}
+                  </div>
+                </td>
                 <td>
                   <div className="action-buttons">
                     <button
                       className="action-btn view-btn"
                       onClick={() => handleView(report)}
-                      title="View"
+                      title="View Details"
                     >
                       <FaEye />
                       <span className="btn-label">View</span>

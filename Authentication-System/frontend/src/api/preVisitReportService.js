@@ -47,7 +47,11 @@ preVisitApiClient.interceptors.response.use(
 );
 
 const preVisitReportService = {
-  // ✅ CORRECT: Get all reports - GET /previsit-reports
+  // ========================================
+  // REPORT CRUD OPERATIONS
+  // ========================================
+
+  // ✅ Get all reports - GET /previsit-reports
   getAllReports: async () => {
     try {
       console.log('🔄 [Pre-Visit] Fetching all reports from: /previsit-reports');
@@ -135,55 +139,211 @@ const preVisitReportService = {
     }
   },
 
-  /**
-   * Check if email exists (with optional exclude ID for edit mode)
-   * @param {string} email - Email to check
-   * @param {string|number} excludeId - ID to exclude from check (for edit mode)
-   * @returns {Promise<boolean>} - True if email exists
-   */
+  // ✅ Check email exists - GET /previsit-reports/exists?email=...
   checkEmailExists: async (email, excludeId = null) => {
     try {
+      console.log('📧 [Pre-Visit] Checking email:', email);
       const params = { email };
       if (excludeId) {
         params.excludeId = excludeId;
       }
-
-      const response = await preVisitApiClient.get('/check-email', { params });
-      return response.data?.exists || false;
+      const response = await preVisitApiClient.get('/previsit-reports/exists', { params });
+      console.log('✅ [Pre-Visit] Email exists:', response.data);
+      return response.data || false;
     } catch (error) {
       console.error('❌ [Pre-Visit] Error checking email:', error);
       return false;
     }
-  }
-};
+  },
 
-/**
- * Check if email exists (with optional exclude ID for edit mode)
- * @param {string} email - Email to check
- * @param {string|number} excludeId - ID to exclude from check (for edit mode)
- * @returns {Promise<boolean>} - True if email exists
- */
-const checkEmailExists = async (email, excludeId = null) => {
-  try {
-    // Build URL with query parameters
-    let url = `${API_BASE_URL}/check-email?email=${encodeURIComponent(email)}`;
-    if (excludeId) {
-      url += `&excludeId=${excludeId}`;
+  // ✅ Get report count - GET /previsit-reports/count
+  getReportCount: async () => {
+    try {
+      console.log('📊 [Pre-Visit] Fetching report count');
+      const response = await preVisitApiClient.get('/previsit-reports/count');
+      return response.data || 0;
+    } catch (error) {
+      console.error('❌ [Pre-Visit] Error fetching report count:', error);
+      return 0;
     }
-    
-    const response = await fetch(url);
-    if (response.status === 404) {
-      return false;
+  },
+
+  // ========================================
+  // IMAGE MANAGEMENT OPERATIONS
+  // ========================================
+
+  /**
+   * Upload images for a report - POST /previsit-reports/images/upload/{reportId}
+   * @param {number} reportId - Report ID
+   * @param {FormData} formData - FormData containing image files
+   * @param {Object} options - Upload options
+   * @returns {Promise<Array>} - Uploaded images data
+   */
+  uploadImages: async (reportId, formData, options = {}) => {
+    try {
+      console.log('📸 [Pre-Visit] Uploading images for report:', reportId);
+      const response = await preVisitApiClient.post(
+        `/previsit-reports/images/upload/${reportId}`,
+        formData,
+        {
+          headers: {
+            'Content-Type': 'multipart/form-data',
+          },
+          ...options
+        }
+      );
+      console.log('✅ [Pre-Visit] Images uploaded:', response.data?.length || 0);
+      return response.data || [];
+    } catch (error) {
+      console.error('❌ [Pre-Visit] Error uploading images:', error);
+      throw error.response?.data || 'Failed to upload images';
     }
-    if (!response.ok) {
-      throw new Error('Failed to check email');
+  },
+
+  /**
+   * Upload a single image as base64 - POST /previsit-reports/images/upload-base64/{reportId}
+   * @param {number} reportId - Report ID
+   * @param {Object} imageData - Image data object
+   * @param {string} imageData.imageData - Base64 image data
+   * @param {string} imageData.imageName - Image name
+   * @param {boolean} imageData.isFinal - Is this a final image
+   * @param {string} imageData.description - Image description
+   * @returns {Promise<Object>} - Uploaded image data
+   */
+  uploadBase64Image: async (reportId, imageData) => {
+    try {
+      console.log('📸 [Pre-Visit] Uploading base64 image for report:', reportId);
+      const response = await preVisitApiClient.post(
+        `/previsit-reports/images/upload-base64/${reportId}`,
+        imageData
+      );
+      console.log('✅ [Pre-Visit] Base64 image uploaded:', response.data?.id);
+      return response.data;
+    } catch (error) {
+      console.error('❌ [Pre-Visit] Error uploading base64 image:', error);
+      throw error.response?.data || 'Failed to upload image';
     }
-    const data = await response.json();
-    return data.exists || false;
-  } catch (error) {
-    console.error('Error checking email:', error);
-    return false;
-  }
+  },
+
+  /**
+   * Get all images for a report - GET /previsit-reports/images/report/{reportId}
+   * @param {number} reportId - Report ID
+   * @returns {Promise<Array>} - List of images
+   */
+  getImagesByReport: async (reportId) => {
+    try {
+      console.log('🖼️ [Pre-Visit] Fetching images for report:', reportId);
+      const response = await preVisitApiClient.get(`/previsit-reports/images/report/${reportId}`);
+      console.log('✅ [Pre-Visit] Images fetched:', response.data?.length || 0);
+      return response.data || [];
+    } catch (error) {
+      console.error('❌ [Pre-Visit] Error fetching images:', error);
+      return [];
+    }
+  },
+
+  /**
+   * Get final images for a report - GET /previsit-reports/images/report/{reportId}/final
+   * @param {number} reportId - Report ID
+   * @returns {Promise<Array>} - List of final images
+   */
+  getFinalImagesByReport: async (reportId) => {
+    try {
+      console.log('⭐ [Pre-Visit] Fetching final images for report:', reportId);
+      const response = await preVisitApiClient.get(`/previsit-reports/images/report/${reportId}/final`);
+      console.log('✅ [Pre-Visit] Final images fetched:', response.data?.length || 0);
+      return response.data || [];
+    } catch (error) {
+      console.error('❌ [Pre-Visit] Error fetching final images:', error);
+      return [];
+    }
+  },
+
+  /**
+   * Delete an image - DELETE /previsit-reports/images/{imageId}
+   * @param {number} imageId - Image ID
+   * @returns {Promise<boolean>} - Success status
+   */
+  deleteImage: async (imageId) => {
+    try {
+      console.log('🗑️ [Pre-Visit] Deleting image:', imageId);
+      await preVisitApiClient.delete(`/previsit-reports/images/${imageId}`);
+      console.log('✅ [Pre-Visit] Image deleted:', imageId);
+      return true;
+    } catch (error) {
+      console.error('❌ [Pre-Visit] Error deleting image:', error);
+      throw error.response?.data || 'Failed to delete image';
+    }
+  },
+
+  /**
+   * Delete all images for a report - DELETE /previsit-reports/images/report/{reportId}
+   * @param {number} reportId - Report ID
+   * @returns {Promise<boolean>} - Success status
+   */
+  deleteAllImages: async (reportId) => {
+    try {
+      console.log('🗑️ [Pre-Visit] Deleting all images for report:', reportId);
+      await preVisitApiClient.delete(`/previsit-reports/images/report/${reportId}`);
+      console.log('✅ [Pre-Visit] All images deleted for report:', reportId);
+      return true;
+    } catch (error) {
+      console.error('❌ [Pre-Visit] Error deleting all images:', error);
+      throw error.response?.data || 'Failed to delete images';
+    }
+  },
+
+  /**
+   * Update image details - PUT /previsit-reports/images/{imageId}
+   * @param {number} imageId - Image ID
+   * @param {Object} updates - Update data
+   * @param {string} updates.description - New description
+   * @param {boolean} updates.isFinal - New final status
+   * @returns {Promise<Object>} - Updated image data
+   */
+  updateImage: async (imageId, updates) => {
+    try {
+      console.log('✏️ [Pre-Visit] Updating image:', imageId);
+      const response = await preVisitApiClient.put(`/previsit-reports/images/${imageId}`, updates);
+      console.log('✅ [Pre-Visit] Image updated:', imageId);
+      return response.data;
+    } catch (error) {
+      console.error('❌ [Pre-Visit] Error updating image:', error);
+      throw error.response?.data || 'Failed to update image';
+    }
+  },
+
+  /**
+   * Get image count for a report - GET /previsit-reports/images/count/{reportId}
+   * @param {number} reportId - Report ID
+   * @returns {Promise<number>} - Number of images
+   */
+  getImageCount: async (reportId) => {
+    try {
+      console.log('📊 [Pre-Visit] Fetching image count for report:', reportId);
+      const response = await preVisitApiClient.get(`/previsit-reports/images/count/${reportId}`);
+      return response.data || 0;
+    } catch (error) {
+      console.error('❌ [Pre-Visit] Error fetching image count:', error);
+      return 0;
+    }
+  },
+
+  /**
+   * Get image by ID - GET /previsit-reports/images/{imageId}
+   * @param {number} imageId - Image ID
+   * @returns {Promise<Object>} - Image data
+   */
+  getImageById: async (imageId) => {
+    try {
+      console.log('🔍 [Pre-Visit] Fetching image:', imageId);
+      const response = await preVisitApiClient.get(`/previsit-reports/images/${imageId}`);
+      return response.data;
+    } catch (error) {
+      console.error('❌ [Pre-Visit] Error fetching image:', error);
+      throw error.response?.data || 'Failed to fetch image';
+    }
+  },
 };
 
 export default preVisitReportService;
