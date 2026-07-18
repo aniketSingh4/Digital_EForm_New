@@ -3,9 +3,12 @@ package com.florosense.pre_visit_report.serviceImpl;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.florosense.pre_visit_report.dto.ChecklistItemDTO;
 import com.florosense.pre_visit_report.dto.PreVisitReportDTO;
+import com.florosense.pre_visit_report.dto.SiteImageDTO;
 import com.florosense.pre_visit_report.entity.PreVisitReport;
+import com.florosense.pre_visit_report.entity.SiteImage;
 import com.florosense.pre_visit_report.exception.ResourceNotFoundException;
 import com.florosense.pre_visit_report.repository.PreVisitReportRepository;
+import com.florosense.pre_visit_report.repository.SiteImageRepository;
 import com.florosense.pre_visit_report.service.PreVisitReportService;
 
 import lombok.RequiredArgsConstructor;
@@ -13,6 +16,10 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -26,6 +33,7 @@ import java.util.stream.Collectors;
 public class PreVisitReportServiceImpl implements PreVisitReportService {
 
     private final PreVisitReportRepository repository;
+    private final SiteImageRepository siteImageRepository;
     private final ObjectMapper objectMapper;
 
     private static final List<String> CHECKLIST_FIELDS = Arrays.asList(
@@ -36,6 +44,12 @@ public class PreVisitReportServiceImpl implements PreVisitReportService {
         "Confirm LED Installation Location",
         "Discuss Client Scope of Work"
     );
+
+    private static final String UPLOAD_DIR = "uploads/previsit-images/";
+
+    // ========================================
+    // EXISTING METHODS
+    // ========================================
 
     @Override
     public PreVisitReportDTO createReport(PreVisitReportDTO reportDTO) {
@@ -137,6 +151,10 @@ public class PreVisitReportServiceImpl implements PreVisitReportService {
         if (!repository.existsById(id)) {
             throw new ResourceNotFoundException("Report not found with ID: " + id);
         }
+        
+        // Delete all associated images first
+        deleteAllImagesByReportId(id);
+        
         repository.deleteById(id);
         log.info("Pre-visit report deleted with ID: {}", id);
     }
@@ -147,8 +165,130 @@ public class PreVisitReportServiceImpl implements PreVisitReportService {
         return repository.existsByEmailId(emailId);
     }
 
-    // Conversion Methods
-    private PreVisitReport convertToEntity(PreVisitReportDTO dto) {
+    @Override
+    @Transactional(readOnly = true)
+    public long getReportCount() {
+        return repository.count();
+    }
+
+    // ========================================
+    // IMAGE MANAGEMENT METHODS
+    // ========================================
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<SiteImageDTO> getImagesByReportId(Long reportId) {
+        log.info("Fetching images for report ID: {}", reportId);
+        
+        // Verify report exists
+        if (!repository.existsById(reportId)) {
+            throw new ResourceNotFoundException("Report not found with ID: " + reportId);
+        }
+        
+        List<SiteImage> images = siteImageRepository.findByReportId(reportId);
+        return images.stream()
+            .map(this::convertToSiteImageDTO)
+            .collect(Collectors.toList());
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<SiteImageDTO> getFinalImagesByReportId(Long reportId) {
+        log.info("Fetching final images for report ID: {}", reportId);
+        
+        // Verify report exists
+        if (!repository.existsById(reportId)) {
+            throw new ResourceNotFoundException("Report not found with ID: " + reportId);
+        }
+        
+        List<SiteImage> images = siteImageRepository.findByReportIdAndIsFinal(reportId, true);
+        return images.stream()
+            .map(this::convertToSiteImageDTO)
+            .collect(Collectors.toList());
+    }
+
+    @Override
+    public void deleteImage(Long imageId) {
+        log.info("Deleting image with ID: {}", imageId);
+        
+        SiteImage image = siteImageRepository.findById(imageId)
+            .orElseThrow(() -> new ResourceNotFoundException("Image not found with ID: " + imageId));
+
+        // Delete file from disk
+        String fileName = image.getImageUrl().substring(image.getImageUrl().lastIndexOf("/") + 1);
+        Path filePath = Paths.get(UPLOAD_DIR + fileName);
+        if (Files.exists(filePath)) {
+            try {
+                Files.delete(filePath);
+                log.info("Deleted file: {}", fileName);
+            } catch (IOException e) {
+                log.error("Error deleting file: {}", fileName, e);
+            }
+        }
+
+        siteImageRepository.delete(image);
+        log.info("Image deleted with ID: {}", imageId);
+    }
+
+    @Override
+    public void deleteAllImagesByReportId(Long reportId) {
+        log.info("Deleting all images for report ID: {}", reportId);
+        
+        List<SiteImage> images = siteImageRepository.findByReportId(reportId);
+        
+        // Delete all files from disk
+        for (SiteImage image : images) {
+            String fileName = image.getImageUrl().substring(image.getImageUrl().lastIndexOf("/") + 1);
+            Path filePath = Paths.get(UPLOAD_DIR + fileName);
+            if (Files.exists(filePath)) {
+                try {
+                    Files.delete(filePath);
+                    log.info("Deleted file: {}", fileName);
+                } catch (IOException e) {
+                    log.error("Error deleting file: {}", fileName, e);
+                }
+            }
+        }
+        
+        siteImageRepository.deleteByReportId(reportId);
+        log.info("All images deleted for report ID: {}", reportId);
+    }
+
+    @Override
+    public SiteImageDTO updateImageDetails(Long imageId, String description, Boolean isFinal) {
+        log.info("Updating image details for ID: {}", imageId);
+        
+        SiteImage image = siteImageRepository.findById(imageId)
+            .orElseThrow(() -> new ResourceNotFoundException("Image not found with ID: " + imageId));
+
+        if (description != null) {
+            image.setDescription(description);
+        }
+        if (isFinal != null) {
+            image.setIsFinal(isFinal);
+        }
+
+        SiteImage updatedImage = siteImageRepository.save(image);
+        log.info("Image updated with ID: {}", imageId);
+        return convertToSiteImageDTO(updatedImage);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public long getImageCountByReportId(Long reportId) {
+        // Verify report exists
+        if (!repository.existsById(reportId)) {
+            throw new ResourceNotFoundException("Report not found with ID: " + reportId);
+        }
+        return siteImageRepository.countByReportId(reportId);
+    }
+
+    // ========================================
+    // CONVERSION METHODS
+    // ========================================
+
+    private PreVisitReport convertToEntity(PreVisitReportDTO dto) 
+    {
         PreVisitReport entity = new PreVisitReport();
         
         // Set basic details
@@ -178,41 +318,6 @@ public class PreVisitReportServiceImpl implements PreVisitReportService {
         }
 
         return entity;
-    }
-
-    private void setChecklistField(PreVisitReport entity, ChecklistItemDTO item) {
-        String fieldName = item.getFieldName();
-        Boolean status = item.getStatus();
-        String remark = item.getRemark();
-
-        if (fieldName == null) {
-            log.warn("Field name is null in checklist item");
-            return;
-        }
-
-        log.debug("Setting field: {} with status: {} and remark: {}", fieldName, status, remark);
-
-        if (fieldName.contains("Stabilized power supply")) {
-            entity.setStatusPowerSupply(status);
-            entity.setRemarkPowerSupply(remark);
-        } else if (fieldName.contains("Controller Mounting Structure")) {
-            entity.setStatusControllerMounting(status);
-            entity.setRemarkControllerMounting(remark);
-        } else if (fieldName.contains("Sensor Placement Location")) {
-            entity.setStatusSensorPlacement(status);
-            entity.setRemarkSensorPlacement(remark);
-        } else if (fieldName.contains("internet connectivity")) {
-            entity.setStatusInternetConnectivity(status);
-            entity.setRemarkInternetConnectivity(remark);
-        } else if (fieldName.contains("LED Installation")) {
-            entity.setStatusLedInstallation(status);
-            entity.setRemarkLedInstallation(remark);
-        } else if (fieldName.contains("Scope of Work")) {
-            entity.setStatusClientScope(status);
-            entity.setRemarkClientScope(remark);
-        } else {
-            log.warn("Unknown field name: {}", fieldName);
-        }
     }
 
     private PreVisitReportDTO convertToDTO(PreVisitReport entity) {
@@ -251,6 +356,14 @@ public class PreVisitReportServiceImpl implements PreVisitReportService {
             entity.getStatusClientScope(), entity.getRemarkClientScope());
         dto.setChecklist(checklist);
 
+        // ✅ NEW: Convert Site Images to DTO
+        if (entity.getSiteImages() != null && !entity.getSiteImages().isEmpty()) {
+            List<SiteImageDTO> imageDTOs = entity.getSiteImages().stream()
+                    .map(this::convertToSiteImageDTO)
+                    .collect(Collectors.toList());
+            dto.setSiteImages(imageDTOs);
+        }
+
         // Set audit fields
         dto.setCreatedAt(entity.getCreatedAt() != null ? 
             entity.getCreatedAt().toLocalDate() : null);
@@ -258,6 +371,56 @@ public class PreVisitReportServiceImpl implements PreVisitReportService {
             entity.getUpdatedAt().toLocalDate() : null);
 
         return dto;
+    }
+
+    // ✅ NEW: Convert SiteImage to SiteImageDTO
+    private SiteImageDTO convertToSiteImageDTO(SiteImage image) {
+        SiteImageDTO dto = new SiteImageDTO();
+        dto.setId(image.getId());
+        dto.setImageUrl(image.getImageUrl());
+        dto.setImageName(image.getImageName());
+        dto.setImageType(image.getImageType());
+        dto.setImageSize(image.getImageSize());
+        dto.setIsFinal(image.getIsFinal());
+        dto.setDescription(image.getDescription());
+        dto.setUploadedAt(image.getUploadedAt() != null ? 
+            image.getUploadedAt().toString() : null);
+        return dto;
+    }
+
+    private void setChecklistField(PreVisitReport entity, ChecklistItemDTO item) {
+        String fieldName = item.getFieldName();
+        Boolean status = item.getStatus();
+        String remark = item.getRemark();
+
+        if (fieldName == null) {
+            log.warn("Field name is null in checklist item");
+            return;
+        }
+
+        log.debug("Setting field: {} with status: {} and remark: {}", fieldName, status, remark);
+
+        if (fieldName.contains("Stabilized power supply")) {
+            entity.setStatusPowerSupply(status);
+            entity.setRemarkPowerSupply(remark);
+        } else if (fieldName.contains("Controller Mounting Structure")) {
+            entity.setStatusControllerMounting(status);
+            entity.setRemarkControllerMounting(remark);
+        } else if (fieldName.contains("Sensor Placement Location")) {
+            entity.setStatusSensorPlacement(status);
+            entity.setRemarkSensorPlacement(remark);
+        } else if (fieldName.contains("internet connectivity")) {
+            entity.setStatusInternetConnectivity(status);
+            entity.setRemarkInternetConnectivity(remark);
+        } else if (fieldName.contains("LED Installation")) {
+            entity.setStatusLedInstallation(status);
+            entity.setRemarkLedInstallation(remark);
+        } else if (fieldName.contains("Scope of Work")) {
+            entity.setStatusClientScope(status);
+            entity.setRemarkClientScope(remark);
+        } else {
+            log.warn("Unknown field name: {}", fieldName);
+        }
     }
 
     private void addChecklistItem(List<ChecklistItemDTO> list, String fieldName, 
@@ -295,10 +458,4 @@ public class PreVisitReportServiceImpl implements PreVisitReportService {
             }
         }
     }
-
-	@Override
-	public long getReportCount() 
-	{
-		return repository.count();
-	}
 }

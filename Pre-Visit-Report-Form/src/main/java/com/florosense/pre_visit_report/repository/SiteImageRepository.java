@@ -12,4 +12,5 @@ public interface SiteImageRepository extends JpaRepository<SiteImage, Long>
     List<SiteImage> findByReportId(Long reportId);
     List<SiteImage> findByReportIdAndIsFinal(Long reportId, Boolean isFinal);
     void deleteByReportId(Long reportId);
+    long countByReportId(Long reportId);
 }
