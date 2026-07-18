@@ -53,8 +53,10 @@ public class PreVisitReportDTO {
     @JsonProperty("checklist")
     private List<ChecklistItemDTO> checklist;
     
+    // ✅ NEW: Site images
+    @JsonProperty("siteImages")
+    private List<SiteImageDTO> siteImages;
+    
     private LocalDate createdAt;
     private LocalDate updatedAt;
-    
-    
 }

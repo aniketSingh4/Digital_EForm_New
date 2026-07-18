@@ -9,14 +9,15 @@ import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "pre_visit_reports")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class PreVisitReport 
-{
+public class PreVisitReport {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -85,6 +86,10 @@ public class PreVisitReport
     @Column(name = "noted_if_any", columnDefinition = "TEXT")
     private String notedIfAny;
 
+    // Images
+    @OneToMany(mappedBy = "report", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    private List<SiteImage> siteImages = new ArrayList<>();
+
     // Signatures
     @Column(name = "customer_signature", columnDefinition = "TEXT")
     private String customerSignature;
@@ -119,4 +124,15 @@ public class PreVisitReport
 
     @Column(name = "updated_by", length = 100)
     private String updatedBy;
+
+    // Helper methods for images
+    public void addSiteImage(SiteImage image) {
+        siteImages.add(image);
+        image.setReport(this);
+    }
+
+    public void removeSiteImage(SiteImage image) {
+        siteImages.remove(image);
+        image.setReport(null);
+    }
 }
