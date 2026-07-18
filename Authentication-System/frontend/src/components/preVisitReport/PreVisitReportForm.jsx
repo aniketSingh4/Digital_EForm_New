@@ -5,6 +5,7 @@ import preVisitReportService from "../../api/preVisitReportService";
 import "./PreVisitReport.css";
 import notificationService from '../../services/notificationService';
 import { toast } from 'react-toastify';
+import { FaSpinner, FaFileImage, FaTrash, FaUpload } from 'react-icons/fa';
 
 const CHECKLIST_ITEMS = [
   { id: 1, fieldName: 'Confirm Availability of Stabilized power supply (230 V)' },
@@ -41,12 +42,15 @@ const PreVisitReportForm = ({ onSuccess, onCancel, initialData, isEdit = false }
     }))
   });
 
+  // Image states - only store file names and files
+  const [imageFiles, setImageFiles] = useState([]);
+  const [imageFileNames, setImageFileNames] = useState([]);
+
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitStatus, setSubmitStatus] = useState(null);
   const [emailExists, setEmailExists] = useState(false);
   const [loading, setLoading] = useState(false);
-  // 🔥 Store original email to check if it changed
   const [originalEmail, setOriginalEmail] = useState('');
 
   // Fetch data for edit mode
@@ -71,10 +75,8 @@ const PreVisitReportForm = ({ onSuccess, onCancel, initialData, isEdit = false }
 
       const data = await response.json();
       console.log('📥 Fetched report data for edit:', data);
-      
-      // 🔥 Store original email
+
       setOriginalEmail(data.emailId || '');
-      
       loadInitialData(data);
       toast.success('Report data loaded successfully');
 
@@ -89,13 +91,12 @@ const PreVisitReportForm = ({ onSuccess, onCancel, initialData, isEdit = false }
   };
 
   const loadInitialData = (data) => {
-    // Map checklist data from API to form format
     const checklist = CHECKLIST_ITEMS.map((item, index) => {
-      const apiItem = data.checklist?.find(c => 
-        c.fieldName === item.fieldName || 
+      const apiItem = data.checklist?.find(c =>
+        c.fieldName === item.fieldName ||
         c.fieldName?.toLowerCase() === item.fieldName?.toLowerCase()
       );
-      
+
       return {
         fieldName: item.fieldName,
         status: apiItem?.status !== undefined ? apiItem.status : null,
@@ -121,18 +122,57 @@ const PreVisitReportForm = ({ onSuccess, onCancel, initialData, isEdit = false }
     });
   };
 
-  // 🔥 FIX: Check email existence excluding current report
+  // Handle image selection - only store file names
+  const handleImageSelect = (e) => {
+    const files = Array.from(e.target.files);
+    if (files.length === 0) return;
+
+    // Limit to 10 images
+    if (imageFiles.length + files.length > 10) {
+      toast.warning('Maximum 10 images allowed');
+      e.target.value = '';
+      return;
+    }
+
+    // Check file sizes (max 5MB each)
+    const oversizedFiles = files.filter(file => file.size > 5 * 1024 * 1024);
+    if (oversizedFiles.length > 0) {
+      toast.warning('Some images exceed 5MB limit. Please compress them and try again.');
+      e.target.value = '';
+      return;
+    }
+
+    // Store files and their names
+    setImageFiles(prev => [...prev, ...files]);
+    setImageFileNames(prev => [...prev, ...files.map(file => file.name)]);
+
+    e.target.value = '';
+    toast.success(`${files.length} image(s) selected`);
+  };
+
+  // Remove image from selection by index
+  const removeImage = (index) => {
+    setImageFiles(prev => prev.filter((_, i) => i !== index));
+    setImageFileNames(prev => prev.filter((_, i) => i !== index));
+  };
+
+  // Clear all images
+  const clearAllImages = () => {
+    setImageFiles([]);
+    setImageFileNames([]);
+    toast.info('All images cleared');
+  };
+
+  // Email check effect
   useEffect(() => {
     const checkEmail = async () => {
       const currentEmail = formData.emailId;
-      
-      // Skip if email is empty or invalid
+
       if (!currentEmail || !validateEmail(currentEmail)) {
         setEmailExists(false);
         return;
       }
 
-      // 🔥 If in edit mode and email hasn't changed, skip check
       if (isEditMode && originalEmail && currentEmail === originalEmail) {
         setEmailExists(false);
         setErrors(prev => {
@@ -144,7 +184,6 @@ const PreVisitReportForm = ({ onSuccess, onCancel, initialData, isEdit = false }
       }
 
       try {
-        // 🔥 Check email existence with excludeId parameter
         const exists = await preVisitReportService.checkEmailExists(currentEmail, isEditMode ? id : null);
         setEmailExists(exists);
         if (exists) {
@@ -203,6 +242,7 @@ const PreVisitReportForm = ({ onSuccess, onCancel, initialData, isEdit = false }
     }
   };
 
+  // Submit handler - Uploads images automatically on form submit
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsSubmitting(true);
@@ -223,7 +263,6 @@ const PreVisitReportForm = ({ onSuccess, onCancel, initialData, isEdit = false }
       return;
     }
 
-    // 🔥 FIX: Only check email exists if it's a new email (different from original)
     if (emailExists && formData.emailId !== originalEmail) {
       setSubmitStatus({
         type: 'error',
@@ -234,6 +273,7 @@ const PreVisitReportForm = ({ onSuccess, onCancel, initialData, isEdit = false }
     }
 
     try {
+      // Step 1: Create/Update the report
       const payload = {
         companyName: formData.companyName.trim(),
         siteAddress: formData.siteAddress.trim(),
@@ -254,43 +294,77 @@ const PreVisitReportForm = ({ onSuccess, onCancel, initialData, isEdit = false }
         technicianSignature: formData.technicianSignature.trim()
       };
 
-      console.log('📦 Final Payload:', payload);
+      console.log('📦 Report Payload:', payload);
 
-      let response;
+      let reportResponse;
       const apiUrl = 'http://localhost:8088/api/previsit-reports';
-      
+
       if (isEditMode && id) {
-        response = await fetch(`${apiUrl}/${id}`, {
+        reportResponse = await fetch(`${apiUrl}/${id}`, {
           method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-          },
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload)
         });
       } else {
-        response = await fetch(apiUrl, {
+        reportResponse = await fetch(apiUrl, {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload)
         });
       }
 
-      if (!response.ok) {
-        let errorMessage = `Failed to ${isEditMode ? 'update' : 'save'} report: ${response.status}`;
+      if (!reportResponse.ok) {
+        let errorMessage = `Failed to ${isEditMode ? 'update' : 'save'} report: ${reportResponse.status}`;
         try {
-          const errorData = await response.text();
-          if (errorData) {
-            errorMessage = errorData;
-          }
-        } catch (e) {
-          // Ignore parsing error
-        }
+          const errorData = await reportResponse.text();
+          if (errorData) errorMessage = errorData;
+        } catch (e) { }
         throw new Error(errorMessage);
       }
 
-      const result = await response.json();
+      const reportResult = await reportResponse.json();
+      const reportId = reportResult.id;
+
+      // Step 2: Upload images automatically after report is saved
+      if (imageFiles.length > 0) {
+        console.log(`📸 Uploading ${imageFiles.length} images for report ${reportId}`);
+        
+        let uploadSuccess = 0;
+        let uploadFailed = 0;
+
+        for (let i = 0; i < imageFiles.length; i++) {
+          const imageFormData = new FormData();
+          imageFormData.append('files', imageFiles[i]);
+          imageFormData.append('isFinal', 'false');
+          imageFormData.append('description', '');
+
+          try {
+            const uploadResponse = await fetch(
+              `http://localhost:8088/api/previsit-reports/images/upload/${reportId}`,
+              {
+                method: 'POST',
+                body: imageFormData
+              }
+            );
+
+            if (uploadResponse.ok) {
+              uploadSuccess++;
+            } else {
+              uploadFailed++;
+              console.warn(`Failed to upload image ${i + 1}`);
+            }
+          } catch (error) {
+            uploadFailed++;
+            console.error(`Error uploading image ${i + 1}:`, error);
+          }
+        }
+
+        console.log(`📸 Image upload complete: ${uploadSuccess} successful, ${uploadFailed} failed`);
+        
+        if (uploadFailed > 0) {
+          toast.warning(`${uploadSuccess} images uploaded successfully, ${uploadFailed} failed.`);
+        }
+      }
 
       setSubmitStatus({
         type: 'success',
@@ -301,7 +375,7 @@ const PreVisitReportForm = ({ onSuccess, onCancel, initialData, isEdit = false }
 
       setTimeout(() => {
         if (onSuccess) {
-          onSuccess(result);
+          onSuccess(reportResult);
         }
         if (!isEditMode) {
           setFormData({
@@ -324,6 +398,7 @@ const PreVisitReportForm = ({ onSuccess, onCancel, initialData, isEdit = false }
               displayName: item.fieldName
             }))
           });
+          clearAllImages();
           setEmailExists(false);
           setOriginalEmail('');
         } else {
@@ -334,9 +409,9 @@ const PreVisitReportForm = ({ onSuccess, onCancel, initialData, isEdit = false }
 
     } catch (error) {
       console.error('Error saving report:', error);
-      
+
       let errorMessage = error.message || 'Failed to save report. Please try again.';
-      
+
       if (errorMessage.includes('409') || errorMessage.includes('already exists')) {
         errorMessage = 'A report with this data already exists. Please check your entries.';
       } else if (errorMessage.includes('400')) {
@@ -344,7 +419,7 @@ const PreVisitReportForm = ({ onSuccess, onCancel, initialData, isEdit = false }
       } else if (errorMessage.includes('500')) {
         errorMessage = 'Server error. Please try again later.';
       }
-      
+
       setSubmitStatus({
         type: 'error',
         message: errorMessage
@@ -573,6 +648,70 @@ const PreVisitReportForm = ({ onSuccess, onCancel, initialData, isEdit = false }
           </div>
         </div>
 
+        {/* Site Images Section - Only File Names */}
+        <div className="form-section">
+          <div className="section-title">
+            <span className="section-icon">📸</span>
+            <h3>Site Images <span className="optional">(Optional)</span></h3>
+            <span className="image-hint">(Uploaded automatically on submit)</span>
+          </div>
+
+          <div className="image-upload-wrapper">
+            {/* File Selection */}
+            <div className="image-upload-dropzone">
+              <input
+                id="imageUploadInput"
+                type="file"
+                multiple
+                accept="image/*"
+                onChange={handleImageSelect}
+                className="image-file-input"
+              />
+              <label htmlFor="imageUploadInput" className="image-upload-label">
+                <FaUpload className="upload-icon" />
+                <span>Click to select site images</span>
+                <span className="upload-subtext">JPG, PNG, GIF (Max 5MB each, max 10 images)</span>
+              </label>
+            </div>
+
+            {/* File Names List */}
+            {imageFileNames.length > 0 && (
+              <div className="file-list-container">
+                <div className="file-list-header">
+                  <span className="file-list-title">
+                    <FaFileImage className="file-icon" />
+                    {imageFileNames.length} file(s) selected
+                  </span>
+                  <button
+                    type="button"
+                    className="clear-files-btn"
+                    onClick={clearAllImages}
+                  >
+                    Clear All
+                  </button>
+                </div>
+                <ul className="file-list">
+                  {imageFileNames.map((fileName, index) => (
+                    <li key={index} className="file-item">
+                      <span className="file-name">
+                        <FaFileImage className="file-item-icon" />
+                        {fileName}
+                      </span>
+                      <button
+                        type="button"
+                        className="remove-file-btn"
+                        onClick={() => removeImage(index)}
+                      >
+                        ✕
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </div>
+        </div>
+
         {/* Signatures */}
         <div className="form-section">
           <div className="section-title">
@@ -644,8 +783,19 @@ const PreVisitReportForm = ({ onSuccess, onCancel, initialData, isEdit = false }
           <button type="button" className="btn-cancel" onClick={handleBack}>
             Cancel
           </button>
-          <button type="submit" disabled={isSubmitting || (emailExists && formData.emailId !== originalEmail)} className="btn-submit">
-            {isSubmitting ? 'Saving...' : (isEditMode ? 'Update Report' : 'Submit Report')}
+          <button
+            type="submit"
+            disabled={isSubmitting || (emailExists && formData.emailId !== originalEmail)}
+            className="btn-submit"
+          >
+            {isSubmitting ? (
+              <>
+                <FaSpinner className="spinning" />
+                {imageFiles.length > 0 ? 'Uploading Images...' : 'Saving...'}
+              </>
+            ) : (
+              isEditMode ? 'Update Report' : 'Submit Report'
+            )}
           </button>
         </div>
       </form>
@@ -706,6 +856,21 @@ const PreVisitReportForm = ({ onSuccess, onCancel, initialData, isEdit = false }
           font-size: 12px;
           margin-top: 4px;
           display: block;
+        }
+        .optional {
+          color: #6b7280;
+          font-size: 14px;
+          font-weight: 400;
+        }
+        .image-hint {
+          color: #94a3b8;
+          font-size: 12px;
+          font-weight: 400;
+          margin-left: 8px;
+        }
+        .spinning {
+          animation: spin 1s linear infinite;
+          margin-right: 8px;
         }
         @keyframes spin {
           from { transform: rotate(0deg); }

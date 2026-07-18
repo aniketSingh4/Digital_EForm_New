@@ -36,7 +36,7 @@
 }
 
 /* ========================================
-   MAIN CONTAINER - FIXED
+   MAIN CONTAINER
    ======================================== */
 .pre-visit-form-container {
   max-width: 1000px;
@@ -84,7 +84,7 @@
 }
 
 /* ========================================
-   FORM - FIXED
+   FORM
    ======================================== */
 .pre-visit-form {
   background: white;
@@ -412,6 +412,173 @@
 }
 
 /* ========================================
+   IMAGE UPLOAD - FILE NAMES ONLY
+   ======================================== */
+
+.image-upload-wrapper {
+  width: 100%;
+}
+
+.image-upload-dropzone {
+  position: relative;
+  border: 2px dashed #d1d5db;
+  border-radius: 12px;
+  padding: 25px 20px;
+  background: #fafbfc;
+  transition: all 0.3s ease;
+  cursor: pointer;
+}
+
+.image-upload-dropzone:hover {
+  border-color: #4F46E5;
+  background: #f8faff;
+}
+
+.image-file-input {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.image-upload-label {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  color: #6b7280;
+}
+
+.image-upload-label .upload-icon {
+  font-size: 32px;
+  color: #4F46E5;
+}
+
+.image-upload-label .upload-text {
+  font-size: 14px;
+  font-weight: 500;
+  color: #1e293b;
+}
+
+.image-upload-label .upload-subtext {
+  font-size: 12px;
+  color: #9ca3af;
+}
+
+/* File List */
+.file-list-container {
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px solid #eef2f7;
+}
+
+.file-list-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.file-list-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+  color: #1e293b;
+  font-size: 14px;
+}
+
+.file-list-title .file-icon {
+  color: #4F46E5;
+  font-size: 16px;
+}
+
+.clear-files-btn {
+  background: none;
+  border: none;
+  color: #94a3b8;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  padding: 4px 12px;
+  border-radius: 6px;
+}
+
+.clear-files-btn:hover {
+  color: #ef4444;
+  background: #fef2f2;
+}
+
+.file-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.file-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 14px;
+  background: #f8fafc;
+  border-radius: 6px;
+  border: 1px solid #eef2f7;
+  transition: all 0.3s ease;
+}
+
+.file-item:hover {
+  background: #f1f5f9;
+  border-color: #d1d5db;
+}
+
+.file-name {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+  color: #1e293b;
+  font-weight: 500;
+  flex: 1;
+  overflow: hidden;
+}
+
+.file-name .file-item-icon {
+  color: #4F46E5;
+  font-size: 16px;
+  flex-shrink: 0;
+}
+
+.file-name .file-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.remove-file-btn {
+  background: none;
+  border: none;
+  color: #94a3b8;
+  cursor: pointer;
+  font-size: 16px;
+  padding: 2px 8px;
+  border-radius: 4px;
+  transition: all 0.3s ease;
+  flex-shrink: 0;
+}
+
+.remove-file-btn:hover {
+  color: #ef4444;
+  background: #fef2f2;
+}
+
+/* ========================================
    RESPONSIVE
    ======================================== */
 @media (max-width: 768px) {
@@ -455,6 +622,31 @@
   .pre-visit-form-page {
     padding: 12px;
   }
+
+  .image-upload-dropzone {
+    padding: 18px 14px;
+  }
+
+  .image-upload-label .upload-icon {
+    font-size: 28px;
+  }
+
+  .image-upload-label .upload-text {
+    font-size: 13px;
+  }
+
+  .file-list-header {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .file-item {
+    padding: 6px 12px;
+  }
+
+  .file-name {
+    font-size: 12px;
+  }
 }
 
 @media (max-width: 480px) {
@@ -473,6 +665,31 @@
 
   .remark-input {
     min-width: 100%;
+  }
+
+  .image-upload-label .upload-icon {
+    font-size: 24px;
+  }
+
+  .image-upload-label .upload-text {
+    font-size: 12px;
+  }
+
+  .image-upload-label .upload-subtext {
+    font-size: 11px;
+  }
+
+  .file-item {
+    padding: 5px 10px;
+  }
+
+  .file-name {
+    font-size: 11px;
+  }
+
+  .remove-file-btn {
+    font-size: 14px;
+    padding: 2px 6px;
   }
 }
 
