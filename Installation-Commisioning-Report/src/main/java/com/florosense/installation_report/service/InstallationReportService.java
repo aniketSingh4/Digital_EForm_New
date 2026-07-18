@@ -1,15 +1,17 @@
 package com.florosense.installation_report.service;
 
-
-
 import java.time.LocalDateTime;
 import java.util.List;
 
 import com.florosense.installation_report.dto.InstallationReportRequest;
 import com.florosense.installation_report.dto.InstallationReportResponse;
+import com.florosense.installation_report.entity.InstallationSiteImage;
 
 public interface InstallationReportService 
 {
+    // ========================================
+    // REPORT CRUD OPERATIONS
+    // ========================================
     
     InstallationReportResponse createReport(InstallationReportRequest request);
     
@@ -28,4 +30,19 @@ public interface InstallationReportService
     void deleteReport(Long id);
     
     String generateReportNumber();
+    
+    // ========================================
+    // IMAGE MANAGEMENT METHODS
+    // ========================================
+    List<InstallationSiteImage> getImagesByReportId(Long reportId);
+    
+    List<InstallationSiteImage> getFinalImagesByReportId(Long reportId);
+    
+    void deleteImage(Long imageId);
+    
+    void deleteAllImagesByReportId(Long reportId);
+    
+    InstallationSiteImage updateImageDetails(Long imageId, String description, Boolean isFinal);
+    
+    long getImageCountByReportId(Long reportId);
 }

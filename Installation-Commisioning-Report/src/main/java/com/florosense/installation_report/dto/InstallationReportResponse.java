@@ -1,6 +1,8 @@
 package com.florosense.installation_report.dto;
 
 import com.florosense.installation_report.entity.EquipmentDetail;
+import com.florosense.installation_report.entity.InstallationSiteImage;
+
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -43,6 +45,12 @@ public class InstallationReportResponse
     
     // Work Confirmation
     private Boolean workConfirmation;
+    
+ 
+    private String workActivityOthers;
+
+ 
+    private List<InstallationSiteImage> siteImages;
     
     // Customer & Technician Confirmation
     private String customerConfirmationName;
