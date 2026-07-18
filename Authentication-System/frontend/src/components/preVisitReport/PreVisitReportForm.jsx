@@ -457,7 +457,7 @@ const PreVisitReportForm = ({ onSuccess, onCancel, initialData, isEdit = false }
         <p>{isEditMode ? 'Update the details of the pre-visit report.' : 'Fill in the details below to create a new pre-visit report.'}</p>
         {isEditMode && (
           <div className="edit-mode-banner">
-            ✏️ Editing Mode - Report ID: #{id}
+            ✏️ Editing Mode - Report ID: FESPL_PVR_{id}
           </div>
         )}
       </div>

@@ -16,7 +16,8 @@ import java.util.List;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class InstallationReport {
+public class InstallationReport 
+{
     
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -78,6 +79,10 @@ public class InstallationReport {
     @Column(name = "safety_maintenance_explained")
     private Boolean safetyMaintenanceExplained = false;
     
+    // ✅ NEW: Others Work Activity
+    @Column(name = "work_activity_others", columnDefinition = "TEXT")
+    private String workActivityOthers;
+    
     // Remark
     @Column(name = "remark", length = 1000)
     private String remark;
@@ -99,6 +104,10 @@ public class InstallationReport {
     @Column(name = "technician_signature", length = 255)
     private String technicianSignature;
     
+    // ✅ NEW: Site Images - One-to-Many relationship
+    @OneToMany(mappedBy = "installationReport", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    private List<InstallationSiteImage> siteImages = new ArrayList<>();
+    
     // Audit Fields
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
@@ -107,4 +116,15 @@ public class InstallationReport {
     @UpdateTimestamp
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
+    
+    // ✅ Helper methods for images
+    public void addSiteImage(InstallationSiteImage image) {
+        siteImages.add(image);
+        image.setInstallationReport(this);
+    }
+    
+    public void removeSiteImage(InstallationSiteImage image) {
+        siteImages.remove(image);
+        image.setInstallationReport(null);
+    }
 }
