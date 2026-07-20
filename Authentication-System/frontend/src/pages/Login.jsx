@@ -110,10 +110,10 @@ export default function Login() {
 
             </form>
 
-            <p className="bottom-text">
+            {/* <p className="bottom-text">
                 Don't have an account?
                 <Link to="/signup"> Sign Up</Link>
-            </p>
+            </p> */}
 
         </AuthLayout>
 
