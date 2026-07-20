@@ -64,7 +64,7 @@ export default function Step5SignOff({ formData, setFormData }) {
                     fontWeight: '700',
                     letterSpacing: '-0.5px'
                 }}>
-                    ✍️ Sign Off
+                    Sign Off
                 </h2>
                 <p style={{
                     color: '#64748b',

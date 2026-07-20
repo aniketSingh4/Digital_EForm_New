@@ -336,7 +336,7 @@ export default function Step1BasicInfo({ formData, setFormData, onNext, onBackTo
                     <div className="info-card-value">
                         {report.serviceReportNo}
                     </div>
-                    <div className="info-card-hint">Auto-generated: PM-YYYY-XXXX</div>
+                    {/* <div className="info-card-hint">Auto-generated: PM-YYYY-XXXX</div> */}
                 </div>
                 <div className="info-card">
                     <div className="info-card-header">
@@ -346,9 +346,9 @@ export default function Step1BasicInfo({ formData, setFormData, onNext, onBackTo
                     <div className="info-card-value">
                         {report.serviceVisitNo || (report.sensorId ? 'Limit reached!' : 'Enter sensor ID to generate')}
                     </div>
-                    <div className="info-card-hint">
+                    {/* <div className="info-card-hint">
                         Format: FESPL_&#123;sensor_id&#125;_&#123;count&#125; | Max 6 visits
-                    </div>
+                    </div> */}
                 </div>
             </div>
 
@@ -463,9 +463,9 @@ export default function Step1BasicInfo({ formData, setFormData, onNext, onBackTo
                     {errors.pmVisitDate && (
                         <span className="error-message">{errors.pmVisitDate}</span>
                     )}
-                    <small className="help-text">
+                    {/* <small className="help-text">
                         📅 Current date: {todayDate} (You can change this date)
-                    </small>
+                    </small> */}
                 </div>
             </div>
 
