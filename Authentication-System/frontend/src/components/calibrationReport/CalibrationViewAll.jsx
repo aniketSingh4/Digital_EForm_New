@@ -919,7 +919,7 @@ const CalibrationViewAll = () => {
         } catch (error) {
             console.error("PDF Generation Error:", error);
             //toast.error(`❌ Failed to generate PDF: ${error.message}`);
-            notificationService.error('Failed to generate PDF');
+            //notificationService.error('Failed to generate PDF');
         } finally {
             setActionLoading(null);
         }

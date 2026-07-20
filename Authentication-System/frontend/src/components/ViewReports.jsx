@@ -162,7 +162,7 @@ export default function ViewReports() {
         return statusMap[status] || { icon: <FaClock />, label: status || 'Unknown', class: 'status-unknown' };
     };
 
-    // Transform summary data
+    // Transform summary data - FIXED
     const transformSummaryData = (backendData) => {
         let pmVisitDate = backendData.pmVisitDate || backendData.pmDate || backendData.visitDate || "-";
 
@@ -198,13 +198,21 @@ export default function ViewReports() {
             condition = backendData.siteConditionAfterPm;
         }
 
+        // ✅ FIX: Get sensorId from the backend data
+        // The API response shows "sensorId": "911" at the root level
+        let sensorId = backendData.sensorId || "-";
+
+        // Log for debugging
+        console.log("🔍 Sensor ID from API:", sensorId);
+        console.log("🔍 Full backend data:", backendData);
+
         return {
             id: backendData.id,
             serviceReportNo: backendData.serviceReportNo || "-",
             serviceVisitNo: backendData.serviceVisitNo || "-",
             clientName: backendData.clientName || "-",
             siteName: backendData.siteName || "-",
-            sensorId: backendData.sensorId || "-",
+            sensorId: sensorId,  // ✅ This should now capture the value
             pmVisitDate: pmVisitDate,
             engineerName: backendData.engineerName || "-",
             preventiveMaintenanceStatus: status,
@@ -235,11 +243,9 @@ export default function ViewReports() {
             }
         }
 
-        //FIXED: Extract status and condition from the summary object
         let status = "PENDING";
         let condition = "N/A";
 
-        // Check if summary exists and has the status fields
         if (backendData.summary) {
             if (backendData.summary.preventiveMaintenanceStatus) {
                 status = backendData.summary.preventiveMaintenanceStatus;
@@ -249,7 +255,6 @@ export default function ViewReports() {
             }
         }
 
-        // Also check root level as fallback (if they exist there)
         if (backendData.preventiveMaintenanceStatus) {
             status = backendData.preventiveMaintenanceStatus;
         }
@@ -257,7 +262,21 @@ export default function ViewReports() {
             condition = backendData.siteConditionAfterPm;
         }
 
-        // Extract signOff data
+        // ✅ FIX: Get sensorId from multiple possible locations
+        let sensorId = "-";
+        if (backendData.sensorId) {
+            sensorId = backendData.sensorId;
+        } else if (backendData.sensor_id) {
+            sensorId = backendData.sensor_id;
+        } else if (backendData.equipmentDetails && backendData.equipmentDetails.length > 0) {
+            const firstEquipment = backendData.equipmentDetails[0];
+            if (firstEquipment && firstEquipment.serialNo) {
+                sensorId = firstEquipment.serialNo;
+            } else if (firstEquipment && firstEquipment.serialNumber) {
+                sensorId = firstEquipment.serialNumber;
+            }
+        }
+
         let signOffData = backendData.signOff || backendData.signoff || null;
         if (signOffData && typeof signOffData === 'object') {
             if (signOffData.report && typeof signOffData.report === 'object') {
@@ -266,8 +285,7 @@ export default function ViewReports() {
             }
         }
 
-        console.log("🔍 Transforming full details - Status:", status, "Condition:", condition);
-        console.log("🔍 SignOff:", signOffData);
+        console.log("🔍 Transforming full details - Sensor ID:", sensorId);
 
         return {
             id: backendData.id || null,
@@ -275,7 +293,7 @@ export default function ViewReports() {
             serviceVisitNo: backendData.serviceVisitNo || "-",
             clientName: backendData.clientName || "-",
             siteName: backendData.siteName || "-",
-            sensorId: backendData.sensorId || "-",
+            sensorId: sensorId,  // ✅ Use the fixed sensorId
             pmVisitDate: pmVisitDate,
             engineerName: backendData.engineerName || "-",
             preventiveMaintenanceStatus: status,
