@@ -54,6 +54,9 @@ public class InstallationReportRequest
     private Boolean stableInternetConnection = false;
     private Boolean safetyMaintenanceExplained = false;
     
+    // ✅ NEW: Others Work Activity - Text field for custom work activities
+    private String workActivityOthers;
+    
     // Remark
     private String remark;
     

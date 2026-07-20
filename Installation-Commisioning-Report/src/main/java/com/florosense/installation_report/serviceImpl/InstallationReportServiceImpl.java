@@ -3,14 +3,20 @@ package com.florosense.installation_report.serviceImpl;
 import com.florosense.installation_report.dto.InstallationReportRequest;
 import com.florosense.installation_report.dto.InstallationReportResponse;
 import com.florosense.installation_report.entity.InstallationReport;
+import com.florosense.installation_report.entity.InstallationSiteImage;
 import com.florosense.installation_report.exception.ResourceNotFoundException;
 import com.florosense.installation_report.repository.InstallationReportRepository;
+import com.florosense.installation_report.repository.InstallationSiteImageRepository;
 import com.florosense.installation_report.service.InstallationReportService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.io.IOException;
+import java.nio.file.Files;  // ✅ FIX: Added missing import
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
@@ -22,10 +28,18 @@ import java.util.stream.Collectors;
 public class InstallationReportServiceImpl implements InstallationReportService {
     
     private final InstallationReportRepository reportRepository;
+    private final InstallationSiteImageRepository siteImageRepository;
     
+    private static final String UPLOAD_DIR = "uploads/installation-images/";
+
+    // ========================================
+    // REPORT CRUD OPERATIONS
+    // ========================================
+
     @Override
     @Transactional
-    public InstallationReportResponse createReport(InstallationReportRequest request) {
+    public InstallationReportResponse createReport(InstallationReportRequest request) 
+    {
         log.info("Creating new installation report");
         
         InstallationReport report = new InstallationReport();
@@ -56,6 +70,9 @@ public class InstallationReportServiceImpl implements InstallationReportService 
         report.setStablePowerSupply(request.getStablePowerSupply());
         report.setStableInternetConnection(request.getStableInternetConnection());
         report.setSafetyMaintenanceExplained(request.getSafetyMaintenanceExplained());
+        
+        // NEW: Others Work Activity
+        report.setWorkActivityOthers(request.getWorkActivityOthers());
         
         // Set Remark
         report.setRemark(request.getRemark());
@@ -107,6 +124,9 @@ public class InstallationReportServiceImpl implements InstallationReportService 
         existingReport.setStableInternetConnection(request.getStableInternetConnection());
         existingReport.setSafetyMaintenanceExplained(request.getSafetyMaintenanceExplained());
         
+        // NEW: Others Work Activity
+        existingReport.setWorkActivityOthers(request.getWorkActivityOthers());
+        
         // Update Remark
         existingReport.setRemark(request.getRemark());
         
@@ -126,6 +146,7 @@ public class InstallationReportServiceImpl implements InstallationReportService 
     }
     
     @Override
+    @Transactional(readOnly = true)
     public InstallationReportResponse getReportById(Long id) {
         log.info("Fetching installation report by ID: {}", id);
         
@@ -136,6 +157,7 @@ public class InstallationReportServiceImpl implements InstallationReportService 
     }
     
     @Override
+    @Transactional(readOnly = true)
     public InstallationReportResponse getReportByReportNo(String reportNo) {
         log.info("Fetching installation report by Report No: {}", reportNo);
         
@@ -146,6 +168,7 @@ public class InstallationReportServiceImpl implements InstallationReportService 
     }
     
     @Override
+    @Transactional(readOnly = true)
     public List<InstallationReportResponse> getAllReports() {
         log.info("Fetching all installation reports");
         
@@ -156,6 +179,7 @@ public class InstallationReportServiceImpl implements InstallationReportService 
     }
     
     @Override
+    @Transactional(readOnly = true)
     public List<InstallationReportResponse> getReportsByDateRange(LocalDateTime startDate, LocalDateTime endDate) {
         log.info("Fetching reports between {} and {}", startDate, endDate);
         
@@ -166,6 +190,7 @@ public class InstallationReportServiceImpl implements InstallationReportService 
     }
     
     @Override
+    @Transactional(readOnly = true)
     public List<InstallationReportResponse> getReportsByInstalledBy(String installedBy) {
         log.info("Fetching reports installed by: {}", installedBy);
         
@@ -182,6 +207,9 @@ public class InstallationReportServiceImpl implements InstallationReportService 
         
         InstallationReport report = reportRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Report not found with ID: " + id));
+        
+        // Delete all associated images first
+        deleteAllImagesByReportId(id);
         
         reportRepository.delete(report);
         log.info("Installation report deleted with ID: {}", id);
@@ -204,7 +232,120 @@ public class InstallationReportServiceImpl implements InstallationReportService 
         
         return reportNo;
     }
-    
+
+    // ========================================
+    // IMAGE MANAGEMENT METHODS
+    // ========================================
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<InstallationSiteImage> getImagesByReportId(Long reportId) {
+        log.info("Fetching images for installation report ID: {}", reportId);
+        
+        // Verify report exists
+        if (!reportRepository.existsById(reportId)) {
+            throw new ResourceNotFoundException("Report not found with ID: " + reportId);
+        }
+        
+        return siteImageRepository.findByInstallationReportId(reportId);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<InstallationSiteImage> getFinalImagesByReportId(Long reportId) {
+        log.info("Fetching final images for installation report ID: {}", reportId);
+        
+        // Verify report exists
+        if (!reportRepository.existsById(reportId)) {
+            throw new ResourceNotFoundException("Report not found with ID: " + reportId);
+        }
+        
+        return siteImageRepository.findByInstallationReportIdAndIsFinal(reportId, true);
+    }
+
+    @Override
+    @Transactional
+    public void deleteImage(Long imageId) {
+        log.info("Deleting image with ID: {}", imageId);
+        
+        InstallationSiteImage image = siteImageRepository.findById(imageId)
+                .orElseThrow(() -> new ResourceNotFoundException("Image not found with ID: " + imageId));
+
+        // Delete file from disk
+        String fileName = image.getImageUrl().substring(image.getImageUrl().lastIndexOf("/") + 1);
+        Path filePath = Paths.get(UPLOAD_DIR + fileName);
+        if (Files.exists(filePath)) {
+            try {
+                Files.delete(filePath);
+                log.info("Deleted file: {}", fileName);
+            } catch (IOException e) {
+                log.error("Error deleting file: {}", fileName, e);
+            }
+        }
+
+        siteImageRepository.delete(image);
+        log.info("Image deleted with ID: {}", imageId);
+    }
+
+    @Override
+    @Transactional
+    public void deleteAllImagesByReportId(Long reportId) {
+        log.info("Deleting all images for installation report ID: {}", reportId);
+        
+        List<InstallationSiteImage> images = siteImageRepository.findByInstallationReportId(reportId);
+        
+        // Delete all files from disk
+        for (InstallationSiteImage image : images) {
+            String fileName = image.getImageUrl().substring(image.getImageUrl().lastIndexOf("/") + 1);
+            Path filePath = Paths.get(UPLOAD_DIR + fileName);
+            if (Files.exists(filePath)) {
+                try {
+                    Files.delete(filePath);
+                    log.info("Deleted file: {}", fileName);
+                } catch (IOException e) {
+                    log.error("Error deleting file: {}", fileName, e);
+                }
+            }
+        }
+        
+        siteImageRepository.deleteByInstallationReportId(reportId);
+        log.info("All images deleted for installation report ID: {}", reportId);
+    }
+
+    @Override
+    @Transactional
+    public InstallationSiteImage updateImageDetails(Long imageId, String description, Boolean isFinal) {
+        log.info("Updating image details for ID: {}", imageId);
+        
+        InstallationSiteImage image = siteImageRepository.findById(imageId)
+                .orElseThrow(() -> new ResourceNotFoundException("Image not found with ID: " + imageId));
+
+        if (description != null) {
+            image.setDescription(description);
+        }
+        if (isFinal != null) {
+            image.setIsFinal(isFinal);
+        }
+
+        InstallationSiteImage updatedImage = siteImageRepository.save(image);
+        log.info("Image updated with ID: {}", imageId);
+        return updatedImage;
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public long getImageCountByReportId(Long reportId) {
+        // Verify report exists
+        if (!reportRepository.existsById(reportId)) {
+            throw new ResourceNotFoundException("Report not found with ID: " + reportId);
+        }
+        return siteImageRepository.countByInstallationReportId(reportId);
+    }
+
+    // ========================================
+    // CONVERSION METHODS
+    // ========================================
+
     private InstallationReportResponse convertToResponse(InstallationReport report) {
         InstallationReportResponse response = new InstallationReportResponse();
         
@@ -233,6 +374,9 @@ public class InstallationReportServiceImpl implements InstallationReportService 
         response.setStableInternetConnection(report.getStableInternetConnection());
         response.setSafetyMaintenanceExplained(report.getSafetyMaintenanceExplained());
         
+        // NEW: Others Work Activity
+        response.setWorkActivityOthers(report.getWorkActivityOthers());
+        
         // Remark
         response.setRemark(report.getRemark());
         
@@ -244,6 +388,11 @@ public class InstallationReportServiceImpl implements InstallationReportService 
         response.setCustomerSignature(report.getCustomerSignature());
         response.setTechnicianConfirmationName(report.getTechnicianConfirmationName());
         response.setTechnicianSignature(report.getTechnicianSignature());
+        
+        // NEW: Site Images
+        if (report.getSiteImages() != null && !report.getSiteImages().isEmpty()) {
+            response.setSiteImages(report.getSiteImages());
+        }
         
         // Audit Fields
         response.setCreatedAt(report.getCreatedAt());
