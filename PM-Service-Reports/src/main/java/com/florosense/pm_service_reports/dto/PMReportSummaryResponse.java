@@ -19,8 +19,19 @@ public class PMReportSummaryResponse
     private String engineerName;
 
     private LocalDate pmVisitDate;
+    
+    private String sensorId;
 
-    private PMStatus preventiveMaintenanceStatus;
+
+	private PMStatus preventiveMaintenanceStatus;
+	
+	public String getSensorId() {
+		return sensorId;
+	}
+
+	public void setSensorId(String sensorId) {
+		this.sensorId = sensorId;
+	}
 
     public PMReportSummaryResponse() {
     }
