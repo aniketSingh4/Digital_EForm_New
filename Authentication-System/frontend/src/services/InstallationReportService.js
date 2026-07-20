@@ -25,12 +25,12 @@ export const calibrationReportService = {
   // Create new calibration report
   createReport: async (reportData) => {
     try {
-      console.log('📤 Creating report at:', API_BASE_URL);
+      console.log('Creating report at:', API_BASE_URL);
       const response = await api.post('/', reportData);
-      console.log('✅ Report created:', response.data);
+      console.log('Report created:', response.data);
       return response.data;
     } catch (error) {
-      console.error('❌ Create error:', error);
+      console.error('Create error:', error);
       throw error.response?.data || error.message;
     }
   },
@@ -38,13 +38,13 @@ export const calibrationReportService = {
   // Get all calibration reports
   getAllReports: async () => {
     try {
-      console.log('📥 Fetching reports from:', API_BASE_URL);
+      console.log('Fetching reports from:', API_BASE_URL);
       const response = await api.get('/');
-      console.log('📦 Response status:', response.status);
-      console.log('📦 Response data:', response.data);
+      console.log('Response status:', response.status);
+      console.log('Response data:', response.data);
       return response.data;
     } catch (error) {
-      console.error('❌ Fetch error:', error);
+      console.error('Fetch error:', error);
       throw error.response?.data || error.message;
     }
   },

@@ -63,16 +63,16 @@ const getDetailedReportMessage = (action, reportData = {}) => {
 
   switch (action) {
     case NOTIFICATION_TYPES.REPORT_CREATED:
-      message = `📄 ${typeLabel} ${namePart} created successfully`;
+      message = ` ${typeLabel} ${namePart} created successfully`;
       break;
     case NOTIFICATION_TYPES.REPORT_UPDATED:
-      message = `✏️ ${typeLabel} ${namePart} updated successfully`;
+      message = ` ${typeLabel} ${namePart} updated successfully`;
       break;
     case NOTIFICATION_TYPES.REPORT_DELETED:
-      message = `🗑️ ${typeLabel} ${namePart} deleted successfully`;
+      message = ` ${typeLabel} ${namePart} deleted successfully`;
       break;
     case NOTIFICATION_TYPES.BULK_DELETED:
-      message = `🗑️ ${reportName} ${typeLabel}s deleted successfully`;
+      message = ` ${reportName} ${typeLabel}s deleted successfully`;
       break;
     default:
       message = `${action} completed successfully!`;
@@ -238,7 +238,7 @@ class NotificationService {
     toast.success(finalMessage, {
       ...toastConfig,
       ...options,
-      icon: '✅',
+      icon: '',
       style: {
         background: 'linear-gradient(135deg, #10b981, #059669)',
         color: 'white',
@@ -272,7 +272,7 @@ class NotificationService {
     toast.error(message, {
       ...toastConfig,
       ...options,
-      icon: '❌',
+      icon: '',
       style: {
         background: 'linear-gradient(135deg, #ef4444, #dc2626)',
         color: 'white',
@@ -297,7 +297,7 @@ class NotificationService {
     toast.warning(message, {
       ...toastConfig,
       ...options,
-      icon: '⚠️',
+      icon: '',
       style: {
         background: 'linear-gradient(135deg, #f59e0b, #d97706)',
         color: 'white',
@@ -328,7 +328,7 @@ class NotificationService {
       toast.info(message, {
         ...toastConfig,
         ...options,
-        icon: '👋',
+        icon: '',
         style: {
           background: 'linear-gradient(135deg, #8b5cf6, #7c3aed)',
           color: 'white',
@@ -363,7 +363,7 @@ class NotificationService {
     toast.info(message, {
       ...toastConfig,
       ...options,
-      icon: 'ℹ️',
+      icon: '',
       style: {
         background: 'linear-gradient(135deg, #3b82f6, #2563eb)',
         color: 'white',
@@ -385,7 +385,7 @@ class NotificationService {
 
   // Welcome notification
   welcome(userName = '') {
-    this.info(`👋 Welcome${userName ? ` ${userName}` : ''}! Your reports are loading...`, {
+    this.info(`Welcome${userName ? ` ${userName}` : ''}! Your reports are loading...`, {
       type: 'welcome',
       noAutoClose: true,
       autoClose: 4000,
@@ -395,7 +395,7 @@ class NotificationService {
   // Login success notification
   loginSuccess(userName = '') {
     if (this.hasShownWelcome) return;
-    this.info(`🔐 Welcome back${userName ? ` ${userName}` : ''}!`, {
+    this.info(`Welcome back${userName ? ` ${userName}` : ''}!`, {
       type: 'welcome',
       noAutoClose: true,
       autoClose: 4000,
@@ -497,7 +497,7 @@ class NotificationService {
     toast(message, {
       ...toastConfig,
       ...options,
-      icon: '🔔',
+      icon: '',
       style: {
         background: 'linear-gradient(135deg, #6b7280, #4b5563)',
         color: 'white',

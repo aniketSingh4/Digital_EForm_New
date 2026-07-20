@@ -8,11 +8,11 @@ export const calibrationReportService = {
     async createReport(data) {
         try {
             const response = await axios.post(API_URL, data);
-            console.log('✅ API Response:', response.data);
-            // ✅ Your API returns the DTO directly in response.data
+            //console.log('API Response:', response.data);
+            //Your API returns the DTO directly in response.data
             return response.data;
         } catch (error) {
-            console.error('❌ Error creating report:', error);
+            console.error('Error creating report:', error);
             throw error;
         }
     },
@@ -23,7 +23,7 @@ export const calibrationReportService = {
             const response = await axios.put(`${API_URL}/${id}`, data);
             return response.data;
         } catch (error) {
-            console.error('❌ Error updating report:', error);
+            console.error('Error updating report:', error);
             throw error;
         }
     },
@@ -34,7 +34,7 @@ export const calibrationReportService = {
             const response = await axios.get(`${API_URL}/${id}`);
             return response.data;
         } catch (error) {
-            console.error('❌ Error fetching report:', error);
+            console.error('Error fetching report:', error);
             throw error;
         }
     },
@@ -45,7 +45,7 @@ export const calibrationReportService = {
             const response = await axios.get(API_URL);
             return response.data;
         } catch (error) {
-            console.error('❌ Error fetching reports:', error);
+            console.error('Error fetching reports:', error);
             throw error;
         }
     },
@@ -56,7 +56,7 @@ export const calibrationReportService = {
             const response = await axios.delete(`${API_URL}/${id}`);
             return response.data;
         } catch (error) {
-            console.error('❌ Error deleting report:', error);
+            console.error('Error deleting report:', error);
             throw error;
         }
     }
