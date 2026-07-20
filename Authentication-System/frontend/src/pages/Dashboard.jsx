@@ -703,9 +703,7 @@ export default function Dashboard() {
                 </div>
             </div>
 
-            {/* ============================================ */}
             {/* SUPPORT MODAL */}
-            {/* ============================================ */}
             {showSupportModal && (
                 <div className="modal-overlay" onClick={closeSupportModal}>
                     <div className="modal-content" onClick={(e) => e.stopPropagation()}>
@@ -812,9 +810,8 @@ export default function Dashboard() {
                 </div>
             )}
 
-            {/* ============================================ */}
+
             {/* DOCUMENTATION MODAL */}
-            {/* ============================================ */}
             {showDocsModal && (
                 <div className="modal-overlay" onClick={closeDocsModal}>
                     <div className="modal-content" onClick={(e) => e.stopPropagation()}>
