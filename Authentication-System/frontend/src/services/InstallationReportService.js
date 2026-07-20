@@ -1,8 +1,8 @@
 // src/services/calibrationReportService.js
 import axios from 'axios';
 
-// ✅ FIXED: Use the correct port (8087)
-const API_BASE_URL = 'http://localhost:8087/api/calibration-reports';
+//FIXED: Use the correct port (8086)
+const API_BASE_URL = 'http://localhost:8086/api/installation-reports';
 
 // Create axios instance
 const api = axios.create({

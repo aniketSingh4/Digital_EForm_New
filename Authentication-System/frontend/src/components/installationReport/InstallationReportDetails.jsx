@@ -23,12 +23,17 @@ import {
     FaHistory,
     FaSpinner,
     FaInfoCircle,
-    FaFileSignature
+    FaFileSignature,
+    FaImage,
+    FaDownload,
+    FaEye,
+    FaTrash
 } from 'react-icons/fa';
 import notificationService from '../../services/notificationService';
 import './InstallationReportDetails.css';
 
-const API_BASE_URL = 'http://localhost:8086/api/reports';
+const API_BASE_URL = 'http://localhost:8086/api/installation-reports';
+const IMAGE_BASE_URL = 'http://localhost:8086';
 
 const InstallationReportDetails = () => {
     const { id } = useParams();
@@ -36,6 +41,8 @@ const InstallationReportDetails = () => {
     const [report, setReport] = useState(null);
     const [loading, setLoading] = useState(true);
     const [actionLoading, setActionLoading] = useState(null);
+    const [showLightbox, setShowLightbox] = useState(false);
+    const [selectedImage, setSelectedImage] = useState(null);
 
     useEffect(() => {
         fetchReportDetails();
@@ -47,7 +54,6 @@ const InstallationReportDetails = () => {
             const response = await axios.get(`${API_BASE_URL}/${id}`);
             setReport(response.data);
         } catch (error) {
-            //toast.error('Error fetching report details');
             notificationService.error('Failed to load Installation Report');
             navigate('/installation-reports');
         } finally {
@@ -82,10 +88,8 @@ const InstallationReportDetails = () => {
             setActionLoading('pdf');
             await new Promise(resolve => setTimeout(resolve, 1500));
             notificationService.pdfGenerated(report?.reportNo || 'Installation Report');
-            //toast.success('PDF generated successfully!');
         } catch (error) {
             notificationService.error('Failed to generate PDF');
-            //toast.error('Failed to generate PDF');
         } finally {
             setActionLoading(null);
         }
@@ -101,6 +105,49 @@ const InstallationReportDetails = () => {
 
     const handleBack = () => {
         navigate('/installation-reports');
+    };
+
+    const handleDownloadImage = (imageUrl, imageName) => {
+        const link = document.createElement('a');
+        link.href = imageUrl;
+        link.download = imageName || 'site-image.jpg';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    };
+
+    const openLightbox = (image) => {
+        setSelectedImage(image);
+        setShowLightbox(true);
+    };
+
+    const closeLightbox = () => {
+        setShowLightbox(false);
+        setSelectedImage(null);
+    };
+
+
+
+    // ✅ Updated getFullImageUrl function
+    const getFullImageUrl = (imageUrl) => {
+        if (!imageUrl) return null;
+
+        // If it's already a full URL, return as is
+        if (imageUrl.startsWith('http://') || imageUrl.startsWith('https://')) {
+            return imageUrl;
+        }
+
+        // If it starts with '/uploads/', construct full URL
+        if (imageUrl.startsWith('/uploads/')) {
+            return `${IMAGE_BASE_URL}${imageUrl}`;
+        }
+
+        // If it doesn't start with '/', add it
+        if (!imageUrl.startsWith('/')) {
+            return `${IMAGE_BASE_URL}/uploads/installation-images/${imageUrl}`;
+        }
+
+        return `${IMAGE_BASE_URL}${imageUrl}`;
     };
 
     if (loading) {
@@ -137,7 +184,6 @@ const InstallationReportDetails = () => {
 
     const rightInfo = [
         { label: 'Installation Date', value: formatDate(report.date) },
-        //{ label: 'Site Name', value: report.siteName },
         { label: 'Site Address', value: report.siteAddress },
         { label: 'Status', value: report.workConfirmation }
     ];
@@ -155,9 +201,33 @@ const InstallationReportDetails = () => {
     ];
 
     const equipmentItems = report.equipmentDetails || [];
+    const siteImages = report.siteImages || [];
 
     return (
         <div className="installation-details-container">
+            {/* Lightbox Modal */}
+            {showLightbox && selectedImage && (
+                <div className="lightbox-overlay" onClick={closeLightbox}>
+                    <div className="lightbox-content" onClick={(e) => e.stopPropagation()}>
+                        <button className="lightbox-close" onClick={closeLightbox}>
+                            ✕
+                        </button>
+                        <img
+                            src={getFullImageUrl(selectedImage.imageUrl)}
+                            alt={selectedImage.imageName || 'Site image'}
+                            onError={(e) => {
+                                e.target.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="400" height="400" viewBox="0 0 400 400"%3E%3Crect width="400" height="400" fill="%23f3f4f6"/%3E%3Ctext x="200" y="200" text-anchor="middle" dy=".3em" fill="%239ca3af" font-size="20"%3ENo Image%3C/text%3E%3C/svg%3E';
+                            }}
+                        />
+                        <div className="lightbox-info">
+                            <span className="lightbox-name">{selectedImage.imageName || 'Image'}</span>
+                            {selectedImage.isFinal && <span className="lightbox-final">⭐ Final</span>}
+                            {selectedImage.description && <span className="lightbox-desc">{selectedImage.description}</span>}
+                        </div>
+                    </div>
+                </div>
+            )}
+
             {/* Header */}
             <div className="view-header">
                 <div className="header-left">
@@ -273,7 +343,23 @@ const InstallationReportDetails = () => {
                             </span>
                         </div>
                     ))}
+                    {/* ✅ NEW: Others Work Activity */}
+                    {report.workActivityOthers && (
+                        <div className="activity-item others-completed">
+                            <span>Others</span>
+                            <span className="activity-status status-success">
+                                <FaCheckCircle /> Done
+                            </span>
+                        </div>
+                    )}
                 </div>
+                {/* ✅ NEW: Others Work Activity Details */}
+                {report.workActivityOthers && (
+                    <div className="others-details">
+                        <h4>Other Work Activities:</h4>
+                        <p>{report.workActivityOthers}</p>
+                    </div>
+                )}
             </div>
 
             {/* Remark */}
@@ -283,6 +369,62 @@ const InstallationReportDetails = () => {
                         <h2><FaClipboardCheck className="section-icon" /> Remark</h2>
                     </div>
                     <div className="remark-content">{report.remark}</div>
+                </div>
+            )}
+
+            {/* ✅ NEW: Site Images Section */}
+            {siteImages.length > 0 && (
+                <div className="images-section">
+                    <div className="section-header">
+                        <h2><FaImage className="section-icon" /> Site Images</h2>
+                        <span className="image-count">{siteImages.length} image(s)</span>
+                    </div>
+                    <div className="images-grid">
+                        {siteImages.map((image, index) => (
+                            <div key={image.id || index} className="image-card">
+                                <img
+                                    src={getFullImageUrl(image.imageUrl)}
+                                    alt={image.imageName || 'Site image'}
+                                    className="image-thumb"
+                                    onClick={() => openLightbox(image)}
+                                    onError={(e) => {
+                                        e.target.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="200" height="200" viewBox="0 0 200 200"%3E%3Crect width="200" height="200" fill="%23f3f4f6"/%3E%3Ctext x="100" y="100" text-anchor="middle" dy=".3em" fill="%239ca3af" font-size="16"%3ENo Image%3C/text%3E%3C/svg%3E';
+                                    }}
+                                />
+                                <div className="image-overlay">
+                                    <div className="image-overlay-info">
+                                        {image.isFinal && <span className="image-final-badge">⭐ Final</span>}
+                                        <span className="image-name">{image.imageName || 'Image'}</span>
+                                        {image.description && (
+                                            <span className="image-description">{image.description}</span>
+                                        )}
+                                    </div>
+                                    <div className="image-overlay-actions">
+                                        <button
+                                            className="image-action-btn view"
+                                            onClick={() => openLightbox(image)}
+                                            title="View"
+                                        >
+                                            <FaEye />
+                                        </button>
+                                        <button
+                                            className="image-action-btn download"
+                                            onClick={() => handleDownloadImage(getFullImageUrl(image.imageUrl), image.imageName)}
+                                            title="Download"
+                                        >
+                                            <FaDownload />
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                    <div className="images-footer">
+                        <span>Total: {siteImages.length} image(s)</span>
+                        <span className="final-count">
+                            ⭐ {siteImages.filter(img => img.isFinal).length} final image(s)
+                        </span>
+                    </div>
                 </div>
             )}
 

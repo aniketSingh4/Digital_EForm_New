@@ -110,7 +110,7 @@ export default function Dashboard() {
                     fetch('http://localhost:8087/api/calibration-reports/count', {
                         headers: { 'Content-Type': 'application/json' }
                     }).then(res => res.ok ? res.json() : 0).catch(() => 0),
-                    fetch('http://localhost:8086/api/reports', {
+                    fetch('http://localhost:8086/api/installation-reports', {
                         headers: { 'Content-Type': 'application/json' }
                     }).then(res => res.ok ? res.json() : [])
                         .then(data => Array.isArray(data) ? data.length : 0)

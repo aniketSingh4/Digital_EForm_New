@@ -7,6 +7,8 @@ import lombok.NoArgsConstructor;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -106,6 +108,7 @@ public class InstallationReport
     
     // ✅ NEW: Site Images - One-to-Many relationship
     @OneToMany(mappedBy = "installationReport", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    @JsonIgnoreProperties("installationReport")
     private List<InstallationSiteImage> siteImages = new ArrayList<>();
     
     // Audit Fields
