@@ -49,9 +49,8 @@ public interface PMMapper
 
     SignOffDTO toSignOffDTO(PreventiveMaintenanceSignOff entity);
 
-    // FIXED: Removed siteConditionAfterPm mapping because it doesn't exist in PMReportSummaryResponse
+    @Mapping(target = "sensorId", source = "sensorId")
     @Mapping(target = "preventiveMaintenanceStatus", source = "preventiveMaintenanceStatus")
-    // @Mapping(target = "siteConditionAfterPm", source = "siteConditionAfterPm")  // COMMENT THIS LINE
     PMReportSummaryResponse toSummaryDTO(PreventiveMaintenanceReport entity);
 
     // Helper methods for custom mapping
