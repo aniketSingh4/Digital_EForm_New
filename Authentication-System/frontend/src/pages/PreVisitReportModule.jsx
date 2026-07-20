@@ -15,19 +15,17 @@ const PreVisitReportModule = () => {
     console.log("📍 PreVisitReportModule - Location:", location.pathname);
     
     if (location.pathname.includes('/new')) {
-      console.log("✅ New report mode");
+      console.log("New report mode");
       setIsFormMode(true);
       setEditingReport(null);
     } else if (id && location.pathname.includes('/edit')) {
-      console.log("✅ Edit report mode - ID:", id);
+      console.log("Edit report mode - ID:", id);
       setIsFormMode(true);
-      // Fetch report data for editing
-      // fetchReportData(id);
     } else if (id) {
-      console.log("✅ View report mode - ID:", id);
+      console.log("View report mode - ID:", id);
       setIsFormMode(false);
     } else {
-      console.log("✅ List view mode");
+      console.log("List view mode");
       setIsFormMode(false);
     }
   }, [location, id]);
