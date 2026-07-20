@@ -1,4 +1,3 @@
-// src/components/pmReport/PMReportWizard.jsx
 import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { FaArrowLeft, FaSpinner } from 'react-icons/fa';
@@ -47,7 +46,7 @@ export default function PMReportWizard() {
         }
     }, [isEditMode, id]);
 
-    // 🔥 NEW: Function to map API checklists to form structure
+    // NEW: Function to map API checklists to form structure
     const mapChecklistsToForm = (apiChecklists) => {
         if (!apiChecklists || !Array.isArray(apiChecklists)) {
             return [];
@@ -62,7 +61,7 @@ export default function PMReportWizard() {
         }));
     };
 
-    // 🔥 NEW: Function to populate inspection and technical data from checklists
+    // NEW: Function to populate inspection and technical data from checklists
     const populateStepDataFromChecklists = (checklists) => {
         const inspection = {
             physicalInspection: {},
@@ -119,9 +118,6 @@ export default function PMReportWizard() {
 
             const data = await response.json();
             
-            console.log('📥 Fetched report data:', data);
-            console.log('📋 Checklists from API:', data.checklists);
-            console.log('📋 Checklists length:', data.checklists?.length);
             
             // Store original immutable fields
             setOriginalImmutableFields({
@@ -130,14 +126,14 @@ export default function PMReportWizard() {
                 sensorId: data.sensorId || ''
             });
 
-            // 🔥 Transform checklists for the form
+            // Transform checklists for the form
             const transformedChecklists = mapChecklistsToForm(data.checklists);
             console.log('📋 Transformed checklists for form:', transformedChecklists);
 
-            // 🔥 Populate inspection and technical data from checklists
+            // Populate inspection and technical data from checklists
             const { inspection, technical } = populateStepDataFromChecklists(data.checklists);
-            console.log('🔧 Populated inspection:', inspection);
-            console.log('🔧 Populated technical:', technical);
+            console.log('Populated inspection:', inspection);
+            console.log('Populated technical:', technical);
 
             // Populate form data with fetched data
             setFormData({
@@ -171,10 +167,9 @@ export default function PMReportWizard() {
                 checklists: transformedChecklists // Store checklists directly
             });
 
-            console.log('✅ Form data populated successfully');
-            console.log('📋 Form checklists:', transformedChecklists.length);
+            console.log('Form data populated successfully');
+            console.log('Form checklists:', transformedChecklists.length);
             notificationService.success('Report data loaded successfully', { type: 'REPORT_VIEWED', identifier: id, reportName: data.serviceReportNo || '' });
-            //toast.success('Report data loaded successfully');
 
         } catch (error) {
             console.error('Error fetching report:', error);
@@ -276,8 +271,8 @@ export default function PMReportWizard() {
                 };
             }
 
-            console.log('📦 Final Payload:', payload);
-            console.log('📋 Checklists in payload:', payload.checklists?.length || 0);
+            console.log('Final Payload:', payload);
+            console.log('Checklists in payload:', payload.checklists?.length || 0);
 
             let response;
             let url = 'http://localhost:8090/api/pm_reports';
@@ -313,10 +308,8 @@ export default function PMReportWizard() {
             
             if (isEditMode) {
                 notificationService.reportUpdated('PM Report', id);
-                //toast.success('✅ Report updated successfully!');
             } else {
                 notificationService.reportCreated('PM Report', result.id);
-                //toast.success('✅ Report created successfully!');
             }
 
             // Navigate back to reports list
@@ -339,7 +332,6 @@ export default function PMReportWizard() {
             }
             
             notificationService.error(errorMessage);
-            //toast.error(`❌ ${errorMessage}`);
         } finally {
             setSaving(false);
         }
