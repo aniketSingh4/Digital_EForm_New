@@ -121,9 +121,9 @@ const PreVisitViewAll = () => {
                 }
                 setSelectedReports([]);
                 setSelectAll(false);
-                notificationService.success(`✅ ${selectedReports.length} report(s) deleted successfully!`, { type: 'REPORTS_DELETED', identifier: selectedReports });
+                notificationService.success(`${selectedReports.length} report(s) deleted successfully!`, { type: 'REPORTS_DELETED', identifier: selectedReports });
             } catch (error) {
-                notificationService.error('❌ Failed to delete selected reports. Please try again.', { type: 'REPORTS_DELETION_FAILED', identifier: selectedReports });
+                notificationService.error('Failed to delete selected reports. Please try again.', { type: 'REPORTS_DELETION_FAILED', identifier: selectedReports });
             } finally {
                 setActionLoading(null);
             }
@@ -171,7 +171,7 @@ const PreVisitViewAll = () => {
     const handlePDF = async (report) => {
         try {
             setActionLoading(`pdf-${report.id}`);
-            console.log('📄 Generating PDF for report:', report.id);
+            console.log('Generating PDF for report:', report.id);
 
             const response = await fetch(`http://localhost:8088/api/previsit-reports/${report.id}`, {
                 headers: {
@@ -420,12 +420,7 @@ const PreVisitViewAll = () => {
                         y += 9;
                     }
 
-                    // Row background (alternating)
-                    // if (index % 2 === 0) {
-                    //     doc.setFillColor(248, 250, 252);
-                    //     doc.rect(15, y - 1, pageWidth - 30, 12, 'F');
-                    // }
-
+                    
                     const statusColor = item.status ? [16, 185, 129] : [239, 68, 68];
                     const statusText = item.status ? 'YES' : 'NO';
                     const remark = item.remark || '-'; // Use remark from data or default to '-'
@@ -561,10 +556,10 @@ const PreVisitViewAll = () => {
             const fileName = generateFileName(reportData);
             doc.save(fileName);
 
-            notificationService.success(`✅ PDF generated successfully!\n📄 ${fileName}`);
+            notificationService.success(`PDF generated successfully!\n ${fileName}`);
         } catch (error) {
             //console.error('PDF Generation Error:', error);
-            notificationService.error(`❌ Failed to generate PDF: ${error.message}`);
+            notificationService.error(`Failed to generate PDF: ${error.message}`);
         } finally {
             setActionLoading(null);
         }
@@ -700,7 +695,7 @@ const PreVisitViewAll = () => {
             {/* Reports Table */}
             {filteredReports.length === 0 ? (
                 <div className="no-reports">
-                    <div className="no-reports-icon">📋</div>
+                    <div className="no-reports-icon"></div>
                     <h3>No Reports Found</h3>
                     <p>There are no pre-visit reports to display. Create your first report!</p>
                     <button className="create-first-btn" onClick={handleCreateNew}>
