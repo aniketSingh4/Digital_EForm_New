@@ -69,7 +69,6 @@ const InstallationReportList = () => {
       setFilteredReports(response.data);
     } catch (err) {
       setError('Failed to load reports. Please try again.');
-      //.error('Failed to fetch reports');
       notificationService.error('Failed to fetch Installation Reports');
       console.error('Error fetching reports:', err);
     } finally {
@@ -117,13 +116,10 @@ const InstallationReportList = () => {
         setActionLoading(id);
         await axios.delete(`${API_BASE_URL}/${id}`);
         setSelectedReports(selectedReports.filter(reportId => reportId !== id));
-        //notificationService.reportDeleted('Installation Report', id);
-        //toast.success('✅ Report deleted successfully!');
         notificationService.success('Installation Report deleted successfully!');
 
         fetchReports();
       } catch (error) {
-        //toast.error('❌ Failed to delete report');
         notificationService.error('Failed to delete Installation Report');
       } finally {
         setActionLoading(null);
@@ -132,8 +128,8 @@ const InstallationReportList = () => {
   };
 
   const handleBulkDelete = async () => {
-    if (selectedReports.length === 0) {
-      //.warning('Please select at least one report to delete.');
+    if (selectedReports.length === 0) 
+    {
       notificationService.warning('Please select at least one report to delete.');
       return;
     }
@@ -146,12 +142,11 @@ const InstallationReportList = () => {
         }
         setSelectedReports([]);
         setSelectAll(false);
-        //notificationService.bulkDeleted(selectedReports.length);
-        //toast.success(`✅ ${selectedReports.length} report(s) deleted successfully!`);
-        notificationService.success(`✅ ${selectedReports.length} Installation Report(s) deleted successfully!`);
+        
+        notificationService.success(`${selectedReports.length} Installation Report(s) deleted successfully!`);
         fetchReports();
-      } catch (error) {
-        //toast.error('❌ Failed to delete selected reports');
+      } catch (error) 
+      {
         notificationService.error('Failed to delete selected reports');
       } finally {
         setActionLoading(null);
@@ -183,12 +178,6 @@ const InstallationReportList = () => {
   const handleEdit = (report) => {
     navigate(`/installation-reports/edit/${report.id}`);
   };
-
-
-
-
-
-
 
   // Handle PDF Generation - WITH REPORT SUBMIT DATE
   const handlePDF = async (report) => {
@@ -462,12 +451,6 @@ const InstallationReportList = () => {
             doc.text('Quantity', pageWidth - 35, y + 4, { align: 'center' });
             y += 9;
           }
-
-          // Row background (alternating)
-          // if (index % 2 === 0) {
-          //   doc.setFillColor(248, 250, 252);
-          //   doc.rect(15, y - 1, pageWidth - 30, 8, 'F');
-          // }
 
           doc.setFontSize(8);
           doc.setFont('helvetica', 'normal');
@@ -789,11 +772,9 @@ const InstallationReportList = () => {
       doc.save(fileName);
 
       notificationService.pdfGenerated(reportData.reportNo || 'Installation Report');
-      //toast.success('✅ PDF generated successfully!');
 
     } catch (error) {
-      //console.error('PDF Generation Error:', error);
-      //toast.error('❌ Failed to generate PDF: ' + error.message);
+
       //notificationService.error('Failed to generate PDF');
     } finally {
       setActionLoading(null);
