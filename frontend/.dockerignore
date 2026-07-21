@@ -1,0 +1,32 @@
+# Build artifacts
+dist/
+node_modules/
+
+# IDE files
+.idea/
+.vscode/
+
+# Git
+.git/
+.gitignore
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Documentation
+*.md
+README.md
+
+# Docker files
+dockerfile
+.dockerignore
+nginx.conf

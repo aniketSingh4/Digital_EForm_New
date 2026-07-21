@@ -197,7 +197,7 @@ export default function Dashboard() {
             title: "Pre-Visit Report",
             description: "Complete pre-visit inspection checklists to ensure all safety and preparation protocols are followed.",
             icon: <FaCalendarCheck size={40} />,
-            path: "/previsit",
+            path: "/previsit/new",
             viewAllPath: "/previsit/view-all",
             color: "#0EA5E9",
             bgGradient: "linear-gradient(135deg, #0EA5E9, #06B6D4, #0891B2)",
