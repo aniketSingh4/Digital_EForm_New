@@ -107,7 +107,7 @@ export default function Dashboard() {
                     fetch('https://previsit-reports.onrender.com/api/previsit-reports/count', {
                         headers: { 'Content-Type': 'application/json' }
                     }).then(res => res.ok ? res.json() : 0).catch(() => 0),
-                    fetch('http://localhost:8087/api/calibration-reports/count', {
+                    fetch('https://calibration-reports.onrender.com/api/calibration-reports/count', {
                         headers: { 'Content-Type': 'application/json' }
                     }).then(res => res.ok ? res.json() : 0).catch(() => 0),
                     fetch('https://installation-reports.onrender.com/api/installation-reports', {

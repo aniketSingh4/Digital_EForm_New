@@ -1,7 +1,7 @@
 // src/services/calibrationReportService.js
 import axios from 'axios';
 
-const API_URL = 'http://localhost:8087/api/calibration-reports';
+const API_URL = 'https://calibration-reports.onrender.com/api/calibration-reports';
 
 export const calibrationReportService = {
     // Create a new report

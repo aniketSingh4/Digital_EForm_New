@@ -319,7 +319,7 @@ const CalibrationViewAll = () => {
             console.log('📄 Generating PDF for report:', reportId);
 
             // Fetch full report details - using the same pattern as Previsit
-            const response = await fetch(`http://localhost:8087/api/calibration-reports/${reportId}`, {
+            const response = await fetch(`https://calibration-reports.onrender.com/api/calibration-reports/${reportId}`, {
                 headers: {
                     'Content-Type': 'application/json',
                 }
