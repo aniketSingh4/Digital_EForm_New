@@ -101,7 +101,7 @@ export default function Dashboard() {
 
             try {
                 const results = await Promise.allSettled([
-                    fetch('http://localhost:8090/api/pm_reports/count', {
+                    fetch('https://pm-reports.onrender.com/api/pm_reports/count', {
                         headers: { 'Content-Type': 'application/json' }
                     }).then(res => res.ok ? res.json() : 0).catch(() => 0),
                     fetch('http://localhost:8088/api/previsit-reports/count', {

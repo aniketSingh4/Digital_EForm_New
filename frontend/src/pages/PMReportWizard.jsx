@@ -108,7 +108,7 @@ export default function PMReportWizard() {
     const fetchReportData = async () => {
         try {
             setLoading(true);
-            const response = await fetch(`http://localhost:8090/api/pm_reports/${id}`, {
+            const response = await fetch(`https://pm-reports.onrender.com/api/pm_reports/${id}`, {
                 headers: { 'Content-Type': 'application/json' }
             });
 

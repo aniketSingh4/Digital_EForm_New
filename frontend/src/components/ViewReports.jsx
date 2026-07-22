@@ -147,7 +147,7 @@ export default function ViewReports() {
     };
 
     const config = featureConfig[featureId] || featureConfig[1];
-    const API_BASE_URL = "http://localhost:8090";
+    const API_BASE_URL = "https://pm-reports.onrender.com";
 
     // Helper function for status badge
     const getStatusBadge = (status) => {

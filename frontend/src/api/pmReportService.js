@@ -8,7 +8,7 @@ const getApiUrl = () => {
       return import.meta.env.VITE_API_URL;
     }
   }
-  return "http://localhost:8090/api";
+  return "https://pm-reports.onrender.com/api";
 };
 
 const apiClient = axios.create({
