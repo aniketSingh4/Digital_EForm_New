@@ -1,7 +1,7 @@
 import axios from "axios";
 
 const api = axios.create({
-    baseURL: "http://localhost:8089/api",
+    baseURL: "https://authentication-service-eda5.onrender.com/api",
     headers: {
         "Content-Type": "application/json",
     },

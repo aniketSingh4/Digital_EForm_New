@@ -2,7 +2,7 @@
 import axios from 'axios';
 
 //FIXED: Use the correct port (8086)
-const API_BASE_URL = 'http://localhost:8086/api/installation-reports';
+const API_BASE_URL = 'https://installation-reports.onrender.com/api/installation-reports';
 
 // Create axios instance
 const api = axios.create({

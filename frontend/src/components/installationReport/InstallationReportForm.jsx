@@ -6,7 +6,7 @@ import { FaImage, FaUpload, FaTrash } from 'react-icons/fa';
 import './InstallationReportForm.css';
 import notificationService from "../../services/notificationService";
 
-const API_BASE_URL = 'http://localhost:8086/api/installation-reports';
+const API_BASE_URL = 'https://installation-reports.onrender.com/api/installation-reports';
 
 const InstallationReportForm = () => {
   const navigate = useNavigate();

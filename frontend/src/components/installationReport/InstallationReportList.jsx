@@ -30,7 +30,7 @@ import {
 import notificationService from '../../services/notificationService';
 import "./InstallationReportList.css";
 
-const API_BASE_URL = 'http://localhost:8086/api/installation-reports';
+const API_BASE_URL = 'https://installation-reports.onrender.com/api/installation-reports';
 
 const InstallationReportList = () => {
   const navigate = useNavigate();

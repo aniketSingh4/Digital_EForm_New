@@ -32,8 +32,8 @@ import {
 import notificationService from '../../services/notificationService';
 import './InstallationReportDetails.css';
 
-const API_BASE_URL = 'http://localhost:8086/api/installation-reports';
-const IMAGE_BASE_URL = 'http://localhost:8086';
+const API_BASE_URL = 'https://installation-reports.onrender.com/api/installation-reports';
+const IMAGE_BASE_URL = 'https://installation-reports.onrender.com';
 
 const InstallationReportDetails = () => {
     const { id } = useParams();
