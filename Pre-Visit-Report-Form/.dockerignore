@@ -1,0 +1,40 @@
+# Build artifacts
+target/
+*.log
+
+# IDE files
+.idea/
+*.iml
+.vscode/
+.settings/
+.classpath
+.project
+
+# Git
+.git/
+.gitignore
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# Uploads (don't include in Docker build)
+uploads/
+*.jpg
+*.jpeg
+*.png
+*.pdf
+*.docx
+
+# Documentation
+*.md
+README.md
+
+# Docker files
+Dockerfile
+.dockerignore
