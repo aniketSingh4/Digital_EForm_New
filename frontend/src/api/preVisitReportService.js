@@ -1,7 +1,7 @@
 // src/api/preVisitReportService.js
 import axios from 'axios';
 
-const PREVISIT_API_BASE_URL = 'http://localhost:8088/api';
+const PREVISIT_API_BASE_URL = 'https://previsit-reports.onrender.com/api';
 
 const preVisitApiClient = axios.create({
   baseURL: PREVISIT_API_BASE_URL,

@@ -17,7 +17,7 @@ import preVisitReportService from '../../api/preVisitReportService';
 import './PreVisitReportDetail.css';
 
 // ✅ Base URL for images (your backend URL)
-const IMAGE_BASE_URL = 'http://localhost:8088';
+const IMAGE_BASE_URL = 'https://previsit-reports.onrender.com';
 
 const PreVisitReportDetail = () => {
   const { id } = useParams();
@@ -419,9 +419,9 @@ const PreVisitReportDetail = () => {
               </div>
               <div className="images-footer">
                 <span>Total: {images.length} image(s)</span>
-                <span className="final-count">
+                {/* <span className="final-count">
                   ⭐ {images.filter(img => img.isFinal).length} final image(s)
-                </span>
+                </span> */}
               </div>
             </>
           ) : (

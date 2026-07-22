@@ -65,7 +65,7 @@ const PreVisitReportForm = ({ onSuccess, onCancel, initialData, isEdit = false }
   const fetchReportData = async () => {
     try {
       setLoading(true);
-      const response = await fetch(`http://localhost:8088/api/previsit-reports/${id}`, {
+      const response = await fetch(`https://previsit-reports.onrender.com/api/previsit-reports/${id}`, {
         headers: { 'Content-Type': 'application/json' }
       });
 
@@ -297,7 +297,7 @@ const PreVisitReportForm = ({ onSuccess, onCancel, initialData, isEdit = false }
       console.log('📦 Report Payload:', payload);
 
       let reportResponse;
-      const apiUrl = 'http://localhost:8088/api/previsit-reports';
+      const apiUrl = 'https://previsit-reports.onrender.com/api/previsit-reports';
 
       if (isEditMode && id) {
         reportResponse = await fetch(`${apiUrl}/${id}`, {
@@ -340,7 +340,7 @@ const PreVisitReportForm = ({ onSuccess, onCancel, initialData, isEdit = false }
 
           try {
             const uploadResponse = await fetch(
-              `http://localhost:8088/api/previsit-reports/images/upload/${reportId}`,
+              `https://previsit-reports.onrender.com/api/previsit-reports/images/upload/${reportId}`,
               {
                 method: 'POST',
                 body: imageFormData
