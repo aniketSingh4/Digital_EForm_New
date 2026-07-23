@@ -25,7 +25,7 @@ const getDatePlus90Days = (dateStr) => {
   return d.toISOString().split('T')[0];
 };
 
-// ✅ Generate unique ID with timestamp
+//Generate unique ID with timestamp
 const generateUniqueId = () => {
   const now = new Date();
   const date = now.toISOString().slice(0, 10).replace(/-/g, '');
@@ -33,26 +33,26 @@ const generateUniqueId = () => {
   return `${date}${time}`;
 };
 
-// ✅ Generate Certificate No with sequential count - FESPL_CAL format
+//Generate Certificate No with sequential count - FESPL_CAL format
 const generateCertificateNo = (count) => {
   const datePart = new Date().toISOString().slice(0, 10).replace(/-/g, '');
   const sequence = String(count).padStart(4, '0');
   return `FESPL_CAL_${datePart}_${sequence}`;
 };
 
-// ✅ Helper function to generate model number
+//Helper function to generate model number
 const generateModelNo = (sensorId) => {
   if (!sensorId) return '';
   return `FESPL_MN_${sensorId}`;
 };
 
-// ✅ Helper function to generate reference serial number (hidden)
+//Helper function to generate reference serial number (hidden)
 const generateRefSerialNo = (sensorId) => {
   if (!sensorId) return '';
   return `FESPL_RSN_${sensorId}`;
 };
 
-// ✅ Guaranteed complete default object
+//Guaranteed complete default object
 const DEFAULT_FORM_DATA = {
   reportDate: getTodayDate(),
   clientName: '',
@@ -168,18 +168,18 @@ const CalibrationReportForm = ({ onSuccess, onCancel, isEdit = false }) => {
         const newModelNo = generateModelNo(val);
         const newRefSerialNo = generateRefSerialNo(val);
         const newCount = reportCount + 1;
-        // ✅ Generate Certificate No with FESPL_CAL format
+        //Generate Certificate No with FESPL_CAL format
         const newCertificateNo = generateCertificateNo(newCount);
 
         let updated = {
           ...current,
           sensorId: val,
           modelNo: newModelNo,
-          serialNo: newCertificateNo, // ✅ Hidden field, same as certificate no
+          serialNo: newCertificateNo,
           masterRefInstrument: {
             ...current.masterRefInstrument,
             refSerialNo: newRefSerialNo,
-            calibrationCertificateNo: newCertificateNo, // ✅ Same as serial no
+            calibrationCertificateNo: newCertificateNo,
           }
         };
         return updated;
@@ -247,7 +247,7 @@ const CalibrationReportForm = ({ onSuccess, onCancel, isEdit = false }) => {
 
     const sensorId = formData.sensorId || '';
     const nextCount = reportCount + 1;
-    // ✅ Generate Certificate No with FESPL_CAL format
+    //Generate Certificate No with FESPL_CAL format
     const certificateNo = formData.masterRefInstrument?.calibrationCertificateNo || generateCertificateNo(nextCount);
 
     const submitData = {
@@ -257,12 +257,12 @@ const CalibrationReportForm = ({ onSuccess, onCancel, isEdit = false }) => {
       siteAddress: formData.siteAddress || '',
       sensorId: sensorId,
       modelNo: formData.modelNo || generateModelNo(sensorId),
-      serialNo: certificateNo, // ✅ Hidden field, same as certificate no
+      serialNo: certificateNo,
       calibrationDate: formData.calibrationDate || getTodayDate(),
       calibrationDueDate: formData.calibrationDueDate || getDatePlus90Days(getTodayDate()),
       masterRefInstrument: {
         refSerialNo: formData.masterRefInstrument?.refSerialNo || generateRefSerialNo(sensorId),
-        calibrationCertificateNo: certificateNo, // ✅ FESPL_CAL format
+        calibrationCertificateNo: certificateNo,
         certificateValidity: formData.masterRefInstrument?.certificateValidity || getDatePlus90Days(getTodayDate()),
       },
       readingBeforeCalibration: {
@@ -293,11 +293,11 @@ const CalibrationReportForm = ({ onSuccess, onCancel, isEdit = false }) => {
     };
 
     const validationResult = validateCalibrationReport(submitData);
-    console.log('🔍 Validation Result:', validationResult);
+    console.log('Validation Result:', validationResult);
 
     if (!validationResult.isValid) {
       const errorMessages = validationResult.errors || {};
-      console.log('❌ Validation Errors:', errorMessages);
+      console.log('Validation Errors:', errorMessages);
       setErrors(errorMessages);
 
       const errorList = Object.entries(errorMessages)
@@ -316,19 +316,17 @@ const CalibrationReportForm = ({ onSuccess, onCancel, isEdit = false }) => {
       let response;
 
       if (isEditMode && id) {
-        console.log('✏️ Updating report with ID:', id);
+        console.log('Updating report with ID:', id);
         response = await calibrationReportService.updateReport(id, submitData);
-        //toast.success('✅ Report updated successfully!');
-        notificationService.success('✅ Report updated successfully!');
+        notificationService.success('Report updated successfully!');
       } else {
-        console.log('🆕 Creating new report...');
+        console.log('Creating new report...');
         response = await calibrationReportService.createReport(submitData);
-        //toast.success('✅ Report created successfully!');
-        notificationService.success('✅ Report created successfully!');
+        notificationService.success('Report created successfully!');
         setReportCount(prev => prev + 1);
       }
 
-      console.log('✅ API Response:', response);
+      console.log('API Response:', response);
 
       setSubmitStatus({
         type: 'success',
@@ -351,15 +349,14 @@ const CalibrationReportForm = ({ onSuccess, onCancel, isEdit = false }) => {
       }, 1500);
 
     } catch (error) {
-      console.error('❌ Submit error:', error);
+      console.error('Submit error:', error);
       const errorMessage = error.response?.data?.message || error.message || 'Failed to save report';
       setApiError(errorMessage);
       setSubmitStatus({
         type: 'error',
         message: errorMessage
       });
-      //toast.error(`❌ ${errorMessage}`);
-      notificationService.error(`❌ ${errorMessage}`);
+      notificationService.error(`${errorMessage}`);
     } finally {
       setIsSubmitting(false);
     }
@@ -383,7 +380,7 @@ const CalibrationReportForm = ({ onSuccess, onCancel, isEdit = false }) => {
   const sensorId = safe.sensorId || '';
   const modelNo = safe.modelNo || generateModelNo(sensorId);
   const nextCount = reportCount + 1;
-  // ✅ Generate certificate no with FESPL_CAL format
+  //Generate certificate no with FESPL_CAL format
   const certificateNo = safe.masterRefInstrument?.calibrationCertificateNo || generateCertificateNo(nextCount);
   const calibrationDate = safe.calibrationDate || getTodayDate();
   const calibrationDueDate = safe.calibrationDueDate || getDatePlus90Days(getTodayDate());

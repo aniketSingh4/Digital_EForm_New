@@ -65,10 +65,10 @@ const CalibrationViewAll = () => {
             setLoading(true);
             setError(null);
 
-            console.log('🔄 Fetching reports...');
+            console.log('Fetching reports...');
             let data = await calibrationReportService.getAllReports();
 
-            console.log('📦 Raw API Response:', data);
+            console.log('Raw API Response:', data);
 
             // Ensure data is an array
             if (!Array.isArray(data)) {
@@ -88,7 +88,7 @@ const CalibrationViewAll = () => {
                 }
             }
 
-            console.log('✅ Reports fetched:', data.length);
+            console.log('Reports fetched:', data.length);
 
             // Map the data to ensure consistent field names
             const mappedData = data.map(report => ({
@@ -109,19 +109,17 @@ const CalibrationViewAll = () => {
                 }
             }));
 
-            console.log('✅ Mapped data:', mappedData.length);
+            console.log('Mapped data:', mappedData.length);
             setReports(mappedData);
             setFilteredReports(mappedData);
 
             if (mappedData.length === 0) {
-                //toast.info('No reports found. Create your first calibration report!');
                 notificationService.info('No reports found. Create your first calibration report!');
             }
 
         } catch (err) {
-            console.error('❌ Error fetching reports:', err);
+            console.error('Error fetching reports:', err);
             setError('Failed to load reports. Please try again.');
-            //toast.error('Failed to fetch reports');
             notificationService.error('Failed to fetch reports');
         } finally {
             setLoading(false);
@@ -210,7 +208,6 @@ const CalibrationViewAll = () => {
     const handleDelete = async (report) => {
         const reportId = getReportId(report);
         if (!reportId) {
-            //toast.error('Could not find report ID');
             notificationService.error('Could not find report ID');
             return;
         }
@@ -222,11 +219,9 @@ const CalibrationViewAll = () => {
             await calibrationReportService.deleteReport(reportId);
             setSelectedReports(selectedReports.filter(id => id !== reportId));
             notificationService.reportDeleted('Calibration Report', reportId);
-            //toast.success('✅ Report deleted successfully!');
-            notificationService.success('✅ Report deleted successfully!');
+            notificationService.success('Report deleted successfully!');
             fetchReports();
         } catch (error) {
-            //toast.error('❌ Failed to delete report');
             notificationService.error('Failed to delete Calibration Report');
         } finally {
             setActionLoading(null);
@@ -235,7 +230,6 @@ const CalibrationViewAll = () => {
 
     const handleBulkDelete = async () => {
         if (selectedReports.length === 0) {
-            //toast.warning('Please select at least one report to delete.');
             notificationService.warning('Please select at least one report to delete.');
             return;
         }
@@ -250,10 +244,8 @@ const CalibrationViewAll = () => {
             setSelectedReports([]);
             setSelectAll(false);
             notificationService.bulkDeleted(selectedReports.length);
-           //toast.success(`✅ ${selectedReports.length} report(s) deleted successfully!`);
             fetchReports();
         } catch (error) {
-            //toast.error('❌ Failed to delete selected reports');
             notificationService.error('Failed to delete selected reports');
         } finally {
             setActionLoading(null);
@@ -286,7 +278,6 @@ const CalibrationViewAll = () => {
     const handleView = (report) => {
         const reportId = getReportId(report);
         if (!reportId) {
-            //toast.error('Could not find report ID');
             notificationService.error('Could not find report ID');
             return;
         }
@@ -296,27 +287,22 @@ const CalibrationViewAll = () => {
     const handleEdit = (report) => {
         const reportId = getReportId(report);
         if (!reportId) {
-            //toast.error('Could not find report ID');
             notificationService.error('Could not find report ID');
             return;
         }
         navigate(`/calibration-reports/edit/${reportId}`);
     };
 
-    // [Keep your PDF generation function here - it's long so I'm omitting it for brevity]
-    // Make sure to keep the handlePDF function from your original code
-    // PDF Generation - FIXED to match working Previsit pattern
     const handlePDF = async (report) => {
         const reportId = getReportId(report);
         if (!reportId) {
-            //toast.error('Could not find report ID');
             notificationService.error('Could not find report ID');
             return;
         }
 
         try {
             setActionLoading(`pdf-${reportId}`);
-            console.log('📄 Generating PDF for report:', reportId);
+           // console.log('Generating PDF for report:', reportId);
 
             // Fetch full report details - using the same pattern as Previsit
             const response = await fetch(`https://calibration-reports.onrender.com/api/calibration-reports/${reportId}`, {
@@ -330,7 +316,7 @@ const CalibrationViewAll = () => {
             }
 
             const fullReport = await response.json();
-            console.log('📄 Full Report Data for PDF:', fullReport);
+            //console.log('📄 Full Report Data for PDF:', fullReport);
 
             const doc = new jsPDF('p', 'mm', 'a4');
             const pageWidth = doc.internal.pageSize.getWidth();
@@ -358,8 +344,8 @@ const CalibrationViewAll = () => {
                 loadImageAsBase64('/header.webp')
             ]);
 
-            console.log('📄 Background image loaded:', backgroundImage ? '✅' : '❌');
-            console.log('📄 Header image loaded:', headerImage ? '✅' : '❌');
+            //console.log('📄 Background image loaded:', backgroundImage ? '✅' : '❌');
+            //console.log('📄 Header image loaded:', headerImage ? '✅' : '❌');
 
             // Helper function to safely convert any value to string
             const safeString = (value) => {
@@ -639,11 +625,6 @@ const CalibrationViewAll = () => {
             ];
 
             readingData.forEach((item, index) => {
-                // Row background (alternating)
-                // if (index % 2 === 0) {
-                //     doc.setFillColor(248, 250, 252);
-                //     doc.rect(15, y - 1, pageWidth - 30, 8, 'F');
-                // }
 
                 // Parameter
                 doc.setFontSize(8);
@@ -913,13 +894,11 @@ const CalibrationViewAll = () => {
             const fileName = `Calibration_Report_${safeString(fullReport.reportNo || 'Report')}_${new Date().toISOString().split('T')[0]}.pdf`;
             doc.save(fileName);
 
-            //toast.success('✅ PDF generated successfully!');
+            //toast.success('PDF generated successfully!');
             notificationService.pdfGenerated(fullReport.reportNo || 'Calibration Report');
 
         } catch (error) {
             console.error("PDF Generation Error:", error);
-            //toast.error(`❌ Failed to generate PDF: ${error.message}`);
-            //notificationService.error('Failed to generate PDF');
         } finally {
             setActionLoading(null);
         }

@@ -423,7 +423,7 @@ const PreVisitViewAll = () => {
                     
                     const statusColor = item.status ? [16, 185, 129] : [239, 68, 68];
                     const statusText = item.status ? 'YES' : 'NO';
-                    const remark = item.remark || '-'; // Use remark from data or default to '-'
+                    const remark = item.remark || '-';
 
                     // Serial Number
                     doc.setFontSize(8);
@@ -558,7 +558,6 @@ const PreVisitViewAll = () => {
 
             notificationService.success(`PDF generated successfully!\n ${fileName}`);
         } catch (error) {
-            //console.error('PDF Generation Error:', error);
             notificationService.error(`Failed to generate PDF: ${error.message}`);
         } finally {
             setActionLoading(null);

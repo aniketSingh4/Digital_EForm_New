@@ -28,7 +28,7 @@ const ReportView = () => {
         } catch (err) {
             setError('Failed to load report details');
             notificationService.error('Failed to fetch report');
-            console.error('Error fetching report:', err);
+            //console.error('Error fetching report:', err);
         } finally {
             setLoading(false);
         }
@@ -55,13 +55,13 @@ const ReportView = () => {
             return { label: 'Pending', className: 'status-pending' };
         }
         if (summary.calibrationSuccessful) {
-            return { label: '✅ Successful', className: 'status-success' };
+            return { label: 'Successful', className: 'status-success' };
         } else if (summary.sensorRequiresReplacement) {
-            return { label: '⚠️ Needs Replacement', className: 'status-danger' };
+            return { label: 'Needs Replacement', className: 'status-danger' };
         } else if (summary.calibrationAdjustmentPerformed) {
-            return { label: '🔄 Adjusted', className: 'status-warning' };
+            return { label: 'Adjusted', className: 'status-warning' };
         } else {
-            return { label: '⏳ Pending', className: 'status-pending' };
+            return { label: 'Pending', className: 'status-pending' };
         }
     };
 
@@ -108,7 +108,7 @@ const ReportView = () => {
     const summary = report.calibrationSummary || {};
     const engineer = report.engineerDetails || {};
 
-    // ✅ Get the certificate number (or report number as fallback)
+    //Get the certificate number (or report number as fallback)
     const certificateNo = masterRef.calibrationCertificateNo || report.reportNo || 'N/A';
 
     return (
@@ -198,7 +198,7 @@ const ReportView = () => {
                     </div>
                 </div>
                 <div className="certificate-note">
-                    <small>⚠️ Note: Report No and Certificate No are the same</small>
+                    <small>Note: Report No and Certificate No are the same</small>
                 </div>
             </div>
 
@@ -225,8 +225,8 @@ const ReportView = () => {
                                 <td>
                                     {before.pm25Value && after.pm25Value && 
                                         (parseFloat(after.pm25Value) <= parseFloat(before.pm25Value) 
-                                            ? '✅ Improved' 
-                                            : '⚠️ Changed'
+                                            ? 'Improved' 
+                                            : 'Changed'
                                         )
                                     }
                                 </td>
@@ -238,8 +238,8 @@ const ReportView = () => {
                                 <td>
                                     {before.pm10Value && after.pm10Value && 
                                         (parseFloat(after.pm10Value) <= parseFloat(before.pm10Value) 
-                                            ? '✅ Improved' 
-                                            : '⚠️ Changed'
+                                            ? 'Improved' 
+                                            : 'Changed'
                                         )
                                     }
                                 </td>
@@ -251,8 +251,8 @@ const ReportView = () => {
                                 <td>
                                     {before.temp && after.temp && 
                                         (parseFloat(after.temp) <= parseFloat(before.temp) 
-                                            ? '✅ Improved' 
-                                            : '⚠️ Changed'
+                                            ? 'Improved' 
+                                            : 'Changed'
                                         )
                                     }
                                 </td>
@@ -264,8 +264,8 @@ const ReportView = () => {
                                 <td>
                                     {before.humidity && after.humidity && 
                                         (parseFloat(after.humidity) <= parseFloat(before.humidity) 
-                                            ? '✅ Improved' 
-                                            : '⚠️ Changed'
+                                            ? 'Improved' 
+                                            : 'Changed'
                                         )
                                     }
                                 </td>
@@ -283,19 +283,19 @@ const ReportView = () => {
                 <div className="summary-grid">
                     <div className={`summary-item ${summary.calibrationSuccessful ? 'success' : 'failed'}`}>
                         <label>Calibration Successful</label>
-                        <span>{summary.calibrationSuccessful ? '✅ Yes' : '❌ No'}</span>
+                        <span>{summary.calibrationSuccessful ? 'Yes' : 'No'}</span>
                     </div>
                     <div className={`summary-item ${summary.calibrationAdjustmentPerformed ? 'adjusted' : 'not-adjusted'}`}>
                         <label>Calibration Adjustment Performed</label>
-                        <span>{summary.calibrationAdjustmentPerformed ? '✅ Yes' : '❌ No'}</span>
+                        <span>{summary.calibrationAdjustmentPerformed ? 'Yes' : 'No'}</span>
                     </div>
                     <div className={`summary-item ${summary.sensorWithinAcceptableLimits ? 'within-limits' : 'out-of-limits'}`}>
                         <label>Sensor Within Acceptable Limits</label>
-                        <span>{summary.sensorWithinAcceptableLimits ? '✅ Yes' : '❌ No'}</span>
+                        <span>{summary.sensorWithinAcceptableLimits ? 'Yes' : 'No'}</span>
                     </div>
                     <div className={`summary-item ${summary.sensorRequiresReplacement ? 'needs-replacement' : 'ok'}`}>
                         <label>Sensor Requires Replacement</label>
-                        <span>{summary.sensorRequiresReplacement ? '✅ Yes' : '❌ No'}</span>
+                        <span>{summary.sensorRequiresReplacement ? 'Yes' : 'No'}</span>
                     </div>
                 </div>
             </div>

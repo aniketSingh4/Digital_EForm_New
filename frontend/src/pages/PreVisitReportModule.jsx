@@ -12,7 +12,7 @@ const PreVisitReportModule = () => {
   const [editingReport, setEditingReport] = useState(null);
 
   useEffect(() => {
-    console.log("📍 PreVisitReportModule - Location:", location.pathname);
+    console.log("PreVisitReportModule - Location:", location.pathname);
     
     if (location.pathname.includes('/new')) {
       console.log("New report mode");

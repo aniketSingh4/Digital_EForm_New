@@ -63,9 +63,7 @@ const ReportList = () => {
       setFilteredReports(data);
     } catch (err) {
       setError('Failed to load reports. Please try again.');
-      //toast.error('Failed to fetch reports');
       notificationService.error('Failed to fetch reports');
-      console.error('Error fetching reports:', err);
     } finally {
       setLoading(false);
     }
@@ -113,12 +111,9 @@ const ReportList = () => {
       setActionLoading(reportId);
       await calibrationReportService.deleteReport(reportId);
       setSelectedReports(selectedReports.filter(id => id !== reportId));
-      notificationService.reportDeleted('Calibration Report', reportId);
-      //toast.success('✅ Report deleted successfully!');
-      notificationService.success('✅ Report deleted successfully!');
+      notificationService.success('Report deleted successfully!');
       fetchReports();
     } catch (error) {
-      //toast.error('❌ Failed to delete report');
       notificationService.error('Failed to delete Calibration Report');
     } finally {
       setActionLoading(null);
@@ -127,7 +122,6 @@ const ReportList = () => {
 
   const handleBulkDelete = async () => {
     if (selectedReports.length === 0) {
-      //toast.warning('Please select at least one report to delete.');
       notificationService.warning('Please select at least one report to delete.');
       return;
     }
@@ -140,12 +134,10 @@ const ReportList = () => {
         }
         setSelectedReports([]);
         setSelectAll(false);
-        notificationService.bulkDeleted(selectedReports.length);
-        //toast.success(`✅ ${selectedReports.length} report(s) deleted successfully!`);
-        notificationService.success(`✅ ${selectedReports.length} report(s) deleted successfully!`);
+        //notificationService.bulkDeleted(selectedReports.length);
+        notificationService.success(`${selectedReports.length} report(s) deleted successfully!`);
         fetchReports();
       } catch (error) {
-        //toast.error('❌ Failed to delete selected reports');
         notificationService.error('Failed to delete selected reports');
       } finally {
         setActionLoading(null);
@@ -182,11 +174,9 @@ const ReportList = () => {
     try {
       setActionLoading(`pdf-${report.id}`);
       // PDF generation logic here
-      notificationService.pdfGenerated(report.reportNo || 'Calibration Report');
-      //toast.success('PDF generated successfully!');
+      //notificationService.pdfGenerated(report.reportNo || 'Calibration Report');
       notificationService.success('PDF generated successfully!');
     } catch (error) {
-      //toast.error('Failed to generate PDF');
       notificationService.error('Failed to generate PDF');
     } finally {
       setActionLoading(null);
