@@ -16,7 +16,7 @@ import {
 import preVisitReportService from '../../api/preVisitReportService';
 import './PreVisitReportDetail.css';
 
-// ✅ Base URL for images (your backend URL)
+//Base URL for images (your backend URL)
 const IMAGE_BASE_URL = 'https://previsit-reports.onrender.com';
 
 const PreVisitReportDetail = () => {
@@ -49,7 +49,7 @@ const PreVisitReportDetail = () => {
       if (data) {
         setReport(data);
         if (data.siteImages && data.siteImages.length > 0) {
-          console.log('📸 Images found in report data:', data.siteImages);
+          console.log('Images found in report data:', data.siteImages);
           setImages(data.siteImages);
         }
       } else {
@@ -70,10 +70,10 @@ const PreVisitReportDetail = () => {
   const fetchReportImages = async (reportId) => {
     try {
       setLoadingImages(true);
-      console.log('🖼️ Fetching images for report:', reportId);
+      console.log('Fetching images for report:', reportId);
 
       const data = await preVisitReportService.getImagesByReport(reportId);
-      console.log('📸 Images fetched from API:', data);
+      console.log('Images fetched from API:', data);
 
       if (data && data.length > 0) {
         setImages(data);
@@ -86,7 +86,7 @@ const PreVisitReportDetail = () => {
     }
   };
 
-  // ✅ Helper function to get full image URL
+  //Helper function to get full image URL
   const getImageUrl = (imageUrl) => {
     if (!imageUrl) return null;
 
@@ -104,13 +104,13 @@ const PreVisitReportDetail = () => {
     return `${IMAGE_BASE_URL}/${imageUrl}`;
   };
 
-  // ✅ Handle image load error
+  //Handle image load error
   const handleImageError = (imageId) => {
-    console.error('❌ Image failed to load for ID:', imageId);
+    console.error('Image failed to load for ID:', imageId);
     setImageErrors(prev => ({ ...prev, [imageId]: true }));
   };
 
-  // ✅ Get placeholder image
+  //Get placeholder image
   const getPlaceholderImage = () => {
     return 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="300" height="300" viewBox="0 0 300 300"%3E%3Crect width="300" height="300" fill="%23f3f4f6"/%3E%3Ctext x="150" y="150" text-anchor="middle" dy=".3em" fill="%239ca3af" font-size="18"%3ENo Image%3C/text%3E%3C/svg%3E';
   };
@@ -119,10 +119,10 @@ const PreVisitReportDetail = () => {
     if (!window.confirm('Are you sure you want to delete this report?')) return;
     try {
       await preVisitReportService.deleteReport(id);
-      alert('✅ Report deleted successfully!');
+      alert('Report deleted successfully!');
       navigate('/previsit/view-all');
     } catch (error) {
-      alert('❌ Failed to delete report');
+      alert('Failed to delete report');
     }
   };
 
@@ -131,9 +131,9 @@ const PreVisitReportDetail = () => {
     try {
       await preVisitReportService.deleteImage(imageId);
       setImages(images.filter(img => img.id !== imageId));
-      alert('✅ Image deleted successfully!');
+      alert('Image deleted successfully!');
     } catch (error) {
-      alert('❌ Failed to delete image');
+      alert('Failed to delete image');
     }
   };
 
@@ -331,7 +331,7 @@ const PreVisitReportDetail = () => {
                   <span className="checklist-number">{index + 1}.</span>
                   <span className="checklist-field">{item.fieldName}</span>
                   <span className={`checklist-status ${item.status ? 'yes' : 'no'}`}>
-                    {item.status ? '✅ YES' : '❌ NO'}
+                    {item.status ? 'YES' : 'NO'}
                   </span>
                   {item.remark && (
                     <span className="checklist-remark">Remark: {item.remark}</span>
@@ -366,9 +366,6 @@ const PreVisitReportDetail = () => {
                 {images.map((image, index) => {
 
                   const imageUrl = getImageUrl(image.imageUrl);
-                  console.log('🖼️ Image URL:', imageUrl); // ✅ This will show the full URL
-                  console.log('📸 Image data:', image); // ✅ This will show the image data
-                  //const imageUrl = getImageUrl(image.imageUrl);
                   const hasError = imageErrors[image.id];
 
                   return (
