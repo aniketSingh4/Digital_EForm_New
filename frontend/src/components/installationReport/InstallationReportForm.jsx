@@ -63,7 +63,7 @@ const InstallationReportForm = () => {
     }
   }, [isEditMode, id]);
 
-  // ✅ Check if others text exists on load
+  //Check if others text exists on load
   useEffect(() => {
     if (formData.workActivityOthers && formData.workActivityOthers.trim() !== '') {
       setShowOthersText(true);
@@ -90,7 +90,7 @@ const InstallationReportForm = () => {
       const data = response.data;
       const formattedDate = data.date ? data.date.slice(0, 16) : '';
       
-      // ✅ Ensure equipmentDetails has only modelNo, serialNo, quantity
+      //Ensure equipmentDetails has only modelNo, serialNo, quantity
       const equipmentDetails = data.equipmentDetails && data.equipmentDetails.length > 0 
         ? data.equipmentDetails.map(item => ({
             modelNo: item.modelNo || item.modelNumber || '',
@@ -105,7 +105,7 @@ const InstallationReportForm = () => {
         equipmentDetails: equipmentDetails,
       });
       
-      // ✅ Set others text visibility
+      //Set others text visibility
       if (data.workActivityOthers && data.workActivityOthers.trim() !== '') {
         setShowOthersText(true);
       }
@@ -194,7 +194,7 @@ const InstallationReportForm = () => {
     }
   };
 
-  // ✅ Handle Others checkbox
+  //Handle Others checkbox
   const handleOthersChange = (e) => {
     const checked = e.target.checked;
     setShowOthersText(checked);
@@ -382,7 +382,7 @@ const InstallationReportForm = () => {
           </div>
         </div>
 
-        {/* ✅ Equipment Details - Only Model No, Serial No, Quantity */}
+        {/*Equipment Details - Only Model No, Serial No, Quantity */}
         <div className="form-section">
           <div className="section-header">
             <h3>Equipment Details</h3>
@@ -544,7 +544,7 @@ const InstallationReportForm = () => {
               </label>
             </div>
             
-            {/* ✅ Others Work Activity - Text box appears only when checked */}
+            {/*Others Work Activity - Text box appears only when checked */}
             <div className="checkbox-item checkbox-others">
               <label>
                 <input

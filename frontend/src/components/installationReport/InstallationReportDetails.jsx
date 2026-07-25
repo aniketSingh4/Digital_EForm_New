@@ -219,11 +219,11 @@ const InstallationReportDetails = () => {
                                 e.target.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="400" height="400" viewBox="0 0 400 400"%3E%3Crect width="400" height="400" fill="%23f3f4f6"/%3E%3Ctext x="200" y="200" text-anchor="middle" dy=".3em" fill="%239ca3af" font-size="20"%3ENo Image%3C/text%3E%3C/svg%3E';
                             }}
                         />
-                        <div className="lightbox-info">
+                        {/* <div className="lightbox-info">
                             <span className="lightbox-name">{selectedImage.imageName || 'Image'}</span>
                             {selectedImage.isFinal && <span className="lightbox-final">⭐ Final</span>}
                             {selectedImage.description && <span className="lightbox-desc">{selectedImage.description}</span>}
-                        </div>
+                        </div> */}
                     </div>
                 </div>
             )}
