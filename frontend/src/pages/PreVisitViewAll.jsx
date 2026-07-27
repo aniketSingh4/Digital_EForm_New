@@ -288,7 +288,7 @@ const PreVisitViewAll = () => {
             doc.setTextColor(79, 70, 229);
             doc.setFontSize(8);
             doc.setFont('helvetica', 'bold');
-            doc.text(`Report ID: #${String(reportData.id || '000').padStart(3, '0')}`, 20, y + 6);
+            doc.text(`Report ID: FESPL_PVR_${String(reportData.id || '000').padStart(3, '0')}`, 20, y + 6);
 
             doc.setTextColor(100, 100, 120);
             doc.setFont('helvetica', 'normal');

@@ -137,7 +137,7 @@ const PreVisitReportList = ({ onEdit, refreshTrigger }) => {
         <table className="reports-table">
           <thead>
             <tr>
-              <th style={{ width: '50px' }}>#</th>
+              <th style={{ width: '50px' }}>S.No</th>
               <th style={{ width: '70px' }}>ID</th>
               <th>Company Name</th>
               <th>Site Person</th>

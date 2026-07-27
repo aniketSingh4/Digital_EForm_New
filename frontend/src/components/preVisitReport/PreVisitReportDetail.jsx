@@ -288,7 +288,7 @@ const PreVisitReportDetail = () => {
           <div className="detail-grid">
             <div className="detail-item">
               <label>Report ID</label>
-              <span>#{String(report.id).padStart(3, '0')}</span>
+              <span>FESPL_PVR_{String(report.id).padStart(3, '0')}</span>
             </div>
             <div className="detail-item">
               <label>Visit Date</label>
