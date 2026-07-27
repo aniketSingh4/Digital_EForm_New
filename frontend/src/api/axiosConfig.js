@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 // Update this URL to match your backend API
-const API_BASE_URL = 'http://localhost:8087/api';
+const API_BASE_URL = 'https://calibration-reports.onrender.com/api';
 
 const axiosInstance = axios.create({
   baseURL: API_BASE_URL,
