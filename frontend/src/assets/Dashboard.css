@@ -2773,3 +2773,46 @@
         padding: 4px 12px;
     }
 }
+
+/*  ========================================
+   Refresh Button Styles - Home Page
+   ======================================== */
+   /* In Dashboard.css */
+.refresh-btn {
+    background: rgba(255, 255, 255, 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    color: white;
+    padding: 8px 12px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    margin-left: 10px;
+}
+
+.refresh-btn:hover:not(:disabled) {
+    background: rgba(255, 255, 255, 0.3);
+    transform: rotate(180deg);
+}
+
+.refresh-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.spinning {
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+.loading-badge {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: #6b7280;
+    font-size: 14px;
+    margin-left: 16px;
+}

@@ -1,5 +1,5 @@
 // src/pages/Dashboard.js
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import {
     FaUserCircle,
@@ -48,6 +48,12 @@ import {
 import { useNotification } from '../context/NotificationContext';
 import notificationService from '../services/notificationService';
 import "../assets/Dashboard.css";
+import { FaSync } from "react-icons/fa";
+
+// ✅ Cache keys
+const CACHE_KEY = 'dashboard_data';
+const CACHE_TIMESTAMP_KEY = 'dashboard_timestamp';
+const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes cache
 
 export default function Dashboard() {
     const navigate = useNavigate();
@@ -62,30 +68,62 @@ export default function Dashboard() {
 
     const [openMenu, setOpenMenu] = useState(false);
     const [searchTerm, setSearchTerm] = useState("");
-    const [reportCounts, setReportCounts] = useState({
-        pmReports: 0,
-        preVisitChecklists: 0,
-        calibrationReports: 0,
-        installationReports: 0
+    const [reportCounts, setReportCounts] = useState(() => {
+        // ✅ Load from cache on initial render
+        const cached = localStorage.getItem(CACHE_KEY);
+        if (cached) {
+            try {
+                const data = JSON.parse(cached);
+                const timestamp = localStorage.getItem(CACHE_TIMESTAMP_KEY);
+                if (timestamp && (Date.now() - parseInt(timestamp)) < CACHE_DURATION) {
+                    return data;
+                }
+            } catch (e) {
+                // Invalid cache, ignore
+            }
+        }
+        return {
+            pmReports: 0,
+            preVisitChecklists: 0,
+            calibrationReports: 0,
+            installationReports: 0
+        };
     });
-    const [loading, setLoading] = useState(true);
+    const [loading, setLoading] = useState(() => {
+        // ✅ Only show loading if no cached data
+        const cached = localStorage.getItem(CACHE_KEY);
+        const timestamp = localStorage.getItem(CACHE_TIMESTAMP_KEY);
+        if (cached && timestamp && (Date.now() - parseInt(timestamp)) < CACHE_DURATION) {
+            return false;
+        }
+        return true;
+    });
     const [error, setError] = useState(null);
     const [hoveredCard, setHoveredCard] = useState(null);
     const [currentTime, setCurrentTime] = useState(new Date());
     const [showNotifications, setShowNotifications] = useState(false);
     const [notificationFilter, setNotificationFilter] = useState('all');
+    const [isRefreshing, setIsRefreshing] = useState(false);
     
     // Modal states
     const [showSupportModal, setShowSupportModal] = useState(false);
     const [showDocsModal, setShowDocsModal] = useState(false);
+    
+    // ✅ Refs to prevent duplicate fetches
+    const hasFetched = useRef(false);
+    const isFetching = useRef(false);
 
     const userName = localStorage.getItem("userName") || "User";
     const userRole = localStorage.getItem("userRole") || "Admin";
 
-    // Show welcome notification on first load
+    // Show welcome notification on first load (only once)
     useEffect(() => {
-        notificationService.welcome(userName);
-    }, []);
+        const welcomeShown = sessionStorage.getItem('welcome_shown');
+        if (!welcomeShown) {
+            notificationService.welcome(userName);
+            sessionStorage.setItem('welcome_shown', 'true');
+        }
+    }, [userName]);
 
     useEffect(() => {
         const timer = setInterval(() => {
@@ -94,83 +132,98 @@ export default function Dashboard() {
         return () => clearInterval(timer);
     }, []);
 
+    // ✅ Optimized fetch with cache check
     useEffect(() => {
-        const fetchReportCounts = async () => {
-            setLoading(true);
+        // Check if we have valid cached data
+        const cached = localStorage.getItem(CACHE_KEY);
+        const timestamp = localStorage.getItem(CACHE_TIMESTAMP_KEY);
+        const hasValidCache = cached && timestamp && (Date.now() - parseInt(timestamp)) < CACHE_DURATION;
+
+        // If we have valid cache and not forcing refresh, skip fetch
+        if (hasValidCache && !isRefreshing) {
+            setLoading(false);
+            return;
+        }
+
+        // Prevent duplicate fetches
+        if (isFetching.current) return;
+        
+        fetchReportCounts();
+    }, []); // ✅ Empty dependency array - runs only once
+
+    // ✅ Separate function for manual refresh
+    const handleRefresh = () => {
+        setIsRefreshing(true);
+        setLoading(true);
+        fetchReportCounts();
+    };
+
+    const fetchReportCounts = async () => {
+        if (isFetching.current) return;
+        isFetching.current = true;
+
+        try {
+            const results = await Promise.allSettled([
+                fetch('https://pm-reports.onrender.com/api/pm_reports/count', {
+                    headers: { 'Content-Type': 'application/json' }
+                }).then(res => res.ok ? res.json() : 0).catch(() => 0),
+                fetch('https://previsit-reports.onrender.com/api/previsit-reports/count', {
+                    headers: { 'Content-Type': 'application/json' }
+                }).then(res => res.ok ? res.json() : 0).catch(() => 0),
+                fetch('https://calibration-reports.onrender.com/api/calibration-reports/count', {
+                    headers: { 'Content-Type': 'application/json' }
+                }).then(res => res.ok ? res.json() : 0).catch(() => 0),
+                fetch('https://installation-reports.onrender.com/api/installation-reports', {
+                    headers: { 'Content-Type': 'application/json' }
+                }).then(res => res.ok ? res.json() : [])
+                    .then(data => Array.isArray(data) ? data.length : 0)
+                    .catch(() => 0)
+            ]);
+
+            const counts = results.map(result =>
+                result.status === 'fulfilled' ? result.value : 0
+            );
+
+            const newCounts = {
+                pmReports: typeof counts[0] === 'object' ? counts[0].count || 0 : counts[0] || 0,
+                preVisitChecklists: typeof counts[1] === 'object' ? counts[1].count || 0 : counts[1] || 0,
+                calibrationReports: typeof counts[2] === 'object' ? counts[2].count || 0 : counts[2] || 0,
+                installationReports: typeof counts[3] === 'number' ? counts[3] : 0
+            };
+
+            setReportCounts(newCounts);
             setError(null);
 
-            try {
-                const results = await Promise.allSettled([
-                    fetch('https://pm-reports.onrender.com/api/pm_reports/count', {
-                        headers: { 'Content-Type': 'application/json' }
-                    }).then(res => res.ok ? res.json() : 0).catch(() => 0),
-                    fetch('https://previsit-reports.onrender.com/api/previsit-reports/count', {
-                        headers: { 'Content-Type': 'application/json' }
-                    }).then(res => res.ok ? res.json() : 0).catch(() => 0),
-                    fetch('https://calibration-reports.onrender.com/api/calibration-reports/count', {
-                        headers: { 'Content-Type': 'application/json' }
-                    }).then(res => res.ok ? res.json() : 0).catch(() => 0),
-                    fetch('https://installation-reports.onrender.com/api/installation-reports', {
-                        headers: { 'Content-Type': 'application/json' }
-                    }).then(res => res.ok ? res.json() : [])
-                        .then(data => Array.isArray(data) ? data.length : 0)
-                        .catch(() => 0)
-                ]);
+            // ✅ Save to cache
+            localStorage.setItem(CACHE_KEY, JSON.stringify(newCounts));
+            localStorage.setItem(CACHE_TIMESTAMP_KEY, String(Date.now()));
 
-                const counts = results.map(result =>
-                    result.status === 'fulfilled' ? result.value : 0
-                );
-
-                setReportCounts({
-                    pmReports: typeof counts[0] === 'object' ? counts[0].count || 0 : counts[0] || 0,
-                    preVisitChecklists: typeof counts[1] === 'object' ? counts[1].count || 0 : counts[1] || 0,
-                    calibrationReports: typeof counts[2] === 'object' ? counts[2].count || 0 : counts[2] || 0,
-                    installationReports: typeof counts[3] === 'number' ? counts[3] : 0
-                });
-
-                // Use the notification service for success
-                notificationService.success('Dashboard data loaded successfully', {
+            // Only show notification on manual refresh
+            if (isRefreshing) {
+                notificationService.success('Dashboard refreshed successfully', {
                     type: 'dashboard_load',
                     identifier: 'dashboard',
                     autoClose: 3000
                 });
-
-            } catch (error) {
-                console.error("Error fetching report counts:", error);
-                setError("Failed to load report counts. Please refresh the page.");
-                
-                // Use notification service for error
-                notificationService.error('Failed to load dashboard data', {
-                    identifier: 'dashboard_error'
-                });
-                
-                setReportCounts({
-                    pmReports: 0,
-                    preVisitChecklists: 0,
-                    calibrationReports: 0,
-                    installationReports: 0
-                });
-            } finally {
-                setLoading(false);
             }
-        };
 
-        fetchReportCounts();
-    }, []);
-
-    const handleLogout = () => {
-        notificationService.info('Logging out...', { autoClose: 2000 });
-        setTimeout(() => {
-            localStorage.removeItem("token");
-            localStorage.removeItem("userName");
-            localStorage.removeItem("userRole");
-            navigate("/login");
-        }, 1000);
+        } catch (error) {
+            console.error("Error fetching report counts:", error);
+            setError("Failed to load report counts. Please refresh the page.");
+            
+            notificationService.error('Failed to load dashboard data', {
+                identifier: 'dashboard_error'
+            });
+            
+        } finally {
+            setLoading(false);
+            isFetching.current = false;
+            setIsRefreshing(false);
+        }
     };
 
-    const totalReports = Object.values(reportCounts).reduce((a, b) => a + b, 0);
-
-    const features = [
+    // ✅ Memoized features to prevent unnecessary re-renders
+    const features = useMemo(() => [
         {
             id: 1,
             title: "Preventive Maintenance Report",
@@ -255,7 +308,23 @@ export default function Dashboard() {
             darkColor: "#065F46",
             shadowColor: "rgba(16, 185, 129, 0.25)"
         }
-    ];
+    ], [reportCounts]);
+
+    const handleLogout = () => {
+        notificationService.info('Logging out...', { autoClose: 2000 });
+        // ✅ Clear cache on logout
+        localStorage.removeItem(CACHE_KEY);
+        localStorage.removeItem(CACHE_TIMESTAMP_KEY);
+        sessionStorage.removeItem('welcome_shown');
+        setTimeout(() => {
+            localStorage.removeItem("token");
+            localStorage.removeItem("userName");
+            localStorage.removeItem("userRole");
+            navigate("/login");
+        }, 1000);
+    };
+
+    const totalReports = Object.values(reportCounts).reduce((a, b) => a + b, 0);
 
     const handleViewAll = (feature) => {
         notificationService.info(`Opening ${feature.title}`, { 
@@ -334,25 +403,21 @@ export default function Dashboard() {
         feature.description.toLowerCase().includes(searchTerm.toLowerCase())
     );
 
-    // Open Support Modal
     const openSupportModal = () => {
         setShowSupportModal(true);
         document.body.style.overflow = 'hidden';
     };
 
-    // Close Support Modal
     const closeSupportModal = () => {
         setShowSupportModal(false);
         document.body.style.overflow = 'auto';
     };
 
-    // Open Documentation Modal
     const openDocsModal = () => {
         setShowDocsModal(true);
         document.body.style.overflow = 'hidden';
     };
 
-    // Close Documentation Modal
     const closeDocsModal = () => {
         setShowDocsModal(false);
         document.body.style.overflow = 'auto';
@@ -584,6 +649,14 @@ export default function Dashboard() {
                             <div className="stat-value">{currentTime.toLocaleTimeString()}</div>
                             <div className="stat-label">{currentTime.toLocaleDateString()}</div>
                         </div>
+                        <button 
+                            className="refresh-btn"
+                            onClick={handleRefresh}
+                            disabled={isRefreshing}
+                            title="Refresh data"
+                        >
+                            {isRefreshing ? <FaSpinner className="spinning" /> : <FaSync />}
+                        </button>
                     </div>
                 </div>
 
@@ -601,17 +674,17 @@ export default function Dashboard() {
                                 Found {filteredFeatures.length} results
                             </span>
                         )}
+                        {loading && !isRefreshing && (
+                            <span className="loading-badge">
+                                <FaSpinner className="spinning" /> Loading...
+                            </span>
+                        )}
                     </div>
 
-                    {loading ? (
-                        <div className="loading-container">
-                            <FaSpinner className="spinner" />
-                            <p>Loading report counts...</p>
-                        </div>
-                    ) : error ? (
+                    {error ? (
                         <div className="error-container">
                             <p className="error-message">{error}</p>
-                            <button onClick={() => window.location.reload()} className="retry-btn">
+                            <button onClick={handleRefresh} className="retry-btn">
                                 Retry
                             </button>
                         </div>
@@ -810,7 +883,6 @@ export default function Dashboard() {
                 </div>
             )}
 
-
             {/* DOCUMENTATION MODAL */}
             {showDocsModal && (
                 <div className="modal-overlay" onClick={closeDocsModal}>
@@ -916,5 +988,5 @@ export default function Dashboard() {
     );
 }
 
-// Add these missing icons at the top of your file
+// Missing icon component
 const FaChevronDown = () => <span style={{ fontSize: '14px' }}>▾</span>;
