@@ -6,8 +6,8 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.CreationTimestamp;
-import com.fasterxml.jackson.annotation.JsonIgnore; 
-
+import org.hibernate.annotations.JdbcType;
+import org.hibernate.type.descriptor.jdbc.BinaryJdbcType;
 import java.time.LocalDateTime;
 
 @Entity
@@ -21,6 +21,11 @@ public class InstallationSiteImage
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+    
+    @Lob
+    @JdbcType(BinaryJdbcType.class)
+    @Column(name = "image_data", columnDefinition = "BYTEA")
+    private byte[] imageData;
 
     @Column(name = "image_url", nullable = false, columnDefinition = "TEXT")
     private String imageUrl;

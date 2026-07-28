@@ -262,6 +262,35 @@ public class InstallationReportServiceImpl implements InstallationReportService 
         
         return siteImageRepository.findByInstallationReportIdAndIsFinal(reportId, true);
     }
+    
+    //NEW: Get image data as byte array
+    @Override
+    @Transactional(readOnly = true)
+    public byte[] getImageData(Long imageId) {
+        log.info("Fetching image data for ID: {}", imageId);
+        
+        InstallationSiteImage image = siteImageRepository.findById(imageId)
+                .orElseThrow(() -> new ResourceNotFoundException("Image not found with ID: " + imageId));
+        
+        byte[] imageData = image.getImageData();
+        if (imageData == null) {
+            log.warn("No image data found for ID: {}", imageId);
+            // Fallback: try to read from disk if data not in database
+            try {
+                String fileName = image.getImageUrl().substring(image.getImageUrl().lastIndexOf("/") + 1);
+                Path filePath = Paths.get(UPLOAD_DIR + fileName);
+                if (Files.exists(filePath)) {
+                    log.info("Reading image from disk: {}", fileName);
+                    return Files.readAllBytes(filePath);
+                }
+            } catch (IOException e) {
+                log.error("Error reading image from disk", e);
+            }
+            return null;
+        }
+        
+        return imageData;
+    }
 
     @Override
     @Transactional

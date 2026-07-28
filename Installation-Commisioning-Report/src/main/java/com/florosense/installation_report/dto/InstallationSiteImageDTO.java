@@ -10,6 +10,7 @@ import lombok.NoArgsConstructor;
 public class InstallationSiteImageDTO 
 {
     private Long id;
+    private String imageData;
     private String imageUrl;
     private String imageName;
     private String imageType;

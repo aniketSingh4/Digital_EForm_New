@@ -45,4 +45,6 @@ public interface InstallationReportService
     InstallationSiteImage updateImageDetails(Long imageId, String description, Boolean isFinal);
     
     long getImageCountByReportId(Long reportId);
+    
+    byte[] getImageData(Long imageId);
 }
