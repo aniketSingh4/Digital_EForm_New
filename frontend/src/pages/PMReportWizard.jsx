@@ -233,8 +233,10 @@ export default function PMReportWizard() {
                 engineerName: reportData.engineerName || "",
                 observation: formData.summary?.observation || "",
                 recommendation: formData.summary?.recommendation || "",
+                summary: {
                 preventiveMaintenanceStatus: formData.summary?.pmStatus || "SATISFACTORY",
-                siteConditionAfterPm: formData.summary?.siteCondition || "SYSTEM_OPERATIONAL",
+                siteConditionAfterPm: formData.summary?.siteCondition || "SYSTEM_OPERATIONAL"
+               },
                 checklists: formData.checklists || [],
                 signOff: {
                     clientRepresentativeName: formData.signoff?.clientRepresentativeName || "",
@@ -275,11 +277,11 @@ export default function PMReportWizard() {
             console.log('Checklists in payload:', payload.checklists?.length || 0);
 
             let response;
-            let url = 'http://localhost:8090/api/pm_reports';
+            let url = 'https://pm-reports.onrender.com/api/pm_reports';
             let method = 'POST';
 
             if (isEditMode && id) {
-                url = `http://localhost:8090/api/pm_reports/${id}`;
+                url = `https://pm-reports.onrender.com/api/pm_reports/${id}`;
                 method = 'PUT';
             }
 

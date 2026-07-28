@@ -50,10 +50,10 @@ import notificationService from '../services/notificationService';
 import "../assets/Dashboard.css";
 import { FaSync } from "react-icons/fa";
 
-// ✅ Cache keys
+//Cache keys
 const CACHE_KEY = 'dashboard_data';
 const CACHE_TIMESTAMP_KEY = 'dashboard_timestamp';
-const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes cache
+const CACHE_DURATION = 30 * 60 * 1000; // 30 minutes cache
 
 export default function Dashboard() {
     const navigate = useNavigate();
@@ -69,7 +69,7 @@ export default function Dashboard() {
     const [openMenu, setOpenMenu] = useState(false);
     const [searchTerm, setSearchTerm] = useState("");
     const [reportCounts, setReportCounts] = useState(() => {
-        // ✅ Load from cache on initial render
+        //Load from cache on initial render
         const cached = localStorage.getItem(CACHE_KEY);
         if (cached) {
             try {
@@ -90,7 +90,7 @@ export default function Dashboard() {
         };
     });
     const [loading, setLoading] = useState(() => {
-        // ✅ Only show loading if no cached data
+        //Only show loading if no cached data
         const cached = localStorage.getItem(CACHE_KEY);
         const timestamp = localStorage.getItem(CACHE_TIMESTAMP_KEY);
         if (cached && timestamp && (Date.now() - parseInt(timestamp)) < CACHE_DURATION) {
@@ -109,7 +109,7 @@ export default function Dashboard() {
     const [showSupportModal, setShowSupportModal] = useState(false);
     const [showDocsModal, setShowDocsModal] = useState(false);
     
-    // ✅ Refs to prevent duplicate fetches
+    //Refs to prevent duplicate fetches
     const hasFetched = useRef(false);
     const isFetching = useRef(false);
 
@@ -132,7 +132,7 @@ export default function Dashboard() {
         return () => clearInterval(timer);
     }, []);
 
-    // ✅ Optimized fetch with cache check
+    //Optimized fetch with cache check
     useEffect(() => {
         // Check if we have valid cached data
         const cached = localStorage.getItem(CACHE_KEY);
@@ -149,9 +149,9 @@ export default function Dashboard() {
         if (isFetching.current) return;
         
         fetchReportCounts();
-    }, []); // ✅ Empty dependency array - runs only once
+    }, []); //Empty dependency array - runs only once
 
-    // ✅ Separate function for manual refresh
+    //Separate function for manual refresh
     const handleRefresh = () => {
         setIsRefreshing(true);
         setLoading(true);
@@ -194,7 +194,7 @@ export default function Dashboard() {
             setReportCounts(newCounts);
             setError(null);
 
-            // ✅ Save to cache
+            //Save to cache
             localStorage.setItem(CACHE_KEY, JSON.stringify(newCounts));
             localStorage.setItem(CACHE_TIMESTAMP_KEY, String(Date.now()));
 
@@ -222,7 +222,7 @@ export default function Dashboard() {
         }
     };
 
-    // ✅ Memoized features to prevent unnecessary re-renders
+    //Memoized features to prevent unnecessary re-renders
     const features = useMemo(() => [
         {
             id: 1,
@@ -312,7 +312,7 @@ export default function Dashboard() {
 
     const handleLogout = () => {
         notificationService.info('Logging out...', { autoClose: 2000 });
-        // ✅ Clear cache on logout
+        //Clear cache on logout
         localStorage.removeItem(CACHE_KEY);
         localStorage.removeItem(CACHE_TIMESTAMP_KEY);
         sessionStorage.removeItem('welcome_shown');

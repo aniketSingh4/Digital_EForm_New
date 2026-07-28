@@ -53,10 +53,10 @@ const PMReportView = () => {
             }
 
             const data = await response.json();
+            console.log('📥 Raw report data:', data);
             setReport(data);
         } catch (error) {
             console.error('Error fetching report:', error);
-            //toast.error('Failed to load report details');
             notificationService.error('Failed to load PM Report');
             navigate('/pm-reports/view-all');
         } finally {
@@ -79,15 +79,31 @@ const PMReportView = () => {
         }
     };
 
+    // ✅ Helper function to format status text
+    const formatStatusText = (status) => {
+        if (!status) return 'N/A';
+        return status.replace(/_/g, ' ').toLowerCase()
+            .replace(/\b\w/g, l => l.toUpperCase());
+    };
+
+    // ✅ Helper function to get status badge
     const getStatusBadge = (status) => {
+        if (!status) {
+            return { label: 'N/A', className: 'status-pending', icon: <FaClock /> };
+        }
+
         const statusMap = {
             'SATISFACTORY': { label: 'Satisfactory', className: 'status-success', icon: <FaCheckCircle /> },
             'FOLLOW_UP_VISIT_REQUIRED': { label: 'Follow-up Required', className: 'status-warning', icon: <FaClock /> },
             'REQUIRES_ATTENTION': { label: 'Requires Attention', className: 'status-danger', icon: <FaClock /> },
             'COMPLETED': { label: 'Completed', className: 'status-success', icon: <FaCheckCircle /> },
-            'PENDING': { label: 'Pending', className: 'status-pending', icon: <FaClock /> }
+            'PENDING': { label: 'Pending', className: 'status-pending', icon: <FaClock /> },
+            'SYSTEM_OPERATIONAL': { label: 'System Operational', className: 'status-success', icon: <FaCheckCircle /> },
+            'NEEDS_MAINTENANCE': { label: 'Needs Maintenance', className: 'status-warning', icon: <FaClock /> },
+            'CRITICAL': { label: 'Critical', className: 'status-danger', icon: <FaClock /> },
+            'UNDER_OBSERVATION': { label: 'Under Observation', className: 'status-info', icon: <FaClock /> }
         };
-        return statusMap[status] || { label: status || 'Unknown', className: 'status-pending', icon: <FaClock /> };
+        return statusMap[status] || { label: formatStatusText(status), className: 'status-pending', icon: <FaClock /> };
     };
 
     const handlePDF = async () => {
@@ -95,10 +111,8 @@ const PMReportView = () => {
             setActionLoading('pdf');
             // Add PDF generation logic here
             notificationService.pdfGenerated(report?.serviceReportNo || 'PM Report');
-            //toast.success('PDF generated successfully!');
         } catch (error) {
             notificationService.error('Failed to generate PDF');
-            //toast.error('Failed to generate PDF');
         } finally {
             setActionLoading(null);
         }
@@ -140,8 +154,13 @@ const PMReportView = () => {
         );
     }
 
-    const status = getStatusBadge(report.preventiveMaintenanceStatus);
+    // ✅ Get summary data from report
+    const summary = report.summary || {};
     const signOff = report.signOff || {};
+
+    // ✅ Get status badges
+    const pmStatus = getStatusBadge(summary.preventiveMaintenanceStatus);
+    const siteCondition = getStatusBadge(summary.siteConditionAfterPm);
 
     return (
         <div className="pm-report-view-container">
@@ -209,10 +228,6 @@ const PMReportView = () => {
                             <span className="label">Engineer</span>
                             <span className="value">{report.engineerName || 'N/A'}</span>
                         </div>
-                        <div className="detail-row">
-                            <span className="label">Site Condition</span>
-                            <span className="value">{report.siteConditionAfterPm || 'N/A'}</span>
-                        </div>
                     </div>
                 </div>
 
@@ -238,6 +253,33 @@ const PMReportView = () => {
                     <div className="card-body">
                         <div className="recommendation-content">
                             {report.recommendation || 'No recommendation provided'}
+                        </div>
+                    </div>
+                </div>
+
+                {/* ✅ FIXED: Preventive Maintenance */}
+                <div className="detail-card">
+                    <div className="card-header">
+                        <FaClipboardCheck className="card-icon" />
+                        <h3>Preventive Maintenance</h3>
+                    </div>
+                    <div className="card-body">
+                        <div className="detail-row">
+                            <span className="label">PM Status</span>
+                            <span className="value">
+                                <span className={`status-badge ${pmStatus.className}`}>
+                                    {pmStatus.icon} {pmStatus.label}
+                                </span>
+                            </span>
+                        </div>
+
+                        <div className="detail-row">
+                            <span className="label">Site Condition</span>
+                            <span className="value">
+                                <span className={`status-badge ${siteCondition.className}`}>
+                                    {siteCondition.icon} {siteCondition.label}
+                                </span>
+                            </span>
                         </div>
                     </div>
                 </div>
