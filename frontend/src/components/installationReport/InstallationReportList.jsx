@@ -505,7 +505,8 @@ const InstallationReportList = () => {
         ['Basic Functionality Check', reportData.basicFunctionalityCheck],
         ['Stable Power Supply', reportData.stablePowerSupply],
         ['Stable Internet Connection', reportData.stableInternetConnection],
-        ['Safety & Maintenance Explained', reportData.safetyMaintenanceExplained]
+        ['Safety & Maintenance Explained', reportData.safetyMaintenanceExplained],
+        ['Other Activities', reportData.workActivityOthers]
       ];
 
       // Display activity in two columns

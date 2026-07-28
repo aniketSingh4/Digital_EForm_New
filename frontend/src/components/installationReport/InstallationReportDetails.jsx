@@ -53,6 +53,8 @@ const InstallationReportDetails = () => {
         try {
             setLoading(true);
             const response = await axios.get(`${API_BASE_URL}/${id}`);
+            console.log('📥 Report data:', response.data);
+            console.log('📸 Site images:', response.data.siteImages);
             setReport(response.data);
         } catch (error) {
             console.error('Error fetching report:', error);
@@ -111,7 +113,7 @@ const InstallationReportDetails = () => {
         navigate('/installation-reports');
     };
 
-    // ✅ IMPROVED: Delete Image Function with proper error handling and state management
+    // ✅ FIXED: Delete Image Function
     const handleDeleteImage = async (imageId, imageName) => {
         if (!window.confirm(`Are you sure you want to delete "${imageName || 'this image'}"?`)) {
             return;
@@ -120,11 +122,9 @@ const InstallationReportDetails = () => {
         try {
             setDeleteLoading(imageId);
 
-            // API call to delete image
             const response = await axios.delete(`${API_BASE_URL}/images/${imageId}`);
 
             if (response.status === 200 || response.data.success !== false) {
-                // Update the report state by removing the deleted image
                 setReport(prevReport => ({
                     ...prevReport,
                     siteImages: prevReport.siteImages.filter(img => img.id !== imageId)
@@ -143,7 +143,7 @@ const InstallationReportDetails = () => {
         }
     };
 
-    //IMPROVED: Download Image Function with better error handling
+    // ✅ FIXED: Download Image Function - Handles data URIs
     const handleDownloadImage = (imageUrl, imageName) => {
         try {
             if (!imageUrl) {
@@ -151,7 +151,19 @@ const InstallationReportDetails = () => {
                 return;
             }
 
-            // Create a temporary anchor element
+            // If it's a data URI, create download directly
+            if (imageUrl && imageUrl.startsWith('data:')) {
+                const link = document.createElement('a');
+                link.href = imageUrl;
+                link.download = imageName || 'site-image.jpg';
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                toast.success(`Downloading "${imageName || 'Image'}"...`);
+                return;
+            }
+
+            // Otherwise use the full URL
             const link = document.createElement('a');
             link.href = imageUrl;
             link.download = imageName || 'site-image.jpg';
@@ -166,38 +178,51 @@ const InstallationReportDetails = () => {
         }
     };
 
-    //IMPROVED: Open Lightbox function
     const openLightbox = (image) => {
         setSelectedImage(image);
         setShowLightbox(true);
     };
 
-    //IMPROVED: Close Lightbox function
     const closeLightbox = () => {
         setShowLightbox(false);
         setSelectedImage(null);
     };
 
-    //Updated getFullImageUrl function
+    // ✅ FIXED: getFullImageUrl function - Handles data URIs
     const getFullImageUrl = (imageUrl) => {
         if (!imageUrl) return null;
 
+        console.log('🔗 Processing image URL:', imageUrl);
+
+        // ✅ If it's a data URI, return as is
+        if (imageUrl.startsWith('data:')) {
+            console.log('✅ Data URI detected, using directly');
+            return imageUrl;
+        }
+
         // If it's already a full URL, return as is
         if (imageUrl.startsWith('http://') || imageUrl.startsWith('https://')) {
+            console.log('✅ Full URL detected:', imageUrl);
             return imageUrl;
         }
 
         // If it starts with '/uploads/', construct full URL
         if (imageUrl.startsWith('/uploads/')) {
-            return `${IMAGE_BASE_URL}${imageUrl}`;
+            const fullUrl = `${IMAGE_BASE_URL}${imageUrl}`;
+            console.log('✅ Constructed URL from /uploads/:', fullUrl);
+            return fullUrl;
         }
 
         // If it doesn't start with '/', add it
         if (!imageUrl.startsWith('/')) {
-            return `${IMAGE_BASE_URL}/uploads/installation-images/${imageUrl}`;
+            const fullUrl = `${IMAGE_BASE_URL}/uploads/installation-images/${imageUrl}`;
+            console.log('✅ Constructed URL with folder:', fullUrl);
+            return fullUrl;
         }
 
-        return `${IMAGE_BASE_URL}${imageUrl}`;
+        const fullUrl = `${IMAGE_BASE_URL}${imageUrl}`;
+        console.log('✅ Final constructed URL:', fullUrl);
+        return fullUrl;
     };
 
     if (loading) {
@@ -266,6 +291,7 @@ const InstallationReportDetails = () => {
                             src={getFullImageUrl(selectedImage.imageUrl)}
                             alt={selectedImage.imageName || 'Site image'}
                             onError={(e) => {
+                                console.error('❌ Image failed to load:', selectedImage.imageUrl);
                                 e.target.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="400" height="400" viewBox="0 0 400 400"%3E%3Crect width="400" height="400" fill="%23f3f4f6"/%3E%3Ctext x="200" y="200" text-anchor="middle" dy=".3em" fill="%239ca3af" font-size="20"%3ENo Image%3C/text%3E%3C/svg%3E';
                             }}
                         />
@@ -430,60 +456,66 @@ const InstallationReportDetails = () => {
                         <span className="image-count">{siteImages.length} image(s)</span>
                     </div>
                     <div className="images-grid">
-                        {siteImages.map((image, index) => (
-                            <div key={image.id || index} className="image-card">
-                                <img
-                                    src={getFullImageUrl(image.imageUrl)}
-                                    alt={image.imageName || 'Site image'}
-                                    className="image-thumb"
-                                    onClick={() => openLightbox(image)}
-                                    onError={(e) => {
-                                        e.target.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="200" height="200" viewBox="0 0 200 200"%3E%3Crect width="200" height="200" fill="%23f3f4f6"/%3E%3Ctext x="100" y="100" text-anchor="middle" dy=".3em" fill="%239ca3af" font-size="16"%3ENo Image%3C/text%3E%3C/svg%3E';
-                                    }}
-                                />
-                                <div className="image-overlay">
-                                    <div className="image-overlay-info">
-                                        {image.isFinal && <span className="image-final-badge">⭐ Final</span>}
-                                        <span className="image-name">{image.imageName || 'Image'}</span>
-                                        {image.description && (
-                                            <span className="image-description">{image.description}</span>
-                                        )}
-                                    </div>
-                                    <div className="image-overlay-actions">
-                                        <button
-                                            className="image-action-btn view"
-                                            onClick={() => openLightbox(image)}
-                                            title="View"
-                                        >
-                                            <FaEye /> View
-                                        </button>
-                                        <button
-                                            className="image-action-btn download"
-                                            onClick={() => handleDownloadImage(
-                                                getFullImageUrl(image.imageUrl),
-                                                image.imageName
+                        {siteImages.map((image, index) => {
+                            const imageUrl = getFullImageUrl(image.imageUrl);
+                            console.log(`🖼️ Image ${index} URL:`, imageUrl);
+                            
+                            return (
+                                <div key={image.id || index} className="image-card">
+                                    <img
+                                        src={imageUrl}
+                                        alt={image.imageName || 'Site image'}
+                                        className="image-thumb"
+                                        onClick={() => openLightbox(image)}
+                                        onError={(e) => {
+                                            console.error('❌ Image failed to load:', imageUrl);
+                                            e.target.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="200" height="200" viewBox="0 0 200 200"%3E%3Crect width="200" height="200" fill="%23f3f4f6"/%3E%3Ctext x="100" y="100" text-anchor="middle" dy=".3em" fill="%239ca3af" font-size="16"%3ENo Image%3C/text%3E%3C/svg%3E';
+                                        }}
+                                    />
+                                    <div className="image-overlay">
+                                        <div className="image-overlay-info">
+                                            {image.isFinal && <span className="image-final-badge">⭐ Final</span>}
+                                            <span className="image-name">{image.imageName || 'Image'}</span>
+                                            {image.description && (
+                                                <span className="image-description">{image.description}</span>
                                             )}
-                                            title="Download"
-                                            disabled={deleteLoading === image.id}
-                                        >
-                                            <FaDownload /> Download
-                                        </button>
-                                        <button
-                                            className="image-action-btn delete"
-                                            onClick={() => handleDeleteImage(image.id, image.imageName)}
-                                            title="Delete"
-                                            disabled={deleteLoading === image.id}
-                                        >
-                                            {deleteLoading === image.id ? (
-                                                <FaSpinner className="spinning" />
-                                            ) : (
-                                                <FaTrash />
-                                            )} Delete
-                                        </button>
+                                        </div>
+                                        <div className="image-overlay-actions">
+                                            <button
+                                                className="image-action-btn view"
+                                                onClick={() => openLightbox(image)}
+                                                title="View"
+                                            >
+                                                <FaEye /> View
+                                            </button>
+                                            <button
+                                                className="image-action-btn download"
+                                                onClick={() => handleDownloadImage(
+                                                    image.imageUrl,
+                                                    image.imageName
+                                                )}
+                                                title="Download"
+                                                disabled={deleteLoading === image.id}
+                                            >
+                                                <FaDownload /> Download
+                                            </button>
+                                            <button
+                                                className="image-action-btn delete"
+                                                onClick={() => handleDeleteImage(image.id, image.imageName)}
+                                                title="Delete"
+                                                disabled={deleteLoading === image.id}
+                                            >
+                                                {deleteLoading === image.id ? (
+                                                    <FaSpinner className="spinning" />
+                                                ) : (
+                                                    <FaTrash />
+                                                )} Delete
+                                            </button>
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
-                        ))}
+                            );
+                        })}
                     </div>
                     <div className="images-footer">
                         <span>Total: {siteImages.length} image(s)</span>
