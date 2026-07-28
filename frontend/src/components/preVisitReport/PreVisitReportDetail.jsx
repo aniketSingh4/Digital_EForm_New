@@ -87,22 +87,28 @@ const PreVisitReportDetail = () => {
   };
 
   //Helper function to get full image URL
-  const getImageUrl = (imageUrl) => {
-    if (!imageUrl) return null;
+const getImageUrl = (imageUrl) => {
+  if (!imageUrl) return null;
 
-    // If it's already a full URL, return as is
-    if (imageUrl.startsWith('http://') || imageUrl.startsWith('https://')) {
-      return imageUrl;
-    }
+  // ✅ If it's a data URI, return as is
+  if (imageUrl.startsWith('data:')) {
+    console.log('Data URI detected, using directly');
+    return imageUrl;
+  }
 
-    // If it starts with '/', prepend base URL
-    if (imageUrl.startsWith('/')) {
-      return `${IMAGE_BASE_URL}${imageUrl}`;
-    }
+  // If it's already a full URL, return as is
+  if (imageUrl.startsWith('http://') || imageUrl.startsWith('https://')) {
+    return imageUrl;
+  }
 
-    // Otherwise, prepend base URL with slash
-    return `${IMAGE_BASE_URL}/${imageUrl}`;
-  };
+  // If it starts with '/', prepend base URL
+  if (imageUrl.startsWith('/')) {
+    return `${IMAGE_BASE_URL}${imageUrl}`;
+  }
+
+  // Otherwise, prepend base URL with slash
+  return `${IMAGE_BASE_URL}/${imageUrl}`;
+};
 
   //Handle image load error
   const handleImageError = (imageId) => {
@@ -392,21 +398,21 @@ const PreVisitReportDetail = () => {
                             title="View"
                             disabled={hasError}
                           >
-                            <FaEye />
+                            <FaEye /> View
                           </button>
                           <button
                             className="image-action-btn download"
                             onClick={() => handleDownloadImage(image.imageUrl, image.imageName)}
                             title="Download"
                           >
-                            <FaDownload />
+                            <FaDownload /> Download
                           </button>
                           <button
                             className="image-action-btn delete"
                             onClick={() => handleDeleteImage(image.id)}
                             title="Delete"
                           >
-                            <FaTrash />
+                            <FaTrash /> Delete
                           </button>
                         </div>
                       </div>

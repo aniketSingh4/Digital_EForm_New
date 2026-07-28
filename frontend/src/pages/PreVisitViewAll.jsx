@@ -714,7 +714,7 @@ const PreVisitViewAll = () => {
                                         className="select-checkbox"
                                     />
                                 </th>
-                                <th style={{ width: '60px' }}>#</th>
+                                <th style={{ width: '60px' }}>SNo</th>
                                 <th onClick={() => handleSort('id')} className="sortable">
                                     ID {getSortIcon('id')}
                                 </th>
@@ -747,7 +747,7 @@ const PreVisitViewAll = () => {
                                             />
                                         </td>
                                         <td>{indexOfFirstItem + index + 1}</td>
-                                        <td className="report-id">#{String(report.id).padStart(3, '0')}</td>
+                                        <td className="report-id">FESPL_PVR_{String(report.id).padStart(3, '0')}</td>
                                         <td className="company-name">
                                             <span className="company-text">{report.companyName || '-'}</span>
                                         </td>

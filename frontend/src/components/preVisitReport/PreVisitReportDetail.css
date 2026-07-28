@@ -705,13 +705,6 @@
   }
 }
 
-/* src/components/PreVisitReport/PreVisitReportDetail.css */
-
-/* ... existing styles ... */
-
-/* ========================================
-   NO IMAGES STATE
-   ======================================== */
 
 .no-images {
   display: flex;
@@ -765,5 +758,3 @@
 .image-card:hover .image-overlay {
   opacity: 1;
 }
-
-/* ... rest of existing styles ... */

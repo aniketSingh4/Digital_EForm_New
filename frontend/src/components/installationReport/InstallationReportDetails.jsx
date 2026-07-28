@@ -43,6 +43,7 @@ const InstallationReportDetails = () => {
     const [actionLoading, setActionLoading] = useState(null);
     const [showLightbox, setShowLightbox] = useState(false);
     const [selectedImage, setSelectedImage] = useState(null);
+    const [deleteLoading, setDeleteLoading] = useState(null);
 
     useEffect(() => {
         fetchReportDetails();
@@ -54,7 +55,8 @@ const InstallationReportDetails = () => {
             const response = await axios.get(`${API_BASE_URL}/${id}`);
             setReport(response.data);
         } catch (error) {
-            notificationService.error('Failed to load Installation Report');
+            console.error('Error fetching report:', error);
+            toast.error('Failed to load Installation Report');
             navigate('/installation-reports');
         } finally {
             setLoading(false);
@@ -87,9 +89,11 @@ const InstallationReportDetails = () => {
         try {
             setActionLoading('pdf');
             await new Promise(resolve => setTimeout(resolve, 1500));
+            toast.success('PDF generated successfully!');
             notificationService.pdfGenerated(report?.reportNo || 'Installation Report');
         } catch (error) {
-            notificationService.error('Failed to generate PDF');
+            console.error('PDF generation failed:', error);
+            toast.error('Failed to generate PDF');
         } finally {
             setActionLoading(null);
         }
@@ -107,28 +111,74 @@ const InstallationReportDetails = () => {
         navigate('/installation-reports');
     };
 
-    const handleDownloadImage = (imageUrl, imageName) => {
-        const link = document.createElement('a');
-        link.href = imageUrl;
-        link.download = imageName || 'site-image.jpg';
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
+    // ✅ IMPROVED: Delete Image Function with proper error handling and state management
+    const handleDeleteImage = async (imageId, imageName) => {
+        if (!window.confirm(`Are you sure you want to delete "${imageName || 'this image'}"?`)) {
+            return;
+        }
+
+        try {
+            setDeleteLoading(imageId);
+
+            // API call to delete image
+            const response = await axios.delete(`${API_BASE_URL}/images/${imageId}`);
+
+            if (response.status === 200 || response.data.success !== false) {
+                // Update the report state by removing the deleted image
+                setReport(prevReport => ({
+                    ...prevReport,
+                    siteImages: prevReport.siteImages.filter(img => img.id !== imageId)
+                }));
+
+                toast.success(`Image "${imageName || 'Image'}" deleted successfully!`);
+            } else {
+                throw new Error(response.data.message || 'Failed to delete image');
+            }
+        } catch (error) {
+            console.error('Delete failed:', error);
+            const errorMessage = error.response?.data?.message || error.message || 'Failed to delete image. Please try again.';
+            toast.error(errorMessage);
+        } finally {
+            setDeleteLoading(null);
+        }
     };
 
+    //IMPROVED: Download Image Function with better error handling
+    const handleDownloadImage = (imageUrl, imageName) => {
+        try {
+            if (!imageUrl) {
+                toast.error('Image URL is not available');
+                return;
+            }
+
+            // Create a temporary anchor element
+            const link = document.createElement('a');
+            link.href = imageUrl;
+            link.download = imageName || 'site-image.jpg';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+
+            toast.success(`Downloading "${imageName || 'Image'}"...`);
+        } catch (error) {
+            console.error('Download failed:', error);
+            toast.error('Failed to download image. Please try again.');
+        }
+    };
+
+    //IMPROVED: Open Lightbox function
     const openLightbox = (image) => {
         setSelectedImage(image);
         setShowLightbox(true);
     };
 
+    //IMPROVED: Close Lightbox function
     const closeLightbox = () => {
         setShowLightbox(false);
         setSelectedImage(null);
     };
 
-
-
-    // ✅ Updated getFullImageUrl function
+    //Updated getFullImageUrl function
     const getFullImageUrl = (imageUrl) => {
         if (!imageUrl) return null;
 
@@ -219,11 +269,11 @@ const InstallationReportDetails = () => {
                                 e.target.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="400" height="400" viewBox="0 0 400 400"%3E%3Crect width="400" height="400" fill="%23f3f4f6"/%3E%3Ctext x="200" y="200" text-anchor="middle" dy=".3em" fill="%239ca3af" font-size="20"%3ENo Image%3C/text%3E%3C/svg%3E';
                             }}
                         />
-                        {/* <div className="lightbox-info">
+                        <div className="lightbox-info">
                             <span className="lightbox-name">{selectedImage.imageName || 'Image'}</span>
                             {selectedImage.isFinal && <span className="lightbox-final">⭐ Final</span>}
                             {selectedImage.description && <span className="lightbox-desc">{selectedImage.description}</span>}
-                        </div> */}
+                        </div>
                     </div>
                 </div>
             )}
@@ -343,7 +393,7 @@ const InstallationReportDetails = () => {
                             </span>
                         </div>
                     ))}
-                    {/* ✅ NEW: Others Work Activity */}
+                    {/* Others Work Activity */}
                     {report.workActivityOthers && (
                         <div className="activity-item others-completed">
                             <span>Others</span>
@@ -353,7 +403,7 @@ const InstallationReportDetails = () => {
                         </div>
                     )}
                 </div>
-                {/* ✅ NEW: Others Work Activity Details */}
+                {/* Others Work Activity Details */}
                 {report.workActivityOthers && (
                     <div className="others-details">
                         <h4>Other Work Activities:</h4>
@@ -372,7 +422,7 @@ const InstallationReportDetails = () => {
                 </div>
             )}
 
-            {/* ✅ NEW: Site Images Section */}
+            {/* Site Images Section */}
             {siteImages.length > 0 && (
                 <div className="images-section">
                     <div className="section-header">
@@ -405,14 +455,30 @@ const InstallationReportDetails = () => {
                                             onClick={() => openLightbox(image)}
                                             title="View"
                                         >
-                                            <FaEye />
+                                            <FaEye /> View
                                         </button>
                                         <button
                                             className="image-action-btn download"
-                                            onClick={() => handleDownloadImage(getFullImageUrl(image.imageUrl), image.imageName)}
+                                            onClick={() => handleDownloadImage(
+                                                getFullImageUrl(image.imageUrl),
+                                                image.imageName
+                                            )}
                                             title="Download"
+                                            disabled={deleteLoading === image.id}
                                         >
-                                            <FaDownload />
+                                            <FaDownload /> Download
+                                        </button>
+                                        <button
+                                            className="image-action-btn delete"
+                                            onClick={() => handleDeleteImage(image.id, image.imageName)}
+                                            title="Delete"
+                                            disabled={deleteLoading === image.id}
+                                        >
+                                            {deleteLoading === image.id ? (
+                                                <FaSpinner className="spinning" />
+                                            ) : (
+                                                <FaTrash />
+                                            )} Delete
                                         </button>
                                     </div>
                                 </div>

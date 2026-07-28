@@ -16,6 +16,9 @@ const CHECKLIST_ITEMS = [
   { id: 6, fieldName: 'Discuss Client Scope of Work' },
 ];
 
+// ✅ Define API Base URL
+const API_BASE_URL = 'https://previsit-reports.onrender.com/api/previsit-reports';
+
 const PreVisitReportForm = ({ onSuccess, onCancel, initialData, isEdit = false }) => {
   const navigate = useNavigate();
   const { id } = useParams();
@@ -42,9 +45,10 @@ const PreVisitReportForm = ({ onSuccess, onCancel, initialData, isEdit = false }
     }))
   });
 
-  // Image states - only store file names and files
+  // Image states
   const [imageFiles, setImageFiles] = useState([]);
   const [imageFileNames, setImageFileNames] = useState([]);
+  const [uploadedImages, setUploadedImages] = useState([]);
 
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -65,7 +69,7 @@ const PreVisitReportForm = ({ onSuccess, onCancel, initialData, isEdit = false }
   const fetchReportData = async () => {
     try {
       setLoading(true);
-      const response = await fetch(`https://previsit-reports.onrender.com/api/previsit-reports/${id}`, {
+      const response = await fetch(`${API_BASE_URL}/${id}`, {
         headers: { 'Content-Type': 'application/json' }
       });
 
@@ -78,6 +82,12 @@ const PreVisitReportForm = ({ onSuccess, onCancel, initialData, isEdit = false }
 
       setOriginalEmail(data.emailId || '');
       loadInitialData(data);
+      
+      // ✅ Load existing images if any
+      if (data.siteImages && data.siteImages.length > 0) {
+        setUploadedImages(data.siteImages);
+      }
+      
       toast.success('Report data loaded successfully');
 
     } catch (error) {
@@ -122,7 +132,7 @@ const PreVisitReportForm = ({ onSuccess, onCancel, initialData, isEdit = false }
     });
   };
 
-  // Handle image selection - only store file names
+  // Handle image selection
   const handleImageSelect = (e) => {
     const files = Array.from(e.target.files);
     if (files.length === 0) return;
@@ -142,7 +152,6 @@ const PreVisitReportForm = ({ onSuccess, onCancel, initialData, isEdit = false }
       return;
     }
 
-    // Store files and their names
     setImageFiles(prev => [...prev, ...files]);
     setImageFileNames(prev => [...prev, ...files.map(file => file.name)]);
 
@@ -150,7 +159,7 @@ const PreVisitReportForm = ({ onSuccess, onCancel, initialData, isEdit = false }
     toast.success(`${files.length} image(s) selected`);
   };
 
-  // Remove image from selection by index
+  // Remove image from selection
   const removeImage = (index) => {
     setImageFiles(prev => prev.filter((_, i) => i !== index));
     setImageFileNames(prev => prev.filter((_, i) => i !== index));
@@ -242,7 +251,7 @@ const PreVisitReportForm = ({ onSuccess, onCancel, initialData, isEdit = false }
     }
   };
 
-  // Submit handler - Uploads images automatically on form submit
+  // ✅ FIXED: Submit handler with correct image upload
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsSubmitting(true);
@@ -297,16 +306,15 @@ const PreVisitReportForm = ({ onSuccess, onCancel, initialData, isEdit = false }
       console.log('📦 Report Payload:', payload);
 
       let reportResponse;
-      const apiUrl = 'https://previsit-reports.onrender.com/api/previsit-reports';
 
       if (isEditMode && id) {
-        reportResponse = await fetch(`${apiUrl}/${id}`, {
+        reportResponse = await fetch(`${API_BASE_URL}/${id}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload)
         });
       } else {
-        reportResponse = await fetch(apiUrl, {
+        reportResponse = await fetch(API_BASE_URL, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload)
@@ -325,44 +333,88 @@ const PreVisitReportForm = ({ onSuccess, onCancel, initialData, isEdit = false }
       const reportResult = await reportResponse.json();
       const reportId = reportResult.id;
 
-      // Step 2: Upload images automatically after report is saved
+      // ✅ Step 2: Upload images using FormData (bulk upload)
       if (imageFiles.length > 0) {
         console.log(`📸 Uploading ${imageFiles.length} images for report ${reportId}`);
         
-        let uploadSuccess = 0;
-        let uploadFailed = 0;
+        // ✅ Create FormData with all files
+        const imageFormData = new FormData();
+        imageFiles.forEach(file => {
+          imageFormData.append('files', file);
+        });
+        imageFormData.append('isFinal', 'false');
+        imageFormData.append('description', 'Site installation images');
 
-        for (let i = 0; i < imageFiles.length; i++) {
-          const imageFormData = new FormData();
-          imageFormData.append('files', imageFiles[i]);
-          imageFormData.append('isFinal', 'false');
-          imageFormData.append('description', '');
-
-          try {
-            const uploadResponse = await fetch(
-              `https://previsit-reports.onrender.com/api/previsit-reports/images/upload/${reportId}`,
-              {
-                method: 'POST',
-                body: imageFormData
-              }
-            );
-
-            if (uploadResponse.ok) {
-              uploadSuccess++;
-            } else {
-              uploadFailed++;
-              console.warn(`Failed to upload image ${i + 1}`);
+        try {
+          // ✅ Use the correct endpoint: ${API_BASE_URL}/images/upload/${reportId}
+          const uploadResponse = await fetch(
+            `${API_BASE_URL}/images/upload/${reportId}`,
+            {
+              method: 'POST',
+              body: imageFormData
             }
-          } catch (error) {
-            uploadFailed++;
-            console.error(`Error uploading image ${i + 1}:`, error);
-          }
-        }
+          );
 
-        console.log(`📸 Image upload complete: ${uploadSuccess} successful, ${uploadFailed} failed`);
-        
-        if (uploadFailed > 0) {
-          toast.warning(`${uploadSuccess} images uploaded successfully, ${uploadFailed} failed.`);
+          if (uploadResponse.ok) {
+            const uploadedData = await uploadResponse.json();
+            console.log('✅ All images uploaded successfully:', uploadedData);
+            setUploadedImages(uploadedData);
+            toast.success(`✅ ${imageFiles.length} images uploaded successfully!`);
+            
+            // ✅ Clear image files after successful upload
+            setImageFiles([]);
+            setImageFileNames([]);
+          } else {
+            const errorText = await uploadResponse.text();
+            console.error('❌ Image upload failed:', errorText);
+            
+            // ✅ Fallback: Try individual uploads
+            toast.warning('Bulk upload failed, trying individual uploads...');
+            let uploadSuccess = 0;
+            let uploadFailed = 0;
+
+            for (let i = 0; i < imageFiles.length; i++) {
+              const singleFormData = new FormData();
+              singleFormData.append('files', imageFiles[i]);
+              singleFormData.append('isFinal', 'false');
+              singleFormData.append('description', 'Site installation images');
+
+              try {
+                const singleResponse = await fetch(
+                  `${API_BASE_URL}/images/upload/${reportId}`,
+                  {
+                    method: 'POST',
+                    body: singleFormData
+                  }
+                );
+
+                if (singleResponse.ok) {
+                  const data = await singleResponse.json();
+                  setUploadedImages(prev => [...prev, ...data]);
+                  uploadSuccess++;
+                } else {
+                  uploadFailed++;
+                  console.warn(`❌ Failed to upload image ${i + 1}`);
+                }
+              } catch (error) {
+                uploadFailed++;
+                console.error(`❌ Error uploading image ${i + 1}:`, error);
+              }
+            }
+
+            if (uploadSuccess > 0) {
+              toast.success(`${uploadSuccess} images uploaded successfully`);
+              setImageFiles([]);
+              setImageFileNames([]);
+            }
+            
+            if (uploadFailed > 0) {
+              toast.warning(`${uploadFailed} images failed to upload`);
+            }
+          }
+        } catch (error) {
+          console.error('❌ Error uploading images:', error);
+          toast.error('Failed to upload images. Please try again.');
         }
       }
 
@@ -398,7 +450,8 @@ const PreVisitReportForm = ({ onSuccess, onCancel, initialData, isEdit = false }
               displayName: item.fieldName
             }))
           });
-          clearAllImages();
+          setImageFiles([]);
+          setImageFileNames([]);
           setEmailExists(false);
           setOriginalEmail('');
         } else {
@@ -648,7 +701,7 @@ const PreVisitReportForm = ({ onSuccess, onCancel, initialData, isEdit = false }
           </div>
         </div>
 
-        {/* Site Images Section - Only File Names */}
+        {/* Site Images Section */}
         <div className="form-section">
           <div className="section-title">
             <span className="section-icon">📸</span>
