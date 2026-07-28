@@ -29,4 +29,5 @@ public interface PreVisitReportService
     void deleteAllImagesByReportId(Long reportId);
     SiteImageDTO updateImageDetails(Long imageId, String description, Boolean isFinal);
     long getImageCountByReportId(Long reportId);
+    byte[] getImageData(Long imageId);
 }

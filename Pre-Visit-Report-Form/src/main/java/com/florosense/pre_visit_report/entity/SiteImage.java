@@ -19,6 +19,11 @@ public class SiteImage
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+    
+    //Store image as byte array in database
+    @Lob
+    @Column(name = "image_data", columnDefinition = "BYTEA")
+    private byte[] imageData;
 
     @Column(name = "image_url", nullable = false, columnDefinition = "TEXT")
     private String imageUrl;

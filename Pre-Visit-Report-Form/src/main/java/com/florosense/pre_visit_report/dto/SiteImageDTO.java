@@ -31,4 +31,7 @@ public class SiteImageDTO {
     
     @JsonProperty("uploadedAt")
     private String uploadedAt;
+    
+    @JsonProperty("imageData")
+    private String imageData;
 }
