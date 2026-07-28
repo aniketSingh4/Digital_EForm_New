@@ -108,13 +108,10 @@ public class PreVisitReportController {
         return ResponseEntity.ok(count);
     }
 
-    // ========================================
     // IMAGE UPLOAD ENDPOINTS
-    // ========================================
 
-    /**
-     * ✅ UPDATED: Upload images - Store in PostgreSQL
-     */
+   
+    //UPDATED: Upload images - Store in PostgreSQL
     @PostMapping("/images/upload/{reportId}")
     public ResponseEntity<?> uploadImages(
             @PathVariable Long reportId,
@@ -128,7 +125,7 @@ public class PreVisitReportController {
 
             List<SiteImageDTO> uploadedImages = files.stream().map(file -> {
                 try {
-                    // ✅ NEW: Read file as byte array
+                    //Read file as byte array
                     byte[] imageBytes = file.getBytes();
                     
                     // Generate unique filename for reference
@@ -146,7 +143,7 @@ public class PreVisitReportController {
                     image.setReport(report);
                     image.setUploadedBy("SYSTEM");
                     
-                    // ✅ Set URL as data URI
+                    //Set URL as data URI
                     String base64Image = Base64.getEncoder().encodeToString(imageBytes);
                     image.setImageUrl("data:" + file.getContentType() + ";base64," + base64Image);
 
@@ -170,9 +167,7 @@ public class PreVisitReportController {
         }
     }
 
-    /**
-     * ✅ UPDATED: Upload base64 image - Store in PostgreSQL
-     */
+    //UPDATED: Upload base64 image - Store in PostgreSQL
     @PostMapping("/images/upload-base64/{reportId}")
     public ResponseEntity<?> uploadBase64Image(
             @PathVariable Long reportId,
@@ -227,9 +222,7 @@ public class PreVisitReportController {
         }
     }
 
-    /**
-     * ✅ NEW: Get image data as byte array
-     */
+    //NEW: Get image data as byte array
     @GetMapping(value = "/images/{imageId}/data", produces = MediaType.APPLICATION_OCTET_STREAM_VALUE)
     public ResponseEntity<byte[]> getImageData(@PathVariable Long imageId) {
         try {
@@ -250,9 +243,7 @@ public class PreVisitReportController {
         }
     }
 
-    /**
-     * ✅ UPDATED: Get all images for a report
-     */
+    //UPDATED: Get all images for a report
     @GetMapping("/images/report/{reportId}")
     public ResponseEntity<List<SiteImageDTO>> getImagesByReport(@PathVariable Long reportId) {
         List<SiteImage> images = siteImageRepository.findByReportId(reportId);
@@ -262,9 +253,7 @@ public class PreVisitReportController {
         return ResponseEntity.ok(dtos);
     }
 
-    /**
-     * ✅ UPDATED: Get only final images for a report
-     */
+    //UPDATED: Get only final images for a report
     @GetMapping("/images/report/{reportId}/final")
     public ResponseEntity<List<SiteImageDTO>> getFinalImagesByReport(@PathVariable Long reportId) {
         List<SiteImage> images = siteImageRepository.findByReportIdAndIsFinal(reportId, true);
@@ -274,9 +263,7 @@ public class PreVisitReportController {
         return ResponseEntity.ok(dtos);
     }
 
-    /**
-     * ✅ UPDATED: Delete a single image - No file system cleanup needed!
-     */
+    //UPDATED: Delete a single image - No file system cleanup needed!
     @DeleteMapping("/images/{imageId}")
     public ResponseEntity<?> deleteImage(@PathVariable Long imageId) {
         try {
@@ -296,9 +283,7 @@ public class PreVisitReportController {
         }
     }
 
-    /**
-     * ✅ UPDATED: Delete all images - No file system cleanup needed!
-     */
+    //UPDATED: Delete all images - No file system cleanup needed!
     @DeleteMapping("/images/report/{reportId}")
     public ResponseEntity<?> deleteAllImages(@PathVariable Long reportId) {
         try {
@@ -315,9 +300,7 @@ public class PreVisitReportController {
         }
     }
 
-    /**
-     * Update image details (description, isFinal flag)
-     */
+    //Update image details (description, isFinal flag)
     @PutMapping("/images/{imageId}")
     public ResponseEntity<?> updateImageDetails(
             @PathVariable Long imageId,

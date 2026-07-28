@@ -5,7 +5,8 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.CreationTimestamp;
-
+import org.hibernate.annotations.JdbcType;
+import org.hibernate.type.descriptor.jdbc.BinaryJdbcType;
 import java.time.LocalDateTime;
 
 @Entity
@@ -22,6 +23,7 @@ public class SiteImage
     
     //Store image as byte array in database
     @Lob
+    @JdbcType(BinaryJdbcType.class)
     @Column(name = "image_data", columnDefinition = "BYTEA")
     private byte[] imageData;
 
