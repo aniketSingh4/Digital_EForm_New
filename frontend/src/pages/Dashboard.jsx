@@ -53,7 +53,7 @@ import { FaSync } from "react-icons/fa";
 //Cache keys
 const CACHE_KEY = 'dashboard_data';
 const CACHE_TIMESTAMP_KEY = 'dashboard_timestamp';
-const CACHE_DURATION = 30 * 60 * 1000; // 30 minutes cache
+const CACHE_DURATION = 120 * 60 * 1000; // 2 hours cache
 
 export default function Dashboard() {
     const navigate = useNavigate();
@@ -257,7 +257,7 @@ export default function Dashboard() {
             iconBg: "rgba(14, 165, 233, 0.12)",
             borderColor: "rgba(14, 165, 233, 0.3)",
             count: reportCounts.preVisitChecklists,
-            countLabel: "Checklists Created",
+            countLabel: "Reports Created",
             badge: "Active",
             badgeColor: "#10b981",
             status: "operational",

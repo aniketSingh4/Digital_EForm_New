@@ -210,9 +210,7 @@ export default function Step6Review({
                 }
             };
 
-            //console.log("📤 Submitting data with checklists:", submitData);
-            //console.log("📊 Number of checklists:", submitData.checklists.length);
-
+            
             // ADDED: Check if we're in edit mode
             let result;
             
@@ -220,10 +218,6 @@ export default function Step6Review({
             const shouldUpdate = isEditMode && reportId;
             
             if (shouldUpdate) {
-                // ADDED: UPDATE - Use the update function
-                console.log(`📝 Updating report ${reportId}`);
-                console.log("📤 Update data:", submitData);
-                
                 result = await updatePMReportWithProgress(
                     reportId,
                     submitData,
