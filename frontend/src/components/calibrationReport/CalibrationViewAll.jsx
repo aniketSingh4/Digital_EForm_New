@@ -894,8 +894,8 @@ const CalibrationViewAll = () => {
             const fileName = `Calibration_Report_${safeString(fullReport.reportNo || 'Report')}_${new Date().toISOString().split('T')[0]}.pdf`;
             doc.save(fileName);
 
-            //toast.success('PDF generated successfully!');
-            notificationService.pdfGenerated(fullReport.reportNo || 'Calibration Report');
+            toast.success('PDF generated successfully!');
+            //notificationService.pdfGenerated(fullReport.reportNo || 'Calibration Report');
 
         } catch (error) {
             console.error("PDF Generation Error:", error);
