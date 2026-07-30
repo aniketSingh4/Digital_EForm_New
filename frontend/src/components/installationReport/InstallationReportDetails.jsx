@@ -53,11 +53,11 @@ const InstallationReportDetails = () => {
         try {
             setLoading(true);
             const response = await axios.get(`${API_BASE_URL}/${id}`);
-            console.log('📥 Report data:', response.data);
-            console.log('📸 Site images:', response.data.siteImages);
+            //console.log('📥 Report data:', response.data);
+            //console.log('📸 Site images:', response.data.siteImages);
             setReport(response.data);
         } catch (error) {
-            console.error('Error fetching report:', error);
+            //console.error('Error fetching report:', error);
             toast.error('Failed to load Installation Report');
             navigate('/installation-reports');
         } finally {
@@ -192,36 +192,36 @@ const InstallationReportDetails = () => {
     const getFullImageUrl = (imageUrl) => {
         if (!imageUrl) return null;
 
-        console.log('🔗 Processing image URL:', imageUrl);
+        //console.log('🔗 Processing image URL:', imageUrl);
 
         // ✅ If it's a data URI, return as is
         if (imageUrl.startsWith('data:')) {
-            console.log('✅ Data URI detected, using directly');
+            //console.log('✅ Data URI detected, using directly');
             return imageUrl;
         }
 
         // If it's already a full URL, return as is
         if (imageUrl.startsWith('http://') || imageUrl.startsWith('https://')) {
-            console.log('✅ Full URL detected:', imageUrl);
+            //console.log('✅ Full URL detected:', imageUrl);
             return imageUrl;
         }
 
         // If it starts with '/uploads/', construct full URL
         if (imageUrl.startsWith('/uploads/')) {
             const fullUrl = `${IMAGE_BASE_URL}${imageUrl}`;
-            console.log('✅ Constructed URL from /uploads/:', fullUrl);
+            //console.log('✅ Constructed URL from /uploads/:', fullUrl);
             return fullUrl;
         }
 
         // If it doesn't start with '/', add it
         if (!imageUrl.startsWith('/')) {
             const fullUrl = `${IMAGE_BASE_URL}/uploads/installation-images/${imageUrl}`;
-            console.log('✅ Constructed URL with folder:', fullUrl);
+            //console.log('✅ Constructed URL with folder:', fullUrl);
             return fullUrl;
         }
 
         const fullUrl = `${IMAGE_BASE_URL}${imageUrl}`;
-        console.log('✅ Final constructed URL:', fullUrl);
+        //console.log('✅ Final constructed URL:', fullUrl);
         return fullUrl;
     };
 
@@ -458,7 +458,7 @@ const InstallationReportDetails = () => {
                     <div className="images-grid">
                         {siteImages.map((image, index) => {
                             const imageUrl = getFullImageUrl(image.imageUrl);
-                            console.log(`🖼️ Image ${index} URL:`, imageUrl);
+                            //console.log(`🖼️ Image ${index} URL:`, imageUrl);
                             
                             return (
                                 <div key={image.id || index} className="image-card">

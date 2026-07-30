@@ -1,4 +1,4 @@
-const API_BASE_URL = 'http://localhost:8090/api/pm_reports';
+const API_BASE_URL = 'https://pm-reports.onrender.com/api/pm_reports';
 
 /**
  * Fetch report data by ID for editing
