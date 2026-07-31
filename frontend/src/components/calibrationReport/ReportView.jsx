@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { toast } from "react-toastify";
 import { FaArrowLeft, FaFilePdf, FaPrint, FaEdit, FaDownload } from "react-icons/fa";
-import { calibrationReportService } from "../../services/calibrationReportService";
+import { calibrationReportService } from "../../services/CalibrationReportService";
 import "./ReportView.css";
 import notificationService from "../../services/notificationService";
 

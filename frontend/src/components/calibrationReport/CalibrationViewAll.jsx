@@ -22,7 +22,7 @@ import {
     FaPlusCircle,
     FaTools
 } from "react-icons/fa";
-import { calibrationReportService } from "../../services/calibrationReportService";
+import { calibrationReportService } from "../../services/CalibrationReportService";  //Import Fixed
 import notificationService from "../../services/notificationService";
 import jsPDF from 'jspdf';
 import "./CalibrationViewAll.css";
