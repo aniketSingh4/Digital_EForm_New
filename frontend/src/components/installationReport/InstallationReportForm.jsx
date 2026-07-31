@@ -4,7 +4,7 @@ import { toast } from 'react-toastify';
 import axios from 'axios';
 import { FaImage, FaUpload, FaTrash } from 'react-icons/fa';
 import './InstallationReportForm.css';
-import notificationService from "../../services/notificationService";
+import notificationService from '../../services/notificationService';
 
 const API_BASE_URL = 'https://installation-reports.onrender.com/api/installation-reports';
 

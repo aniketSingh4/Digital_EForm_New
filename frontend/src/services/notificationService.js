@@ -14,7 +14,7 @@ const toastConfig = {
   theme: "colored",
 };
 
-// Notification types for report actions
+// Notification types
 const NOTIFICATION_TYPES = {
   REPORT_CREATED: 'report_created',
   REPORT_UPDATED: 'report_updated',
@@ -22,7 +22,6 @@ const NOTIFICATION_TYPES = {
   BULK_DELETED: 'bulk_deleted',
 };
 
-// Report type identifiers
 const REPORT_TYPES = {
   PM: 'PM Report',
   PRE_VISIT: 'Pre-Visit Checklist',
@@ -39,7 +38,7 @@ const getReportType = (path = '') => {
   return 'Report';
 };
 
-// Get detailed report message with all identifying information
+// Get detailed report message
 const getDetailedReportMessage = (action, reportData = {}) => {
   const {
     reportName = '',
@@ -54,10 +53,7 @@ const getDetailedReportMessage = (action, reportData = {}) => {
     additionalInfo = {}
   } = reportData;
 
-  // Build the message with available data
   let message = '';
-
-  // Report type and name
   const typeLabel = reportType || 'Report';
   const namePart = reportName ? `"${reportName}"` : `#${reportId || 'Unknown'}`;
 
@@ -78,18 +74,10 @@ const getDetailedReportMessage = (action, reportData = {}) => {
       message = `${action} completed successfully!`;
   }
 
-  // Add additional details if available
   const details = [];
-  
-  if (customerName) {
-    details.push(`Customer: ${customerName}`);
-  }
-  if (location) {
-    details.push(`Location: ${location}`);
-  }
-  if (equipment) {
-    details.push(`Equipment: ${equipment}`);
-  }
+  if (customerName) details.push(`Customer: ${customerName}`);
+  if (location) details.push(`Location: ${location}`);
+  if (equipment) details.push(`Equipment: ${equipment}`);
   if (date) {
     const formattedDate = new Date(date).toLocaleDateString('en-IN', {
       day: '2-digit',
@@ -98,21 +86,13 @@ const getDetailedReportMessage = (action, reportData = {}) => {
     });
     details.push(`Date: ${formattedDate}`);
   }
-  if (status) {
-    details.push(`Status: ${status}`);
-  }
-  if (createdBy) {
-    details.push(`Created by: ${createdBy}`);
-  }
+  if (status) details.push(`Status: ${status}`);
+  if (createdBy) details.push(`Created by: ${createdBy}`);
 
-  // Add any additional info
   Object.entries(additionalInfo).forEach(([key, value]) => {
-    if (value) {
-      details.push(`${key}: ${value}`);
-    }
+    if (value) details.push(`${key}: ${value}`);
   });
 
-  // Combine message with details
   if (details.length > 0) {
     message += `\n${details.join(' • ')}`;
   }
@@ -120,40 +100,25 @@ const getDetailedReportMessage = (action, reportData = {}) => {
   return message;
 };
 
-// Professional notification service
+// ✅ Notification Service with Context Integration
 class NotificationService {
   constructor() {
+    this.notificationCallback = null;
     this.hasShownWelcome = false;
     this.notificationHistory = new Map();
     this.maxHistory = 50;
-    this.cooldownPeriod = 30000; // 30 seconds cooldown
-    this.notificationCallback = null;
-    this.currentReportContext = {}; // Store current report context
+    this.currentReportContext = {};
   }
 
-  // Set callback for adding notifications to context
+  // ✅ Set callback for adding notifications to context
   setNotificationCallback(callback) {
     this.notificationCallback = callback;
   }
 
-  // Set current report context for detailed notifications
-  setReportContext(context) {
-    this.currentReportContext = {
-      ...this.currentReportContext,
-      ...context
-    };
-  }
-
-  // Clear report context
-  clearReportContext() {
-    this.currentReportContext = {};
-  }
-
-  // Add notification to context (dropdown)
+  // ✅ Add notification to context (dropdown)
   addToContext(type, text, metadata = {}) {
     if (this.notificationCallback) {
       this.notificationCallback({
-        id: Date.now().toString(),
         type: type,
         text: text,
         timestamp: new Date().toISOString(),
@@ -163,82 +128,25 @@ class NotificationService {
     }
   }
 
-  // Check if notification should be shown
-  shouldShowNotification(type, identifier) {
-    if (!identifier) return true;
-    
-    const key = `${type}_${identifier}`;
-    const lastShown = this.notificationHistory.get(key);
-    
-    if (!lastShown) {
-      this.addToHistory(key);
-      return true;
-    }
-    
-    const cooldownTime = Date.now() - this.cooldownPeriod;
-    if (lastShown.timestamp < cooldownTime) {
-      this.updateHistory(key);
-      return true;
-    }
-    
-    return false;
+  // Set current report context
+  setReportContext(context) {
+    this.currentReportContext = {
+      ...this.currentReportContext,
+      ...context
+    };
   }
 
-  addToHistory(key) {
-    this.notificationHistory.set(key, { 
-      timestamp: Date.now(),
-      count: 1 
-    });
-    
-    if (this.notificationHistory.size > this.maxHistory) {
-      const oldestKey = this.notificationHistory.keys().next().value;
-      this.notificationHistory.delete(oldestKey);
-    }
+  clearReportContext() {
+    this.currentReportContext = {};
   }
 
-  updateHistory(key) {
-    const entry = this.notificationHistory.get(key);
-    if (entry) {
-      entry.timestamp = Date.now();
-      entry.count = (entry.count || 0) + 1;
-    }
-  }
-
-  isCRUDOperation(type) {
-    const crudTypes = [
-      NOTIFICATION_TYPES.REPORT_CREATED,
-      NOTIFICATION_TYPES.REPORT_UPDATED,
-      NOTIFICATION_TYPES.REPORT_DELETED,
-      NOTIFICATION_TYPES.BULK_DELETED
-    ];
-    return crudTypes.includes(type);
-  }
-
-  // Success notification with detailed information
+  // ✅ Success notification
   success(message, options = {}) {
     const { type, identifier, reportData = {}, reportName = '' } = options;
-    
-    if (type && !this.isCRUDOperation(type)) {
-      return;
-    }
-    
-    if (type && identifier) {
-      if (!this.shouldShowNotification(type, identifier)) {
-        console.log(`Notification suppressed for ${type} - ${identifier} (rate limited)`);
-        return;
-      }
-    }
 
-    // Get detailed message
-    const finalMessage = type 
-      ? getDetailedReportMessage(type, { ...this.currentReportContext, ...reportData, reportName })
-      : message;
-
-    // Show toast notification
-    toast.success(finalMessage, {
+    toast.success(message, {
       ...toastConfig,
       ...options,
-      icon: '',
       style: {
         background: 'linear-gradient(135deg, #10b981, #059669)',
         color: 'white',
@@ -252,27 +160,17 @@ class NotificationService {
       progressStyle: {
         background: 'white',
       },
-      autoClose: options.noAutoClose ? false : 4000,
     });
 
-    // Add to context (dropdown notifications)
-    this.addToContext('success', finalMessage, { type, identifier, reportData: { ...this.currentReportContext, ...reportData, reportName } });
+    // ✅ Add to context (dropdown notifications)
+    this.addToContext('success', message, { type, identifier, reportData: { ...this.currentReportContext, ...reportData, reportName } });
   }
 
-  // Error notification
+  // ✅ Error notification
   error(message, options = {}) {
-    const { type, identifier } = options;
-    
-    if (type && identifier) {
-      if (!this.shouldShowNotification(`error_${type}`, identifier)) {
-        return;
-      }
-    }
-
     toast.error(message, {
       ...toastConfig,
       ...options,
-      icon: '',
       style: {
         background: 'linear-gradient(135deg, #ef4444, #dc2626)',
         color: 'white',
@@ -286,18 +184,16 @@ class NotificationService {
       progressStyle: {
         background: 'white',
       },
-      autoClose: 5000,
     });
 
-    this.addToContext('error', message, { type, identifier });
+    this.addToContext('error', message, options);
   }
 
-  // Warning notification
+  // ✅ Warning notification
   warning(message, options = {}) {
     toast.warning(message, {
       ...toastConfig,
       ...options,
-      icon: '',
       style: {
         background: 'linear-gradient(135deg, #f59e0b, #d97706)',
         color: 'white',
@@ -316,54 +212,11 @@ class NotificationService {
     this.addToContext('warning', message, options);
   }
 
-  // Info notification
+  // ✅ Info notification
   info(message, options = {}) {
-    const { type, identifier } = options;
-    
-    // Special handling for welcome notification
-    if (type === 'welcome') {
-      if (this.hasShownWelcome) return;
-      this.hasShownWelcome = true;
-      
-      toast.info(message, {
-        ...toastConfig,
-        ...options,
-        icon: '',
-        style: {
-          background: 'linear-gradient(135deg, #8b5cf6, #7c3aed)',
-          color: 'white',
-          borderRadius: '12px',
-          boxShadow: '0 10px 40px rgba(139, 92, 246, 0.3)',
-          fontWeight: '500',
-          padding: '14px 20px',
-          fontSize: '14px',
-          border: '1px solid rgba(255,255,255,0.1)',
-        },
-        progressStyle: {
-          background: 'white',
-        },
-        autoClose: options.noAutoClose ? false : 4000,
-      });
-
-      this.addToContext('info', message, { type: 'welcome' });
-      return;
-    }
-    
-    // Skip info notifications for fetch/view operations
-    if (type && (type.includes('view') || type === 'dashboard_load')) {
-      return;
-    }
-
-    if (type && identifier) {
-      if (!this.shouldShowNotification(`info_${type}`, identifier)) {
-        return;
-      }
-    }
-
     toast.info(message, {
       ...toastConfig,
       ...options,
-      icon: '',
       style: {
         background: 'linear-gradient(135deg, #3b82f6, #2563eb)',
         color: 'white',
@@ -377,34 +230,31 @@ class NotificationService {
       progressStyle: {
         background: 'white',
       },
-      autoClose: options.noAutoClose ? false : 3000,
     });
 
     this.addToContext('info', message, options);
   }
 
-  // Welcome notification
-  welcome(userName = '') {
-    this.info(`Welcome${userName ? ` ${userName}` : ''}! Your reports are loading...`, {
-      type: 'welcome',
-      noAutoClose: true,
-      autoClose: 4000,
+  // ✅ PDF Generated
+  pdfGenerated(filename) {
+    this.success(`PDF generated: ${filename}`, {
+      style: {
+        background: 'linear-gradient(135deg, #8b5cf6, #7c3aed)',
+      },
     });
   }
 
-  // Login success notification
-  loginSuccess(userName = '') {
-    if (this.hasShownWelcome) return;
-    this.info(`Welcome back${userName ? ` ${userName}` : ''}!`, {
-      type: 'welcome',
-      noAutoClose: true,
-      autoClose: 4000,
-    });
+  // ✅ Report Saved
+  reportSaved(message) {
+    this.success(message || 'Report saved successfully!');
   }
 
-  // --- CRUD Operation Notifications with detailed data ---
+  // ✅ Report Deleted
+  reportDeleted(message) {
+    this.info(message || 'Report deleted successfully!');
+  }
 
-  // Report created
+  // ✅ Report Created
   reportCreated(reportName, reportData = {}, identifier = null) {
     const data = {
       reportName: reportName,
@@ -419,7 +269,8 @@ class NotificationService {
       ...reportData
     };
 
-    this.success(getDetailedReportMessage(NOTIFICATION_TYPES.REPORT_CREATED, data), {
+    const message = getDetailedReportMessage(NOTIFICATION_TYPES.REPORT_CREATED, data);
+    this.success(message, {
       type: NOTIFICATION_TYPES.REPORT_CREATED,
       identifier: identifier || data.reportId || `create_${Date.now()}`,
       reportData: data,
@@ -427,7 +278,7 @@ class NotificationService {
     });
   }
 
-  // Report updated
+  // ✅ Report Updated
   reportUpdated(reportName, reportData = {}, identifier = null) {
     const data = {
       reportName: reportName,
@@ -442,7 +293,8 @@ class NotificationService {
       ...reportData
     };
 
-    this.success(getDetailedReportMessage(NOTIFICATION_TYPES.REPORT_UPDATED, data), {
+    const message = getDetailedReportMessage(NOTIFICATION_TYPES.REPORT_UPDATED, data);
+    this.success(message, {
       type: NOTIFICATION_TYPES.REPORT_UPDATED,
       identifier: identifier || data.reportId || `update_${Date.now()}`,
       reportData: data,
@@ -450,8 +302,8 @@ class NotificationService {
     });
   }
 
-  // Report deleted
-  reportDeleted(reportName, reportData = {}, identifier = null) {
+  // ✅ Report Deleted (CRUD)
+  reportDeletedAction(reportName, reportData = {}, identifier = null) {
     const data = {
       reportName: reportName,
       reportId: reportData.id || reportData._id || identifier,
@@ -461,7 +313,8 @@ class NotificationService {
       ...reportData
     };
 
-    this.success(getDetailedReportMessage(NOTIFICATION_TYPES.REPORT_DELETED, data), {
+    const message = getDetailedReportMessage(NOTIFICATION_TYPES.REPORT_DELETED, data);
+    this.success(message, {
       type: NOTIFICATION_TYPES.REPORT_DELETED,
       identifier: identifier || data.reportId || `delete_${Date.now()}`,
       reportData: data,
@@ -469,14 +322,14 @@ class NotificationService {
     });
   }
 
-  // Bulk delete
+  // ✅ Bulk Delete
   bulkDeleted(count, reportType = 'Report') {
     const data = {
       reportName: count,
       reportType: reportType,
     };
-
-    this.success(getDetailedReportMessage(NOTIFICATION_TYPES.BULK_DELETED, data), {
+    const message = getDetailedReportMessage(NOTIFICATION_TYPES.BULK_DELETED, data);
+    this.success(message, {
       type: NOTIFICATION_TYPES.BULK_DELETED,
       identifier: 'bulk',
       reportData: data,
@@ -484,72 +337,24 @@ class NotificationService {
     });
   }
 
-  // Set context for a specific report type
-  setReportTypeContext(type, additionalData = {}) {
-    this.setReportContext({
-      reportType: type,
-      ...additionalData
+  // ✅ Welcome
+  welcome(userName = '') {
+    this.info(`Welcome${userName ? ` ${userName}` : ''}!`, {
+      type: 'welcome',
+      noAutoClose: true,
+      autoClose: 4000,
     });
   }
 
-  // Silent notification
-  silent(message, options = {}) {
-    toast(message, {
-      ...toastConfig,
-      ...options,
-      icon: '',
-      style: {
-        background: 'linear-gradient(135deg, #6b7280, #4b5563)',
-        color: 'white',
-        borderRadius: '12px',
-        boxShadow: '0 10px 40px rgba(0, 0, 0, 0.2)',
-        fontWeight: '500',
-        padding: '12px 18px',
-        fontSize: '13px',
-        border: '1px solid rgba(255,255,255,0.1)',
-        opacity: 0.9,
-      },
-      progressStyle: {
-        background: 'white',
-      },
-      autoClose: 2000,
-    });
-
-    this.addToContext('info', message, { ...options, silent: true });
-  }
-
-  // Dismiss all notifications
+  // ✅ Dismiss all
   dismissAll() {
     toast.dismiss();
-  }
-
-  // Reset state
-  resetState() {
-    this.hasShownWelcome = false;
-    this.notificationHistory.clear();
-    this.currentReportContext = {};
-  }
-
-  getHistory() {
-    return Array.from(this.notificationHistory.entries());
-  }
-
-  getStats() {
-    const stats = {
-      total: this.notificationHistory.size,
-      types: {}
-    };
-    
-    this.notificationHistory.forEach((value, key) => {
-      const type = key.split('_')[0];
-      stats.types[type] = (stats.types[type] || 0) + 1;
-    });
-    
-    return stats;
   }
 }
 
 // Export the notification types for use in components
 export { NOTIFICATION_TYPES, REPORT_TYPES };
 
-export default new NotificationService();
+// ✅ Export a singleton instance
+const notificationService = new NotificationService();
+export default notificationService;
