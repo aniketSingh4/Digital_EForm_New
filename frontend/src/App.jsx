@@ -9,8 +9,8 @@ import Dashboard from "./pages/Dashboard";
 import PMReportWizard from "./pages/PMReportWizard";
 import ViewReports from "./components/ViewReports";
 import PreVisitViewAll from "./pages/PreVisitViewAll";
-import PreVisitReportForm from "./components/PreVisitReport/PreVisitReportForm";
-import PreVisitReportDetail from "./components/PreVisitReport/PreVisitReportDetail";
+import PreVisitReportForm from "./components/preVisitReport/PreVisitReportForm"; //fixed Import
+import PreVisitReportDetail from "./components/preVisitReport/PreVisitReportDetail"; //fixed Import
 import CalibrationReportForm from './components/calibrationReport/CalibrationReportForm';
 import CalibrationViewAll from "./components/calibrationReport/CalibrationViewAll";
 import ReportView from './components/calibrationReport/ReportView';
