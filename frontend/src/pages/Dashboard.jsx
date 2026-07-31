@@ -45,7 +45,7 @@ import {
     FaDownload,
     FaPrint
 } from "react-icons/fa";
-import { useNotification } from '../context/NotificationContext';
+import { useNotification } from '../context/notificationContext';
 import notificationService from '../services/notificationService';
 import "../assets/Dashboard.css";
 import { FaSync } from "react-icons/fa";
