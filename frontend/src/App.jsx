@@ -2,7 +2,7 @@
 import { Routes, Route, Navigate } from "react-router-dom";
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
-import { NotificationProvider } from './context/NotificationContext';
+import { NotificationProvider } from './context/notificationContext';
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
 import Dashboard from "./pages/Dashboard";
