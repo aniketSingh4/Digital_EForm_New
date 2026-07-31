@@ -3,7 +3,7 @@ import React, { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { toast } from "react-toastify";
 import { validateCalibrationReport } from "../../utils/calibrationReportValidators";
-import { calibrationReportService } from "../../services/calibrationReportService";
+import { calibrationReportService } from "../../services/CalibrationReportService";
 import "./CalibrationReportForm.css";
 import notificationService from "../../services/notificationService";
 
