@@ -65,10 +65,10 @@ const CalibrationViewAll = () => {
             setLoading(true);
             setError(null);
 
-            console.log('Fetching reports...');
+            //console.log('Fetching reports...');
             let data = await calibrationReportService.getAllReports();
 
-            console.log('Raw API Response:', data);
+            //console.log('Raw API Response:', data);
 
             // Ensure data is an array
             if (!Array.isArray(data)) {
@@ -88,7 +88,7 @@ const CalibrationViewAll = () => {
                 }
             }
 
-            console.log('Reports fetched:', data.length);
+            //console.log('Reports fetched:', data.length);
 
             // Map the data to ensure consistent field names
             const mappedData = data.map(report => ({
@@ -109,7 +109,7 @@ const CalibrationViewAll = () => {
                 }
             }));
 
-            console.log('Mapped data:', mappedData.length);
+            //console.log('Mapped data:', mappedData.length);
             setReports(mappedData);
             setFilteredReports(mappedData);
 

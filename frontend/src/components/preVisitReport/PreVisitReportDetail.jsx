@@ -49,7 +49,7 @@ const PreVisitReportDetail = () => {
       if (data) {
         setReport(data);
         if (data.siteImages && data.siteImages.length > 0) {
-          console.log('Images found in report data:', data.siteImages);
+          //console.log('Images found in report data:', data.siteImages);
           setImages(data.siteImages);
         }
       } else {
@@ -70,16 +70,16 @@ const PreVisitReportDetail = () => {
   const fetchReportImages = async (reportId) => {
     try {
       setLoadingImages(true);
-      console.log('Fetching images for report:', reportId);
+      //console.log('Fetching images for report:', reportId);
 
       const data = await preVisitReportService.getImagesByReport(reportId);
-      console.log('Images fetched from API:', data);
+      //console.log('Images fetched from API:', data);
 
       if (data && data.length > 0) {
         setImages(data);
       }
     } catch (error) {
-      console.error('Error fetching images:', error);
+      //console.error('Error fetching images:', error);
       setImages([]);
     } finally {
       setLoadingImages(false);
@@ -92,7 +92,7 @@ const getImageUrl = (imageUrl) => {
 
   // ✅ If it's a data URI, return as is
   if (imageUrl.startsWith('data:')) {
-    console.log('Data URI detected, using directly');
+    //console.log('Data URI detected, using directly');
     return imageUrl;
   }
 

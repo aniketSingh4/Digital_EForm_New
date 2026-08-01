@@ -203,8 +203,8 @@ export default function ViewReports() {
         let sensorId = backendData.sensorId || "-";
 
         // Log for debugging
-        console.log("🔍 Sensor ID from API:", sensorId);
-        console.log("🔍 Full backend data:", backendData);
+        //console.log("🔍 Sensor ID from API:", sensorId);
+        //console.log("🔍 Full backend data:", backendData);
 
         return {
             id: backendData.id,
@@ -285,7 +285,7 @@ export default function ViewReports() {
             }
         }
 
-        console.log("🔍 Transforming full details - Sensor ID:", sensorId);
+        //console.log("🔍 Transforming full details - Sensor ID:", sensorId);
 
         return {
             id: backendData.id || null,
@@ -399,7 +399,7 @@ export default function ViewReports() {
         setLoadingReportDetails(true);
         try {
             const url = `${API_BASE_URL}${config.apiEndpoint}/${reportId}`;
-            console.log("🔍 Fetching report details from:", url);
+            //console.log("🔍 Fetching report details from:", url);
 
             const response = await fetch(url, {
                 method: 'GET',
@@ -414,10 +414,10 @@ export default function ViewReports() {
             }
 
             const data = await response.json();
-            console.log("📥 Raw report details from API:", data);
+            //console.log("📥 Raw report details from API:", data);
 
             const transformed = transformFullDetails(data);
-            console.log("📥 Transformed report details:", transformed);
+            //console.log("📥 Transformed report details:", transformed);
 
             return transformed;
         } catch (err) {
@@ -556,7 +556,7 @@ export default function ViewReports() {
 
             // Fetch full details if we don't have checklists or signOff
             if (!fullDetails.checklists || fullDetails.checklists.length === 0 || !fullDetails.signOff) {
-                console.log("🔍 Fetching full details for report ID:", report.id);
+                //console.log("🔍 Fetching full details for report ID:", report.id);
                 if (usingMockData) {
                     fullDetails = getMockFullDetails(report.id);
                 } else {
@@ -568,7 +568,7 @@ export default function ViewReports() {
                 throw new Error("Could not load report details");
             }
 
-            console.log("🔍 Full details for PDF:", fullDetails);
+            //console.log("🔍 Full details for PDF:", fullDetails);
 
             setPdfProgress(30);
 

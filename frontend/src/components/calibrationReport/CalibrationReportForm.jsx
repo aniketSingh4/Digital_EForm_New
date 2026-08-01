@@ -121,7 +121,7 @@ const CalibrationReportForm = ({ onSuccess, onCancel, isEdit = false }) => {
       const response = await calibrationReportService.getAllReports();
       if (Array.isArray(response)) {
         setReportCount(response.length);
-        console.log('📊 Current report count:', response.length);
+        //console.log('📊 Current report count:', response.length);
       }
     } catch (error) {
       console.error('❌ Error fetching report count:', error);
@@ -293,11 +293,11 @@ const CalibrationReportForm = ({ onSuccess, onCancel, isEdit = false }) => {
     };
 
     const validationResult = validateCalibrationReport(submitData);
-    console.log('Validation Result:', validationResult);
+    //console.log('Validation Result:', validationResult);
 
     if (!validationResult.isValid) {
       const errorMessages = validationResult.errors || {};
-      console.log('Validation Errors:', errorMessages);
+      //.log('Validation Errors:', errorMessages);
       setErrors(errorMessages);
 
       const errorList = Object.entries(errorMessages)
@@ -316,17 +316,17 @@ const CalibrationReportForm = ({ onSuccess, onCancel, isEdit = false }) => {
       let response;
 
       if (isEditMode && id) {
-        console.log('Updating report with ID:', id);
+        //console.log('Updating report with ID:', id);
         response = await calibrationReportService.updateReport(id, submitData);
         notificationService.success('Report updated successfully!');
       } else {
-        console.log('Creating new report...');
+        //console.log('Creating new report...');
         response = await calibrationReportService.createReport(submitData);
         notificationService.success('Report created successfully!');
         setReportCount(prev => prev + 1);
       }
 
-      console.log('API Response:', response);
+      //console.log('API Response:', response);
 
       setSubmitStatus({
         type: 'success',

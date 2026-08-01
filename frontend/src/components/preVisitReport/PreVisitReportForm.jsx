@@ -78,7 +78,7 @@ const PreVisitReportForm = ({ onSuccess, onCancel, initialData, isEdit = false }
       }
 
       const data = await response.json();
-      console.log('📥 Fetched report data for edit:', data);
+      //console.log('📥 Fetched report data for edit:', data);
 
       setOriginalEmail(data.emailId || '');
       loadInitialData(data);
@@ -303,7 +303,7 @@ const PreVisitReportForm = ({ onSuccess, onCancel, initialData, isEdit = false }
         technicianSignature: formData.technicianSignature.trim()
       };
 
-      console.log('📦 Report Payload:', payload);
+      //console.log('📦 Report Payload:', payload);
 
       let reportResponse;
 
@@ -335,7 +335,7 @@ const PreVisitReportForm = ({ onSuccess, onCancel, initialData, isEdit = false }
 
       // ✅ Step 2: Upload images using FormData (bulk upload)
       if (imageFiles.length > 0) {
-        console.log(`📸 Uploading ${imageFiles.length} images for report ${reportId}`);
+        //console.log(`📸 Uploading ${imageFiles.length} images for report ${reportId}`);
         
         // ✅ Create FormData with all files
         const imageFormData = new FormData();
@@ -357,7 +357,7 @@ const PreVisitReportForm = ({ onSuccess, onCancel, initialData, isEdit = false }
 
           if (uploadResponse.ok) {
             const uploadedData = await uploadResponse.json();
-            console.log('✅ All images uploaded successfully:', uploadedData);
+            //console.log('✅ All images uploaded successfully:', uploadedData);
             setUploadedImages(uploadedData);
             toast.success(`✅ ${imageFiles.length} images uploaded successfully!`);
             
