@@ -83,9 +83,9 @@ export default function Step6Review({
     const transformChecklists = () => {
         const checklists = [];
 
-        console.log("🔍 ========== DEBUGGING CHECKLISTS ==========");
-        console.log("🔍 inspection:", inspection);
-        console.log("🔍 technical:", technical);
+        //console.log("🔍 ========== DEBUGGING CHECKLISTS ==========");
+        //console.log("🔍 inspection:", inspection);
+        //console.log("🔍 technical:", technical);
 
         // Map frontend section names to backend enum values
         const categoryMap = {
@@ -101,13 +101,13 @@ export default function Step6Review({
 
         // Process inspection data
         if (inspection && typeof inspection === 'object') {
-            console.log("✅ Processing inspection data");
+            //console.log("✅ Processing inspection data");
 
             Object.keys(inspection).forEach(section => {
                 const sectionData = inspection[section];
                 const category = categoryMap[section] || section.toUpperCase();
 
-                console.log(`  🔍 Processing section: ${section} -> ${category}`);
+                //console.log(`  🔍 Processing section: ${section} -> ${category}`);
 
                 if (sectionData && typeof sectionData === 'object') {
                     Object.keys(sectionData).forEach(itemKey => {
@@ -122,7 +122,7 @@ export default function Step6Review({
                                     status: item.status.toUpperCase() === 'YES' ? 'YES' : 'NO',
                                     remark: item.remark || ''
                                 });
-                                console.log(`    ✅ Added: ${itemKey} - ${item.status}`);
+                                //console.log(`    ✅ Added: ${itemKey} - ${item.status}`);
                             }
                         }
                     });
@@ -132,13 +132,13 @@ export default function Step6Review({
 
         // Process technical data
         if (technical && typeof technical === 'object') {
-            console.log("✅ Processing technical data");
+            //console.log("✅ Processing technical data");
 
             Object.keys(technical).forEach(section => {
                 const sectionData = technical[section];
                 const category = categoryMap[section] || section.toUpperCase();
 
-                console.log(`  🔍 Processing section: ${section} -> ${category}`);
+                //console.log(`  🔍 Processing section: ${section} -> ${category}`);
 
                 if (sectionData && typeof sectionData === 'object') {
                     Object.keys(sectionData).forEach(itemKey => {
@@ -153,7 +153,7 @@ export default function Step6Review({
                                     status: item.status.toUpperCase() === 'YES' ? 'YES' : 'NO',
                                     remark: item.remark || ''
                                 });
-                                console.log(`    ✅ Added: ${itemKey} - ${item.status}`);
+                                //console.log(`    ✅ Added: ${itemKey} - ${item.status}`);
                             }
                         }
                     });
@@ -161,9 +161,9 @@ export default function Step6Review({
             });
         }
 
-        console.log("📋 Final Transformed checklists:", checklists);
-        console.log("📊 Total checklists count:", checklists.length);
-        console.log("🔍 ========== END DEBUGGING ==========");
+        //console.log("📋 Final Transformed checklists:", checklists);
+        //console.log("📊 Total checklists count:", checklists.length);
+        //console.log("🔍 ========== END DEBUGGING ==========");
 
         return checklists;
     };
@@ -181,7 +181,7 @@ export default function Step6Review({
             // Transform checklists
             const checklists = transformChecklists();
 
-            console.log("📋 Final checklists for submission:", checklists);
+            //console.log("📋 Final checklists for submission:", checklists);
 
             // Prepare the complete data for submission
             const submitData = {

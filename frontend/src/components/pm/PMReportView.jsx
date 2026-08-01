@@ -53,7 +53,7 @@ const PMReportView = () => {
             }
 
             const data = await response.json();
-            console.log('📥 Raw report data:', data);
+            //console.log('📥 Raw report data:', data);
             setReport(data);
         } catch (error) {
             console.error('Error fetching report:', error);

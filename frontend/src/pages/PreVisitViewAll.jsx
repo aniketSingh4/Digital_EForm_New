@@ -171,7 +171,7 @@ const PreVisitViewAll = () => {
     const handlePDF = async (report) => {
         try {
             setActionLoading(`pdf-${report.id}`);
-            console.log('Generating PDF for report:', report.id);
+            //console.log('Generating PDF for report:', report.id);
 
             const response = await fetch(`https://previsit-reports.onrender.com/api/previsit-reports/${report.id}`, {
                 headers: {

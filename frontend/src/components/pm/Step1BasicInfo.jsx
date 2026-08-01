@@ -42,7 +42,7 @@ export default function Step1BasicInfo({ formData, setFormData, onNext, onBackTo
                 const data = await response.json();
                 const count = data.count || 0;
                 sensorCache.current.set(sensorId, count);
-                console.log(`📊 Sensor ${sensorId} has ${count} visits from backend`);
+                //console.log(`📊 Sensor ${sensorId} has ${count} visits from backend`);
                 return count;
             } else {
                 // Fallback to localStorage if API fails
@@ -69,7 +69,7 @@ export default function Step1BasicInfo({ formData, setFormData, onNext, onBackTo
 
     // Initialize component - runs only once
     useEffect(() => {
-        console.log("🚀 Initializing Step1BasicInfo...");
+        //console.log("🚀 Initializing Step1BasicInfo...");
         
         // Preload counters
         preloadCounters();
@@ -84,14 +84,14 @@ export default function Step1BasicInfo({ formData, setFormData, onNext, onBackTo
             const newReportNo = generateServiceReportNo();
             updatedReport.serviceReportNo = newReportNo;
             hasChanges = true;
-            console.log("📋 Generated Service Report No:", newReportNo);
+            //console.log("📋 Generated Service Report No:", newReportNo);
         }
 
         // Set default date if not exists
         if (!updatedReport.pmVisitDate) {
             updatedReport.pmVisitDate = today;
             hasChanges = true;
-            console.log("📅 Set default date to today:", today);
+            //console.log("📅 Set default date to today:", today);
         }
 
         if (hasChanges) {
@@ -103,7 +103,7 @@ export default function Step1BasicInfo({ formData, setFormData, onNext, onBackTo
         }
 
         setIsInitialized(true);
-        console.log("✅ Initialization complete");
+        //console.log("✅ Initialization complete");
     }, []); // Empty array - runs once
 
     // Generate service visit number based on sensor ID
@@ -123,7 +123,7 @@ export default function Step1BasicInfo({ formData, setFormData, onNext, onBackTo
         const visitNo = `FESPL_${sensorId}_${paddedCount}`;
         
         setVisitCount(nextCount);
-        console.log(`🔢 Generated Visit No: ${visitNo} (Visit ${nextCount} of 6)`);
+        //console.log(`🔢 Generated Visit No: ${visitNo} (Visit ${nextCount} of 6)`);
         return visitNo;
     }, [getLiveSensorVisitCount]);
 
@@ -250,7 +250,7 @@ export default function Step1BasicInfo({ formData, setFormData, onNext, onBackTo
     }, []);
 
     const handleBackToDashboard = useCallback(() => {
-        console.log("🔙 Navigating back to dashboard...");
+        //console.log("🔙 Navigating back to dashboard...");
         
         if (onBackToDashboard && typeof onBackToDashboard === 'function') {
             onBackToDashboard();

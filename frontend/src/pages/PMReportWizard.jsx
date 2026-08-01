@@ -128,12 +128,12 @@ export default function PMReportWizard() {
 
             // Transform checklists for the form
             const transformedChecklists = mapChecklistsToForm(data.checklists);
-            console.log('📋 Transformed checklists for form:', transformedChecklists);
+            //console.log('📋 Transformed checklists for form:', transformedChecklists);
 
             // Populate inspection and technical data from checklists
             const { inspection, technical } = populateStepDataFromChecklists(data.checklists);
-            console.log('Populated inspection:', inspection);
-            console.log('Populated technical:', technical);
+            //console.log('Populated inspection:', inspection);
+            //console.log('Populated technical:', technical);
 
             // Populate form data with fetched data
             setFormData({
@@ -167,8 +167,8 @@ export default function PMReportWizard() {
                 checklists: transformedChecklists // Store checklists directly
             });
 
-            console.log('Form data populated successfully');
-            console.log('Form checklists:', transformedChecklists.length);
+            //console.log('Form data populated successfully');
+            //console.log('Form checklists:', transformedChecklists.length);
             notificationService.success('Report data loaded successfully', { type: 'REPORT_VIEWED', identifier: id, reportName: data.serviceReportNo || '' });
 
         } catch (error) {
@@ -273,8 +273,8 @@ export default function PMReportWizard() {
                 };
             }
 
-            console.log('Final Payload:', payload);
-            console.log('Checklists in payload:', payload.checklists?.length || 0);
+            //console.log('Final Payload:', payload);
+            //console.log('Checklists in payload:', payload.checklists?.length || 0);
 
             let response;
             let url = 'https://pm-reports.onrender.com/api/pm_reports';
