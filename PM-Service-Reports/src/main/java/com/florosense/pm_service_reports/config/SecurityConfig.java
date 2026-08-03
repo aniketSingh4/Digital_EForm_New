@@ -60,7 +60,8 @@ public class SecurityConfig {
         configuration.setAllowedOrigins(Arrays.asList(
             "http://localhost:5173",
             "http://localhost:3001",
-            "http://localhost:4200"
+            "http://localhost:4200",
+            "https://digitalform.florosense.com"
         ));
         
         // Allow all HTTP methods
