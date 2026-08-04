@@ -3,19 +3,108 @@ import api from "./api";
 const authService = {
 
     register: async (userData) => {
-
         const response = await api.post("/auth/register", userData);
-
         return response.data;
     },
 
     login: async (loginData) => {
-
         const response = await api.post("/auth/login", loginData);
-
         return response.data;
-    }
+    },
 
+    //Validate token client-side (check expiration)
+    validateToken: () => {
+        const token = localStorage.getItem("token");
+        
+        if (!token) {
+            console.log("validateToken: No token found");
+            return false;
+        }
+
+        try {
+            // Check if token is a JWT (has 3 parts separated by dots)
+            const parts = token.split('.');
+            if (parts.length !== 3) {
+                console.log("validateToken: Invalid token format");
+                return false;
+            }
+
+            // Decode the payload (middle part)
+            const payload = JSON.parse(atob(parts[1]));
+            
+            // Check if token has expiration
+            if (!payload.exp) {
+                console.log("validateToken: No expiration in token");
+                return true; // If no expiration, assume valid
+            }
+
+            // Check if token is expired (exp is in seconds, Date.now() is in milliseconds)
+            const expirationDate = new Date(payload.exp * 1000);
+            const now = new Date();
+            
+            const isValid = now < expirationDate;
+            console.log(`validateToken: Token ${isValid ? 'is valid' : 'is expired'}`);
+            console.log(`Expiration: ${expirationDate.toLocaleString()}`);
+            console.log(`Current: ${now.toLocaleString()}`);
+            
+            return isValid;
+        } catch (error) {
+            console.error("validateToken: Error decoding token:", error);
+            return false;
+        }
+    },
+
+    //Get user info from token without API call
+    getUserFromToken: () => {
+        const token = localStorage.getItem("token");
+        if (!token) return null;
+
+        try {
+            const parts = token.split('.');
+            if (parts.length !== 3) return null;
+            
+            const payload = JSON.parse(atob(parts[1]));
+            return {
+                email: payload.email || payload.sub,
+                userId: payload.userId || payload.id,
+                // Add any other fields from your JWT
+            };
+        } catch (error) {
+            console.error("getUserFromToken: Error:", error);
+            return null;
+        }
+    },
+
+    //Logout
+    logout: () => {
+        localStorage.removeItem("token");
+        localStorage.removeItem("userName");
+        localStorage.removeItem("dashboard_data");
+        localStorage.removeItem("dashboard_timestamp");
+        localStorage.removeItem("notifications");
+        // Clear any other stored data
+    },
+
+    //Check if token exists
+    isAuthenticated: () => {
+        const token = localStorage.getItem("token");
+        return !!token;
+    },
+
+    //Get stored token
+    getToken: () => {
+        return localStorage.getItem("token");
+    },
+
+    //Check token validity without decoding
+    hasValidToken: () => {
+        const token = localStorage.getItem("token");
+        if (!token) return false;
+        
+        // Check if token has 3 parts
+        const parts = token.split('.');
+        return parts.length === 3;
+    }
 };
 
 export default authService;

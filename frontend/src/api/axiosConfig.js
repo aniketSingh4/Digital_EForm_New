@@ -32,10 +32,19 @@ axiosInstance.interceptors.response.use(
     return response;
   },
   (error) => {
-    // Handle 401 unauthorized errors
-    if (error.response && error.response.status === 401) {
+    //Handle 401 and 403 unauthorized errors
+    if (error.response && (error.response.status === 401 || error.response.status === 403)) {
+      // Clear all stored data
       localStorage.removeItem('token');
-      window.location.href = '/login';
+      localStorage.removeItem('userName');
+      localStorage.removeItem('dashboard_data');
+      localStorage.removeItem('dashboard_timestamp');
+      localStorage.removeItem('notifications');
+      
+      // Redirect to login page if not already there
+      if (!window.location.pathname.includes('/login')) {
+        window.location.href = '/login';
+      }
     }
     console.error('API Error:', error.response?.data || error.message);
     return Promise.reject(error);

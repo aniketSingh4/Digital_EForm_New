@@ -22,7 +22,7 @@ const apiClient = axios.create({
 // Interceptors
 apiClient.interceptors.request.use(
   (config) => {
-    console.log(`${config.method.toUpperCase()} ${config.url}`);
+    // console.log(`${config.method.toUpperCase()} ${config.url}`);
     return config;
   },
   (error) => Promise.reject(error)
@@ -30,17 +30,17 @@ apiClient.interceptors.request.use(
 
 apiClient.interceptors.response.use(
   (response) => {
-    console.log(`${response.status} ${response.config.url}`);
+    // console.log(`${response.status} ${response.config.url}`);
     return response;
   },
   (error) => {
     if (error.response) {
-      console.error('API Error Response:', error.response.data);
-      console.error('Status:', error.response.status);
+      // console.error('API Error Response:', error.response.data);
+      // console.error('Status:', error.response.status);
     } else if (error.request) {
-      console.error('No response from server:', error.request);
+      // console.error('No response from server:', error.request);
     } else {
-      console.error('Request error:', error.message);
+      // console.error('Request error:', error.message);
     }
     return Promise.reject(error);
   }
@@ -175,7 +175,7 @@ const removeImmutableFields = (payload) => {
  * @param {boolean} isEditMode - Whether this is an edit operation
  */
 export const transformDataForAPI = (formData, isEditMode = false) => {
-  console.log("Transforming form data:", formData);
+  // console.log("Transforming form data:", formData);
 
   const { report, inspection, technical, summary, signoff } = formData;
 
@@ -279,8 +279,8 @@ export const transformDataForAPI = (formData, isEditMode = false) => {
   }
 
   // Debug: Validate the payload
-  console.log("Final API Payload:", JSON.stringify(apiPayload, null, 2));
-  console.log("Number of checklists:", checklists.length);
+  // console.log("Final API Payload:", JSON.stringify(apiPayload, null, 2));
+  // console.log("Number of checklists:", checklists.length);
 
   // Validate enum values
   const validStatuses = ["YES", "NO"];
@@ -302,11 +302,11 @@ export const submitPMReport = async (formData) => {
   try {
     const payload = transformDataForAPI(formData, false);
 
-    console.log("Submitting payload:", JSON.stringify(payload, null, 2));
+    // console.log("Submitting payload:", JSON.stringify(payload, null, 2));
 
     const response = await apiClient.post('/pm_reports', payload);
 
-    console.log("Submit success:", response.data);
+    // console.log("Submit success:", response.data);
     return {
       success: true,
       data: response.data,
@@ -345,7 +345,7 @@ export const updatePMReport = async (id, formData, onProgress) => {
     // Transform data for API with edit mode = true
     const payload = transformDataForAPI(formData, true);
 
-    console.log(`Updating report ${id} with payload:`, JSON.stringify(payload, null, 2));
+    // console.log(`Updating report ${id} with payload:`, JSON.stringify(payload, null, 2));
 
     const response = await apiClient.put(`/pm_reports/${id}`, payload, {
       onUploadProgress: (progressEvent) => {
@@ -358,7 +358,7 @@ export const updatePMReport = async (id, formData, onProgress) => {
       }
     });
 
-    console.log("Update success:", response.data);
+    // console.log("Update success:", response.data);
     return {
       success: true,
       data: response.data,
@@ -366,7 +366,7 @@ export const updatePMReport = async (id, formData, onProgress) => {
     };
 
   } catch (error) {
-    console.error("Update error:", error);
+    // console.error("Update error:", error);
 
     let errorMessage = error.message;
     if (error.response) {
@@ -398,8 +398,8 @@ export const submitPMReportWithProgress = async (formData, onProgress) => {
       payload = transformDataForAPI(formData, false);
     }
 
-    console.log("Submitting payload:", JSON.stringify(payload, null, 2));
-    console.log("Checklists in payload:", payload.checklists?.length || 0);
+    // console.log("Submitting payload:", JSON.stringify(payload, null, 2));
+    // console.log("Checklists in payload:", payload.checklists?.length || 0);
 
     const response = await apiClient.post('/pm_reports', payload, {
       onUploadProgress: (progressEvent) => {
@@ -414,7 +414,7 @@ export const submitPMReportWithProgress = async (formData, onProgress) => {
       }
     });
 
-    console.log("Submit success:", response.data);
+    // console.log("Submit success:", response.data);
     return {
       success: true,
       data: response.data,
@@ -422,7 +422,7 @@ export const submitPMReportWithProgress = async (formData, onProgress) => {
     };
 
   } catch (error) {
-    console.error("Submit error:", error);
+    // console.error("Submit error:", error);
 
     let errorMessage = error.message;
     if (error.response) {
@@ -454,8 +454,8 @@ export const updatePMReportWithProgress = async (id, formData, onProgress) => {
       payload = transformDataForAPI(formData, true); // Pass true for edit mode
     }
 
-    console.log(`Updating report ${id} with payload:`, JSON.stringify(payload, null, 2));
-    console.log("Checklists in payload:", payload.checklists?.length || 0);
+    // console.log(`Updating report ${id} with payload:`, JSON.stringify(payload, null, 2));
+    // console.log("Checklists in payload:", payload.checklists?.length || 0);
 
     const response = await apiClient.put(`/pm_reports/${id}`, payload, {
       onUploadProgress: (progressEvent) => {
@@ -470,7 +470,7 @@ export const updatePMReportWithProgress = async (id, formData, onProgress) => {
       }
     });
 
-    console.log("Update success:", response.data);
+    //console.log("Update success:", response.data);
     return {
       success: true,
       data: response.data,
@@ -478,7 +478,7 @@ export const updatePMReportWithProgress = async (id, formData, onProgress) => {
     };
 
   } catch (error) {
-    console.error("Update error:", error);
+    //console.error("Update error:", error);
 
     let errorMessage = error.message;
     if (error.response) {

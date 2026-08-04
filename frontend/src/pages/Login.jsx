@@ -1,9 +1,14 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import authService from "../services/authService";
 
 export default function Login() {
     const navigate = useNavigate();
+
+    //clear token on page load to ensure a fresh login session
+    useEffect(() => {
+        authService.logout();
+    }, []);
 
     const [formData, setFormData] = useState({
         username: "",
@@ -42,7 +47,7 @@ export default function Login() {
             localStorage.setItem("token", data.token);
             localStorage.setItem("userName", formData.username);
 
-            navigate("/dashboard");
+            navigate("/dashboard", { replace: true });
 
         } catch (error) {
             console.error("Error:", error);
