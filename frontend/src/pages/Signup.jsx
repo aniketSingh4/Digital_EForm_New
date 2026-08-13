@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import AuthLayout from "../components/AuthLayout";
 import authService from "../services/authService";
+import { env } from "../config/env";
 
 export default function Signup() {
 
@@ -12,8 +13,7 @@ export default function Signup() {
         email: "",
         phone: "",
         password: "",
-        confirmPassword: "",
-        role: "USER"
+        confirmPassword: ""
     });
 
     const [showPassword, setShowPassword] = useState(false);
@@ -64,8 +64,7 @@ export default function Signup() {
                 name: formData.name,
                 email: formData.email,
                 phone: formData.phone,
-                password: formData.password,
-                role: formData.role
+                password: formData.password
             });
 
             alert("Registration Successful");
@@ -77,9 +76,11 @@ export default function Signup() {
             console.error(error);
 
             if (error.response) {
-                alert(error.response.data.message || "Registration Failed");
+                alert(error.response.data?.message || "Registration Failed");
+            } else if (error.code === "ECONNABORTED") {
+                alert(`Request timed out. Cannot reach ${env.AUTH_SERVICE_URL}`);
             } else {
-                alert("Server Error");
+                alert(`Cannot reach ${env.AUTH_SERVICE_URL}. Check that the APIs are running.`);
             }
 
         } finally {
@@ -157,16 +158,6 @@ export default function Signup() {
                     value={formData.confirmPassword}
                     onChange={handleChange}
                 />
-
-                <select
-                    className="input"
-                    name="role"
-                    value={formData.role}
-                    onChange={handleChange}
-                >
-                    <option value="USER">User</option>
-                    <option value="ADMIN">Admin</option>
-                </select>
 
                 <button
                     className="login-btn"

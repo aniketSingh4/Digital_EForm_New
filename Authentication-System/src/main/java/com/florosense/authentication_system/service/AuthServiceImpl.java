@@ -42,17 +42,17 @@ public class AuthServiceImpl implements AuthService {
             throw new RuntimeException("Email already registered.");
         }
 
+        if (request.getPhone() != null && userRepository.existsByPhone(request.getPhone())) {
+            throw new RuntimeException("Phone number already registered.");
+        }
+
         Users user = new Users();
 
         user.setName(request.getName());
         user.setEmail(request.getEmail());
         user.setPhone(request.getPhone());
         user.setPassword(passwordEncoder.encode(request.getPassword()));
-        String role = request.getRole() == null ? "USER" : request.getRole().trim().toUpperCase();
-        if (!"ADMIN".equals(role) && !"USER".equals(role)) {
-            role = "USER";
-        }
-        user.setRole(role);
+        user.setRole("USER");
         user.setEnabled(true);
 
         userRepository.save(user);

@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import authService from "../services/authService";
+import { env } from "../config/env";
 
 export default function Login() {
     const navigate = useNavigate();
@@ -58,11 +59,11 @@ export default function Login() {
             console.error("Error:", error);
 
             if (error.response) {
-                setError(error.response.data.message || "Login Failed");
-            } else if (error.message) {
-                setError(error.message);
+                setError(error.response.data?.message || "Login Failed");
+            } else if (error.code === "ECONNABORTED") {
+                setError(`Request timed out. Cannot reach ${env.AUTH_SERVICE_URL}`);
             } else {
-                setError("Failed to fetch");
+                setError(`Cannot reach ${env.AUTH_SERVICE_URL}. Check that the APIs are running.`);
             }
         } finally {
             setLoading(false);
@@ -113,12 +114,12 @@ export default function Login() {
 
                     <form onSubmit={handleSubmit}>
                         <div style={styles.inputGroup}>
-                            <label style={styles.label}>Username</label>
+                            <label style={styles.label}>Email</label>
                             <input
                                 style={styles.input}
-                                type="text"
+                                type="email"
                                 name="username"
-                                placeholder="admin"
+                                placeholder="you@example.com"
                                 value={formData.username}
                                 onChange={handleChange}
                                 disabled={loading}

@@ -6,18 +6,20 @@ const api = axios.create({
     headers: {
         "Content-Type": "application/json",
     },
-    timeout: 360000,
+    timeout: 20000,
 });
+
+const isPublicAuthUrl = (url = "") =>
+    url.includes("/auth/login") || url.includes("/auth/register");
 
 // Request interceptor with timing
 api.interceptors.request.use(
     (config) => {
         config.metadata = { startTime: new Date() };
-        
+
         const token = localStorage.getItem("token");
         const url = config.url || "";
-        const isPublicAuth = url.includes("/auth/login") || url.includes("/auth/register");
-        if (token && !isPublicAuth) {
+        if (token && !isPublicAuthUrl(url)) {
             config.headers.Authorization = `Bearer ${token}`;
         }
         return config;
@@ -37,28 +39,32 @@ api.interceptors.response.use(
             const duration = new Date() - error.config.metadata.startTime;
             console.log(`Request failed after ${duration}ms`);
         }
-        
-        if (error.code === 'ECONNABORTED') {
-            console.error('Request timeout!');
+
+        if (error.code === "ECONNABORTED") {
+            console.error("Request timeout!");
         }
 
-        //ADD THIS: Handle token expiration (401/403)
-        if (error.response && (error.response.status === 401 || error.response.status === 403)) {
-            console.log('Token expired or invalid - logging out');
-            // Clear all stored data
+        const failedUrl = error.config?.url || "";
+        const isPublicAuth = isPublicAuthUrl(failedUrl);
+
+        if (
+            !isPublicAuth &&
+            error.response &&
+            (error.response.status === 401 || error.response.status === 403)
+        ) {
+            console.log("Token expired or invalid - logging out");
             localStorage.removeItem("token");
             localStorage.removeItem("userName");
             localStorage.removeItem("userRole");
             localStorage.removeItem("dashboard_data");
             localStorage.removeItem("dashboard_timestamp");
             localStorage.removeItem("notifications");
-            
-            // Redirect to login page if not already there
-            if (!window.location.pathname.includes('/login')) {
+
+            if (!window.location.pathname.includes("/login")) {
                 window.location.href = "/login";
             }
         }
-        
+
         return Promise.reject(error);
     }
 );
