@@ -31,10 +31,11 @@ import {
 } from 'react-icons/fa';
 import notificationService from '../../services/notificationService';
 import { getAuthHeaders, canModifyReports } from '../../utils/roles';
+import { env } from '../../config/env';
 import './InstallationReportDetails.css';
 
-const API_BASE_URL = 'https://installation-reports.onrender.com/api/installation-reports';
-const IMAGE_BASE_URL = 'https://installation-reports.onrender.com';
+const API_BASE_URL = env.INSTALLATION_REPORTS_URL;
+const IMAGE_BASE_URL = env.INSTALLATION_SERVICE_URL;
 
 const InstallationReportDetails = () => {
     const { id } = useParams();

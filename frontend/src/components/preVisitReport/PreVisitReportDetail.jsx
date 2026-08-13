@@ -14,10 +14,10 @@ import {
   FaChevronRight
 } from 'react-icons/fa';
 import preVisitReportService from '../../api/preVisitReportService';
+import { env } from '../../config/env';
 import './PreVisitReportDetail.css';
 
-//Base URL for images (your backend URL)
-const IMAGE_BASE_URL = 'https://previsit-reports.onrender.com';
+const IMAGE_BASE_URL = env.PREVISIT_SERVICE_URL;
 
 const PreVisitReportDetail = () => {
   const { id } = useParams();

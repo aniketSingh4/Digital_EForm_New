@@ -1,7 +1,8 @@
 import { getAuthHeaders } from '../utils/roles';
 import { invalidate } from '../utils/cache';
+import { env } from '../config/env';
 
-const API_BASE_URL = 'https://pm-reports.onrender.com/api/pm_reports';
+const API_BASE_URL = env.PM_REPORTS_URL
 
 /**
  * Fetch report data by ID for editing

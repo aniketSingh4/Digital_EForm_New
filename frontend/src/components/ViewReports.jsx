@@ -42,6 +42,7 @@ import { handleEditNavigation } from '../handlers/pmReportEditHandler';
 import notificationService from '../services/notificationService';
 import { canModifyReports, getAuthHeaders } from '../utils/roles';
 import { getCached, setCached, invalidate, LIST_CACHE_TTL } from '../utils/cache';
+import { env } from '../config/env';
 
 export default function ViewReports() {
     const navigate = useNavigate();
@@ -80,6 +81,7 @@ export default function ViewReports() {
     const featureConfig = {
         1: {
             title: "Preventive Maintenance Reports",
+            baseUrl: env.PM_SERVICE_URL,
             apiEndpoint: "/api/pm_reports",
             idField: "id",
             dateField: "pmVisitDate",
@@ -98,6 +100,7 @@ export default function ViewReports() {
         },
         2: {
             title: "Pre-Visit Checklists",
+            baseUrl: env.PREVISIT_SERVICE_URL,
             apiEndpoint: "/api/pre-visit-checklist",
             idField: "id",
             dateField: "createdDate",
@@ -115,6 +118,7 @@ export default function ViewReports() {
         },
         3: {
             title: "Calibration Reports",
+            baseUrl: env.CALIBRATION_SERVICE_URL,
             apiEndpoint: "/api/calibration-reports",
             idField: "id",
             dateField: "calibrationDate",
@@ -132,6 +136,7 @@ export default function ViewReports() {
         },
         4: {
             title: "Installation & Commissioning Reports",
+            baseUrl: env.INSTALLATION_SERVICE_URL,
             apiEndpoint: "/api/installation-reports",
             idField: "id",
             dateField: "installationDate",
@@ -150,7 +155,7 @@ export default function ViewReports() {
     };
 
     const config = featureConfig[featureId] || featureConfig[1];
-    const API_BASE_URL = "https://pm-reports.onrender.com";
+    const API_BASE_URL = config.baseUrl;
 
     // Helper function for status badge
     const getStatusBadge = (status) => {

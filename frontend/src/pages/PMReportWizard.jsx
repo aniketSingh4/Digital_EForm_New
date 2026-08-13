@@ -15,6 +15,7 @@ import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import { getAuthHeaders } from '../utils/roles';
 import { invalidate } from '../utils/cache';
+import { env } from '../config/env';
 
 export default function PMReportWizard() {
     const navigate = useNavigate();
@@ -110,7 +111,7 @@ export default function PMReportWizard() {
     const fetchReportData = async () => {
         try {
             setLoading(true);
-            const response = await fetch(`https://pm-reports.onrender.com/api/pm_reports/${id}`, {
+            const response = await fetch(`${env.PM_REPORTS_URL}/${id}`, {
                 headers: getAuthHeaders()
             });
 
@@ -279,11 +280,11 @@ export default function PMReportWizard() {
             //console.log('Checklists in payload:', payload.checklists?.length || 0);
 
             let response;
-            let url = 'https://pm-reports.onrender.com/api/pm_reports';
+            let url = env.PM_REPORTS_URL;
             let method = 'POST';
 
             if (isEditMode && id) {
-                url = `https://pm-reports.onrender.com/api/pm_reports/${id}`;
+                url = `${env.PM_REPORTS_URL}/${id}`;
                 method = 'PUT';
             }
 

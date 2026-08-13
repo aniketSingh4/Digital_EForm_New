@@ -7,8 +7,9 @@ import './InstallationReportForm.css';
 import notificationService from '../../services/notificationService';
 import { getAuthHeaders } from '../../utils/roles';
 import { invalidate } from '../../utils/cache';
+import { env } from '../../config/env';
 
-const API_BASE_URL = 'https://installation-reports.onrender.com/api/installation-reports';
+const API_BASE_URL = env.INSTALLATION_REPORTS_URL;
 
 const authConfig = () => ({ headers: getAuthHeaders() });
 

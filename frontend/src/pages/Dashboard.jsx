@@ -50,6 +50,7 @@ import notificationService from "../services/notificationService"; //Fixing the 
 import "../assets/Dashboard.css";
 import { FaSync } from "react-icons/fa";
 import { getAuthHeaders } from "../utils/roles";
+import { env } from "../config/env";
 
 //Cache keys
 const CACHE_KEY = 'dashboard_data';
@@ -165,16 +166,16 @@ export default function Dashboard() {
 
         try {
             const results = await Promise.allSettled([
-                fetch('https://pm-reports.onrender.com/api/pm_reports/count', {
+                fetch(`${env.PM_REPORTS_URL}/count`, {
                     headers: getAuthHeaders()
                 }).then(res => res.ok ? res.json() : 0).catch(() => 0),
-                fetch('https://previsit-reports.onrender.com/api/previsit-reports/count', {
+                fetch(`${env.PREVISIT_REPORTS_URL}/count`, {
                     headers: getAuthHeaders()
                 }).then(res => res.ok ? res.json() : 0).catch(() => 0),
-                fetch('https://calibration-reports.onrender.com/api/calibration-reports/count', {
+                fetch(`${env.CALIBRATION_REPORTS_URL}/count`, {
                     headers: getAuthHeaders()
                 }).then(res => res.ok ? res.json() : 0).catch(() => 0),
-                fetch('https://installation-reports.onrender.com/api/installation-reports', {
+                fetch(env.INSTALLATION_REPORTS_URL, {
                     headers: getAuthHeaders()
                 }).then(res => res.ok ? res.json() : [])
                     .then(data => Array.isArray(data) ? data.length : 0)

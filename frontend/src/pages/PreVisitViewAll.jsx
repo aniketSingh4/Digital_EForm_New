@@ -31,6 +31,7 @@ import 'jspdf-autotable';
 import "../assets/PreVisitViewAll.css";
 import notificationService from "../services/notificationService";
 import { canModifyReports, getAuthHeaders } from "../utils/roles";
+import { env } from "../config/env";
 
 const PreVisitViewAll = () => {
     const navigate = useNavigate();
@@ -175,7 +176,7 @@ const PreVisitViewAll = () => {
             setActionLoading(`pdf-${report.id}`);
             //console.log('Generating PDF for report:', report.id);
 
-            const response = await fetch(`https://previsit-reports.onrender.com/api/previsit-reports/${report.id}`, {
+            const response = await fetch(`${env.PREVISIT_REPORTS_URL}/${report.id}`, {
                 headers: getAuthHeaders()
             });
 

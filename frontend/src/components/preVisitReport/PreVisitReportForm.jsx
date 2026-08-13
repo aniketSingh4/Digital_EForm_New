@@ -8,6 +8,7 @@ import { toast } from 'react-toastify';
 import { FaSpinner, FaFileImage, FaTrash, FaUpload } from 'react-icons/fa';
 import { getAuthHeaders } from '../../utils/roles';
 import { invalidate } from '../../utils/cache';
+import { env } from '../../config/env';
 
 const CHECKLIST_ITEMS = [
   { id: 1, fieldName: 'Confirm Availability of Stabilized power supply (230 V)' },
@@ -18,8 +19,7 @@ const CHECKLIST_ITEMS = [
   { id: 6, fieldName: 'Discuss Client Scope of Work' },
 ];
 
-// ✅ Define API Base URL
-const API_BASE_URL = 'https://previsit-reports.onrender.com/api/previsit-reports';
+const API_BASE_URL = env.PREVISIT_REPORTS_URL;
 
 const PreVisitReportForm = ({ onSuccess, onCancel, initialData, isEdit = false }) => {
   const navigate = useNavigate();

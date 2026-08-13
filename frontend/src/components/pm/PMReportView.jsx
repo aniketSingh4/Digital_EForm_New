@@ -25,9 +25,10 @@ import {
 } from 'react-icons/fa';
 import notificationService from '../../services/notificationService';
 import { getAuthHeaders, canModifyReports } from '../../utils/roles';
+import { env } from '../../config/env';
 import './PMReportView.css';
 
-const API_BASE_URL = 'https://pm-reports.onrender.com/api/pm_reports';
+const API_BASE_URL = env.PM_REPORTS_URL;
 
 const PMReportView = () => {
     const navigate = useNavigate();

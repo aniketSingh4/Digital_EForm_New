@@ -25,6 +25,7 @@ import {
 import { calibrationReportService } from "../../services/CalibrationReportService";  //Import Fixed
 import notificationService from "../../services/notificationService";
 import { canModifyReports, getAuthHeaders } from "../../utils/roles";
+import { env } from "../../config/env";
 import jsPDF from 'jspdf';
 import "./CalibrationViewAll.css";
 
@@ -307,7 +308,7 @@ const CalibrationViewAll = () => {
            // console.log('Generating PDF for report:', reportId);
 
             // Fetch full report details - using the same pattern as Previsit
-            const response = await fetch(`https://calibration-reports.onrender.com/api/calibration-reports/${reportId}`, {
+            const response = await fetch(`${env.CALIBRATION_REPORTS_URL}/${reportId}`, {
                 headers: getAuthHeaders()
             });
 

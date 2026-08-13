@@ -1,12 +1,12 @@
 // src/services/CalibrationReportService.js
 import axios from 'axios';
 import { getCached, setCached, invalidate, LIST_CACHE_TTL } from '../utils/cache';
+import { env } from '../config/env';
 
-const API_URL = 'https://calibration-reports.onrender.com/api/calibration-reports';
 const LIST_CACHE_KEY = 'calibration_reports_list';
 
 const api = axios.create({
-  baseURL: API_URL,
+  baseURL: env.CALIBRATION_REPORTS_URL,
   headers: {
     'Content-Type': 'application/json',
   },

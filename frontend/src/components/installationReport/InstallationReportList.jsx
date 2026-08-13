@@ -30,9 +30,10 @@ import {
 import notificationService from '../../services/notificationService';
 import { canModifyReports, getAuthHeaders } from '../../utils/roles';
 import { getCached, setCached, invalidate, LIST_CACHE_TTL } from '../../utils/cache';
+import { env } from '../../config/env';
 import "./InstallationReportList.css";
 
-const API_BASE_URL = 'https://installation-reports.onrender.com/api/installation-reports';
+const API_BASE_URL = env.INSTALLATION_REPORTS_URL;
 const LIST_CACHE_KEY = 'installation_reports_list';
 
 const InstallationReportList = () => {

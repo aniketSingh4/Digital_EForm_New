@@ -1,7 +1,8 @@
 import axios from "axios";
+import { env } from "../config/env";
 
 const api = axios.create({
-    baseURL: "https://authentication-service-eda5.onrender.com/api",
+    baseURL: env.AUTH_API_URL,
     headers: {
         "Content-Type": "application/json",
     },

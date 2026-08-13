@@ -1,19 +1,10 @@
 // src/api/pmReportService.js
 import axios from 'axios';
 import { invalidate } from '../utils/cache';
-
-// Get API URL
-const getApiUrl = () => {
-  if (typeof window !== 'undefined') {
-    if (import.meta && import.meta.env && import.meta.env.VITE_API_URL) {
-      return import.meta.env.VITE_API_URL;
-    }
-  }
-  return "https://pm-reports.onrender.com/api";
-};
+import { env } from '../config/env';
 
 const apiClient = axios.create({
-  baseURL: getApiUrl(),
+  baseURL: env.PM_API_URL,
   headers: {
     'Content-Type': 'application/json',
   },

@@ -1,10 +1,8 @@
 import axios from 'axios';
-
-// Update this URL to match your backend API
-const API_BASE_URL = 'https://calibration-reports.onrender.com/api';
+import { env } from '../config/env';
 
 const axiosInstance = axios.create({
-  baseURL: API_BASE_URL,
+  baseURL: env.CALIBRATION_API_URL,
   headers: {
     'Content-Type': 'application/json',
   },

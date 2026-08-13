@@ -1,12 +1,12 @@
 // src/api/preVisitReportService.js
 import axios from 'axios';
 import { getCached, setCached, invalidate, LIST_CACHE_TTL } from '../utils/cache';
+import { env } from '../config/env';
 
-const PREVISIT_API_BASE_URL = 'https://previsit-reports.onrender.com/api';
 const LIST_CACHE_KEY = 'previsit_reports_list';
 
 const preVisitApiClient = axios.create({
-  baseURL: PREVISIT_API_BASE_URL,
+  baseURL: env.PREVISIT_API_URL,
   headers: {
     'Content-Type': 'application/json',
     'Accept': 'application/json',

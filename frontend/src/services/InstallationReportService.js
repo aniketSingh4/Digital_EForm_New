@@ -1,12 +1,12 @@
 // src/services/InstallationReportService.js
 import axios from 'axios';
 import { getCached, setCached, invalidate, LIST_CACHE_TTL } from '../utils/cache';
+import { env } from '../config/env';
 
-const API_BASE_URL = 'https://installation-reports.onrender.com/api/installation-reports';
 const LIST_CACHE_KEY = 'installation_reports_list';
 
 const api = axios.create({
-  baseURL: API_BASE_URL,
+  baseURL: env.INSTALLATION_REPORTS_URL,
   headers: {
     'Content-Type': 'application/json',
   },
