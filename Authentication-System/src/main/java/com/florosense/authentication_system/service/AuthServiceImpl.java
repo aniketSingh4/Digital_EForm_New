@@ -48,7 +48,11 @@ public class AuthServiceImpl implements AuthService {
         user.setEmail(request.getEmail());
         user.setPhone(request.getPhone());
         user.setPassword(passwordEncoder.encode(request.getPassword()));
-        user.setRole("USER");
+        String role = request.getRole() == null ? "USER" : request.getRole().trim().toUpperCase();
+        if (!"ADMIN".equals(role) && !"USER".equals(role)) {
+            role = "USER";
+        }
+        user.setRole(role);
         user.setEnabled(true);
 
         userRepository.save(user);

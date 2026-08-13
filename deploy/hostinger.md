@@ -248,7 +248,28 @@ docker compose down    # stops only eform-* containers; keeps ~/eform/data
 
 This Compose project uses container names `eform-*`. `docker compose down` does not remove sensor-bridge, duton-dashboard, Redis, or the shared Postgres image.
 
-### `password authentication failed for user "postgres"` (SQLState 28P01)
+### `ERR_CONNECTION_TIMED_OUT` from the browser (`http://72.60.74.221:9080`)
+
+The APIs are healthy on the VPS, but Hostinger's **cloud firewall** (or your ISP) is blocking port 9080 from the internet. `ufw` on the VM is not enough.
+
+1. In Hostinger hPanel: Firewall / Security → allow **TCP 9080**.
+2. On the VPS: `sudo ufw allow 9080/tcp`
+3. From your Windows PC: `curl http://72.60.74.221:9080/` — you must see `eform-api` before the frontend can register.
+
+Temporary test without opening 9080 — SSH tunnel, then point Vite at localhost:
+
+```powershell
+ssh -L 9080:127.0.0.1:9080 dev_user@72.60.74.221
+```
+
+Set every `VITE_*` URL in `frontend/.env` to `http://localhost:9080` and restart Vite.
+
+After changing Auth Java code, rebuild that service:
+
+```bash
+cd ~/eform
+docker compose up -d --build auth
+```
 
 The images built. The app reached Postgres, but the password in `~/eform/.env` is not the password Postgres expects. Typical causes: leftover `change-me` from `.env.example`, or the local-dev password `root`.
 
