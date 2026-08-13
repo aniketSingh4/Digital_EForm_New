@@ -248,8 +248,19 @@ export default function Step6Review({
                     });
                 }
                 // MODIFIED: Different success message for edit vs create
-                const successMessage = isEditMode ? "Report updated successfully!" : "Report submitted successfully!";
-                notificationService.success(successMessage);
+                const reportMeta = {
+                    id: result.data?.id || reportId,
+                    reportType: 'PM Report',
+                    reportName: result.data?.serviceReportNo || report.serviceReportNo,
+                    customerName: report.clientName,
+                    location: report.siteName,
+                    createdBy: localStorage.getItem('userName') || ''
+                };
+                if (isEditMode) {
+                    notificationService.reportUpdated('PM Report', reportMeta);
+                } else {
+                    notificationService.reportCreated('PM Report', reportMeta);
+                }
             } else {
                 notificationService.error(result.error || "Failed to submit report");
                 setSubmitError(result.error || "Failed to submit report");

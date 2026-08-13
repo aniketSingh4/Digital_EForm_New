@@ -318,11 +318,27 @@ const CalibrationReportForm = ({ onSuccess, onCancel, isEdit = false }) => {
       if (isEditMode && id) {
         //console.log('Updating report with ID:', id);
         response = await calibrationReportService.updateReport(id, submitData);
-        notificationService.success('Report updated successfully!');
+        notificationService.reportUpdated('Calibration Report', {
+          id: response?.id || id,
+          reportType: 'Calibration Report',
+          reportName: response?.reportNo || submitData.serialNo || submitData.sensorId,
+          customerName: submitData.clientName,
+          location: submitData.siteName,
+          equipment: submitData.sensorId,
+          createdBy: localStorage.getItem('userName') || ''
+        });
       } else {
         //console.log('Creating new report...');
         response = await calibrationReportService.createReport(submitData);
-        notificationService.success('Report created successfully!');
+        notificationService.reportCreated('Calibration Report', {
+          id: response?.id,
+          reportType: 'Calibration Report',
+          reportName: response?.reportNo || submitData.serialNo || submitData.sensorId,
+          customerName: submitData.clientName,
+          location: submitData.siteName,
+          equipment: submitData.sensorId,
+          createdBy: localStorage.getItem('userName') || ''
+        });
         setReportCount(prev => prev + 1);
       }
 

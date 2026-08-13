@@ -59,6 +59,11 @@ api.interceptors.response.use(
             localStorage.removeItem("dashboard_data");
             localStorage.removeItem("dashboard_timestamp");
             localStorage.removeItem("notifications");
+            const email = localStorage.getItem("userEmail");
+            if (email) {
+                localStorage.removeItem(`notifications_${email}`);
+            }
+            localStorage.removeItem("userEmail");
 
             if (!window.location.pathname.includes("/login")) {
                 window.location.href = "/login";

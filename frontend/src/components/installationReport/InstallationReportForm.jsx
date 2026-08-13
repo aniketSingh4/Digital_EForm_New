@@ -237,10 +237,24 @@ const InstallationReportForm = () => {
       let response;
       if (isEditMode) {
         response = await axios.put(`${API_BASE_URL}/${id}`, submitData, authConfig());
-        notificationService.success('Report updated successfully!');
+        notificationService.reportUpdated('Installation & Commissioning Report', {
+          id: response.data?.id || id,
+          reportType: 'Installation & Commissioning Report',
+          reportName: response.data?.reportNo || generatedReportNo,
+          customerName: formData.customerName || formData.companyName,
+          location: formData.siteAddress,
+          createdBy: localStorage.getItem('userName') || ''
+        });
       } else {
         response = await axios.post(API_BASE_URL, submitData, authConfig());
-        notificationService.success('Report created successfully!');
+        notificationService.reportCreated('Installation & Commissioning Report', {
+          id: response.data?.id,
+          reportType: 'Installation & Commissioning Report',
+          reportName: response.data?.reportNo || generatedReportNo,
+          customerName: formData.customerName || formData.companyName,
+          location: formData.siteAddress,
+          createdBy: localStorage.getItem('userName') || ''
+        });
       }
 
       const reportId = response.data.id;

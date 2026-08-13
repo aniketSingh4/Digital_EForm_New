@@ -24,7 +24,7 @@ public class RegisterRequest
     @Size(min = 8, message = "Password must be at least 8 characters")
     private String password;
 
-    /** Optional. USER (default) or ADMIN. */
+    /** Optional. USER (default) or ADMIN. Invalid values fall back to USER. */
     private String role;
 
     // Getters & Setters

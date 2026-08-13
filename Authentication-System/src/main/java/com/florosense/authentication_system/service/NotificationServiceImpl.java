@@ -1,0 +1,198 @@
+package com.florosense.authentication_system.service;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Locale;
+
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import com.florosense.authentication_system.dto.NotificationRequest;
+import com.florosense.authentication_system.dto.NotificationResponse;
+import com.florosense.authentication_system.entity.AppNotification;
+import com.florosense.authentication_system.entity.Users;
+import com.florosense.authentication_system.repository.NotificationRepository;
+import com.florosense.authentication_system.repository.UserRepository;
+
+@Service
+public class NotificationServiceImpl implements NotificationService {
+
+    private static final String AUDIENCE_USER = "USER";
+    private static final String AUDIENCE_ADMIN = "ADMIN";
+    private static final String TYPE_REPORT_CREATED = "REPORT_CREATED";
+
+    private final NotificationRepository notificationRepository;
+    private final UserRepository userRepository;
+
+    public NotificationServiceImpl(NotificationRepository notificationRepository, UserRepository userRepository) {
+        this.notificationRepository = notificationRepository;
+        this.userRepository = userRepository;
+    }
+
+    @Override
+    @Transactional
+    public List<NotificationResponse> create(String actorEmail, NotificationRequest request) {
+        Users actor = userRepository.findByEmail(actorEmail)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        String type = normalizeType(request.getType());
+        String actorName = actor.getName();
+        List<AppNotification> saved = new ArrayList<>();
+
+        saved.add(notificationRepository.save(buildNotification(
+                type,
+                AUDIENCE_USER,
+                actorEmail,
+                actorName,
+                actorEmail,
+                request,
+                buildSummary(type, actorName, request, true))));
+
+        if (TYPE_REPORT_CREATED.equals(type)) {
+            List<Users> admins = userRepository.findByRoleIgnoreCase(AUDIENCE_ADMIN);
+            for (Users admin : admins) {
+                saved.add(notificationRepository.save(buildNotification(
+                        type,
+                        AUDIENCE_ADMIN,
+                        admin.getEmail(),
+                        actorName,
+                        actorEmail,
+                        request,
+                        buildSummary(type, actorName, request, false))));
+            }
+        }
+
+        return saved.stream()
+                .filter(notification -> actorEmail.equalsIgnoreCase(notification.getRecipientEmail()))
+                .map(NotificationResponse::from)
+                .toList();
+    }
+
+    @Override
+    public List<NotificationResponse> listForUser(String recipientEmail) {
+        return notificationRepository.findByRecipientEmailOrderByCreatedAtDesc(recipientEmail).stream()
+                .map(NotificationResponse::from)
+                .toList();
+    }
+
+    @Override
+    @Transactional
+    public NotificationResponse markRead(Long id, String recipientEmail) {
+        AppNotification notification = notificationRepository.findByIdAndRecipientEmail(id, recipientEmail)
+                .orElseThrow(() -> new RuntimeException("Notification not found"));
+        notification.setReadFlag(true);
+        return NotificationResponse.from(notificationRepository.save(notification));
+    }
+
+    @Override
+    @Transactional
+    public void markAllRead(String recipientEmail) {
+        List<AppNotification> notifications = notificationRepository
+                .findByRecipientEmailOrderByCreatedAtDesc(recipientEmail);
+        for (AppNotification notification : notifications) {
+            notification.setReadFlag(true);
+        }
+        notificationRepository.saveAll(notifications);
+    }
+
+    @Override
+    @Transactional
+    public void delete(Long id, String recipientEmail) {
+        AppNotification notification = notificationRepository.findByIdAndRecipientEmail(id, recipientEmail)
+                .orElseThrow(() -> new RuntimeException("Notification not found"));
+        notificationRepository.delete(notification);
+    }
+
+    @Override
+    @Transactional
+    public void clearAll(String recipientEmail) {
+        notificationRepository.deleteByRecipientEmail(recipientEmail);
+    }
+
+    private AppNotification buildNotification(
+            String type,
+            String audience,
+            String recipientEmail,
+            String actorName,
+            String actorEmail,
+            NotificationRequest request,
+            String summary) {
+        AppNotification notification = new AppNotification();
+        notification.setType(type);
+        notification.setAudience(audience);
+        notification.setRecipientEmail(recipientEmail);
+        notification.setActorName(actorName);
+        notification.setActorEmail(actorEmail);
+        notification.setReportType(blankToNull(request.getReportType()));
+        notification.setReportTitle(blankToNull(request.getReportTitle()));
+        notification.setReportId(blankToNull(request.getReportId()));
+        notification.setSummary(summary);
+        notification.setReadFlag(false);
+        return notification;
+    }
+
+    private String normalizeType(String type) {
+        if (type == null || type.isBlank()) {
+            return TYPE_REPORT_CREATED;
+        }
+        return type.trim().toUpperCase(Locale.ROOT).replace(' ', '_');
+    }
+
+    private String buildSummary(String type, String actorName, NotificationRequest request, boolean forActor) {
+        if (request.getSummary() != null && !request.getSummary().isBlank()) {
+            return request.getSummary().trim();
+        }
+
+        String reportType = request.getReportType() != null && !request.getReportType().isBlank()
+                ? request.getReportType().trim()
+                : "Report";
+        String title = firstNonBlank(request.getReportTitle(), request.getReportId());
+        String titlePart = title != null ? " \"" + title + "\"" : "";
+        String about = aboutClause(request);
+
+        String action = switch (type) {
+            case "REPORT_UPDATED" -> "updated";
+            case "REPORT_DELETED" -> "deleted";
+            default -> "created";
+        };
+
+        String who = forActor ? "You" : (actorName != null && !actorName.isBlank() ? actorName : "A user");
+        return who + " " + action + " a " + reportType + titlePart + about + ".";
+    }
+
+    private String aboutClause(NotificationRequest request) {
+        String customer = blankToNull(request.getCustomerName());
+        String location = blankToNull(request.getLocation());
+        String equipment = blankToNull(request.getEquipment());
+
+        if (customer != null && location != null) {
+            return " for " + customer + ", " + location;
+        }
+        if (customer != null) {
+            return " for " + customer;
+        }
+        if (location != null) {
+            return " at " + location;
+        }
+        if (equipment != null) {
+            return " for " + equipment;
+        }
+        return "";
+    }
+
+    private String firstNonBlank(String... values) {
+        if (values == null) {
+            return null;
+        }
+        for (String value : values) {
+            if (value != null && !value.isBlank()) {
+                return value.trim();
+            }
+        }
+        return null;
+    }
+
+    private String blankToNull(String value) {
+        return value == null || value.isBlank() ? null : value.trim();
+    }
+}

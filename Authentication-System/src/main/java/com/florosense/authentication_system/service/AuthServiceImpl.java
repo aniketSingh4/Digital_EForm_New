@@ -51,7 +51,7 @@ public class AuthServiceImpl implements AuthService {
         user.setEmail(request.getEmail());
         user.setPhone(request.getPhone());
         user.setPassword(passwordEncoder.encode(request.getPassword()));
-        user.setRole("USER");
+        user.setRole(normalizeRole(request.getRole()));
         user.setEnabled(true);
 
         userRepository.save(user);
@@ -86,4 +86,15 @@ public class AuthServiceImpl implements AuthService {
 	        throw e;
 	    }
 	}
+
+    private String normalizeRole(String role) {
+        if (role == null || role.isBlank()) {
+            return "USER";
+        }
+        String normalized = role.trim().toUpperCase();
+        if ("ADMIN".equals(normalized) || "USER".equals(normalized)) {
+            return normalized;
+        }
+        return "USER";
+    }
 }

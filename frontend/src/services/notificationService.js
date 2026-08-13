@@ -1,8 +1,8 @@
 // src/services/notificationService.js
 import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import notificationApi from './notificationApi';
 
-// Toast notification configurations
 const toastConfig = {
   position: "top-right",
   autoClose: 5000,
@@ -14,12 +14,11 @@ const toastConfig = {
   theme: "colored",
 };
 
-// Notification types
 const NOTIFICATION_TYPES = {
-  REPORT_CREATED: 'report_created',
-  REPORT_UPDATED: 'report_updated',
-  REPORT_DELETED: 'report_deleted',
-  BULK_DELETED: 'bulk_deleted',
+  REPORT_CREATED: 'REPORT_CREATED',
+  REPORT_UPDATED: 'REPORT_UPDATED',
+  REPORT_DELETED: 'REPORT_DELETED',
+  BULK_DELETED: 'BULK_DELETED',
 };
 
 const REPORT_TYPES = {
@@ -29,16 +28,11 @@ const REPORT_TYPES = {
   INSTALLATION: 'Installation & Commissioning Report'
 };
 
-// Get report type from URL or context
-const getReportType = (path = '') => {
-  if (path.includes('pm-reports')) return REPORT_TYPES.PM;
-  if (path.includes('previsit')) return REPORT_TYPES.PRE_VISIT;
-  if (path.includes('calibration')) return REPORT_TYPES.CALIBRATION;
-  if (path.includes('installation')) return REPORT_TYPES.INSTALLATION;
-  return 'Report';
-};
+export const currentUserMeta = () => ({
+  createdBy: localStorage.getItem('userName') || '',
+  actorEmail: localStorage.getItem('userEmail') || '',
+});
 
-// Get detailed report message
 const getDetailedReportMessage = (action, reportData = {}) => {
   const {
     reportName = '',
@@ -55,20 +49,20 @@ const getDetailedReportMessage = (action, reportData = {}) => {
 
   let message = '';
   const typeLabel = reportType || 'Report';
-  const namePart = reportName ? `"${reportName}"` : `#${reportId || 'Unknown'}`;
+  const namePart = reportName ? `"${reportName}"` : (reportId ? `#${reportId}` : '');
 
   switch (action) {
     case NOTIFICATION_TYPES.REPORT_CREATED:
-      message = ` ${typeLabel} ${namePart} created successfully`;
+      message = `${typeLabel} ${namePart} created successfully`.trim();
       break;
     case NOTIFICATION_TYPES.REPORT_UPDATED:
-      message = ` ${typeLabel} ${namePart} updated successfully`;
+      message = `${typeLabel} ${namePart} updated successfully`.trim();
       break;
     case NOTIFICATION_TYPES.REPORT_DELETED:
-      message = ` ${typeLabel} ${namePart} deleted successfully`;
+      message = `${typeLabel} ${namePart} deleted successfully`.trim();
       break;
     case NOTIFICATION_TYPES.BULK_DELETED:
-      message = ` ${reportName} ${typeLabel}s deleted successfully`;
+      message = `${reportName} ${typeLabel}s deleted successfully`;
       break;
     default:
       message = `${action} completed successfully!`;
@@ -89,7 +83,7 @@ const getDetailedReportMessage = (action, reportData = {}) => {
   if (status) details.push(`Status: ${status}`);
   if (createdBy) details.push(`Created by: ${createdBy}`);
 
-  Object.entries(additionalInfo).forEach(([key, value]) => {
+  Object.entries(additionalInfo || {}).forEach(([key, value]) => {
     if (value) details.push(`${key}: ${value}`);
   });
 
@@ -100,35 +94,61 @@ const getDetailedReportMessage = (action, reportData = {}) => {
   return message;
 };
 
-// ✅ Notification Service with Context Integration
+const asReportData = (reportName, reportData, identifier) => {
+  const data = reportData && typeof reportData === 'object' && !Array.isArray(reportData)
+    ? reportData
+    : { id: reportData };
+  const actor = currentUserMeta();
+  return {
+    reportName: reportName,
+    reportId: data.id || data._id || identifier,
+    reportType: data.reportType || reportName || 'Report',
+    location: data.location || data.site || data.siteName || data.siteAddress,
+    date: data.date || data.serviceDate || data.pmVisitDate,
+    customerName: data.customerName || data.customer || data.clientName || data.companyName,
+    equipment: data.equipment || data.equipmentName || data.sensorId,
+    status: data.status,
+    createdBy: data.createdBy || actor.createdBy,
+    actorEmail: data.actorEmail || actor.actorEmail,
+    ...data
+  };
+};
+
 class NotificationService {
   constructor() {
     this.notificationCallback = null;
+    this.refreshCallback = null;
     this.hasShownWelcome = false;
     this.notificationHistory = new Map();
     this.maxHistory = 50;
     this.currentReportContext = {};
   }
 
-  // ✅ Set callback for adding notifications to context
   setNotificationCallback(callback) {
     this.notificationCallback = callback;
   }
 
-  // ✅ Add notification to context (dropdown)
+  setRefreshCallback(callback) {
+    this.refreshCallback = callback;
+  }
+
   addToContext(type, text, metadata = {}) {
     if (this.notificationCallback) {
+      const { type: eventType, ...rest } = metadata;
       this.notificationCallback({
-        type: type,
-        text: text,
+        type,
+        eventType: eventType || rest.eventType,
+        text,
         timestamp: new Date().toISOString(),
         read: false,
-        ...metadata
+        localOnly: rest.localOnly !== false,
+        audience: rest.audience || 'USER',
+        recipientEmail: rest.recipientEmail || localStorage.getItem('userEmail') || '',
+        ...rest
       });
     }
   }
 
-  // Set current report context
   setReportContext(context) {
     this.currentReportContext = {
       ...this.currentReportContext,
@@ -140,9 +160,29 @@ class NotificationService {
     this.currentReportContext = {};
   }
 
-  // ✅ Success notification
+  async persistEvent(eventType, reportData = {}) {
+    try {
+      await notificationApi.create({
+        type: eventType,
+        reportType: reportData.reportType || reportData.reportName || 'Report',
+        reportTitle: String(reportData.reportName || reportData.reportTitle || reportData.reportId || ''),
+        reportId: reportData.reportId != null ? String(reportData.reportId) : '',
+        customerName: reportData.customerName || reportData.customer || reportData.clientName || '',
+        location: reportData.location || reportData.site || reportData.siteName || reportData.siteAddress || '',
+        equipment: reportData.equipment || reportData.equipmentName || '',
+      });
+      if (this.refreshCallback) {
+        await this.refreshCallback();
+      }
+      return true;
+    } catch (error) {
+      console.error('Failed to persist notification:', error);
+      return false;
+    }
+  }
+
   success(message, options = {}) {
-    const { type, identifier, reportData = {}, reportName = '' } = options;
+    const { type, identifier, reportData = {}, reportName = '', persistToServer = false } = options;
 
     toast.success(message, {
       ...toastConfig,
@@ -162,11 +202,17 @@ class NotificationService {
       },
     });
 
-    // ✅ Add to context (dropdown notifications)
-    this.addToContext('success', message, { type, identifier, reportData: { ...this.currentReportContext, ...reportData, reportName } });
+    if (!persistToServer) {
+      this.addToContext('success', message, {
+        eventType: type,
+        identifier,
+        reportData: { ...this.currentReportContext, ...reportData, reportName },
+        reportName,
+        localOnly: true,
+      });
+    }
   }
 
-  // ✅ Error notification
   error(message, options = {}) {
     toast.error(message, {
       ...toastConfig,
@@ -186,10 +232,9 @@ class NotificationService {
       },
     });
 
-    this.addToContext('error', message, options);
+    this.addToContext('error', message, { ...options, localOnly: true });
   }
 
-  // ✅ Warning notification
   warning(message, options = {}) {
     toast.warning(message, {
       ...toastConfig,
@@ -209,10 +254,9 @@ class NotificationService {
       },
     });
 
-    this.addToContext('warning', message, options);
+    this.addToContext('warning', message, { ...options, localOnly: true });
   }
 
-  // ✅ Info notification
   info(message, options = {}) {
     toast.info(message, {
       ...toastConfig,
@@ -232,10 +276,9 @@ class NotificationService {
       },
     });
 
-    this.addToContext('info', message, options);
+    this.addToContext('info', message, { ...options, localOnly: true });
   }
 
-  // ✅ PDF Generated
   pdfGenerated(filename) {
     this.success(`PDF generated: ${filename}`, {
       style: {
@@ -244,85 +287,98 @@ class NotificationService {
     });
   }
 
-  // ✅ Report Saved
   reportSaved(message) {
     this.success(message || 'Report saved successfully!');
   }
 
-  // ✅ Report Deleted
   reportDeleted(message) {
     this.info(message || 'Report deleted successfully!');
   }
 
-  // ✅ Report Created
-  reportCreated(reportName, reportData = {}, identifier = null) {
-    const data = {
-      reportName: reportName,
-      reportId: reportData.id || reportData._id || identifier,
-      reportType: reportData.reportType || this.currentReportContext.reportType || 'Report',
-      location: reportData.location || reportData.site || this.currentReportContext.location,
-      date: reportData.date || reportData.serviceDate || this.currentReportContext.date,
-      customerName: reportData.customerName || reportData.customer || this.currentReportContext.customerName,
-      equipment: reportData.equipment || reportData.equipmentName || this.currentReportContext.equipment,
-      status: reportData.status || this.currentReportContext.status,
-      createdBy: reportData.createdBy || this.currentReportContext.createdBy,
-      ...reportData
-    };
-
+  async reportCreated(reportName, reportData = {}, identifier = null) {
+    const data = asReportData(reportName, reportData, identifier);
     const message = getDetailedReportMessage(NOTIFICATION_TYPES.REPORT_CREATED, data);
-    this.success(message, {
-      type: NOTIFICATION_TYPES.REPORT_CREATED,
-      identifier: identifier || data.reportId || `create_${Date.now()}`,
-      reportData: data,
-      reportName: reportName,
+    toast.success(message, {
+      ...toastConfig,
+      style: {
+        background: 'linear-gradient(135deg, #10b981, #059669)',
+        color: 'white',
+        borderRadius: '12px',
+        boxShadow: '0 10px 40px rgba(16, 185, 129, 0.3)',
+        fontWeight: '500',
+        padding: '14px 20px',
+        fontSize: '14px',
+        border: '1px solid rgba(255,255,255,0.1)',
+      },
     });
+    const persisted = await this.persistEvent(NOTIFICATION_TYPES.REPORT_CREATED, data);
+    if (!persisted) {
+      this.addToContext('success', message, {
+        eventType: NOTIFICATION_TYPES.REPORT_CREATED,
+        identifier: identifier || data.reportId,
+        reportData: data,
+        reportName,
+        localOnly: true,
+      });
+    }
   }
 
-  // ✅ Report Updated
-  reportUpdated(reportName, reportData = {}, identifier = null) {
-    const data = {
-      reportName: reportName,
-      reportId: reportData.id || reportData._id || identifier,
-      reportType: reportData.reportType || this.currentReportContext.reportType || 'Report',
-      location: reportData.location || reportData.site || this.currentReportContext.location,
-      date: reportData.date || reportData.serviceDate || this.currentReportContext.date,
-      customerName: reportData.customerName || reportData.customer || this.currentReportContext.customerName,
-      equipment: reportData.equipment || reportData.equipmentName || this.currentReportContext.equipment,
-      status: reportData.status || this.currentReportContext.status,
-      updatedBy: reportData.updatedBy || this.currentReportContext.updatedBy,
-      ...reportData
-    };
-
+  async reportUpdated(reportName, reportData = {}, identifier = null) {
+    const data = asReportData(reportName, reportData, identifier);
     const message = getDetailedReportMessage(NOTIFICATION_TYPES.REPORT_UPDATED, data);
-    this.success(message, {
-      type: NOTIFICATION_TYPES.REPORT_UPDATED,
-      identifier: identifier || data.reportId || `update_${Date.now()}`,
-      reportData: data,
-      reportName: reportName,
+    toast.success(message, {
+      ...toastConfig,
+      style: {
+        background: 'linear-gradient(135deg, #10b981, #059669)',
+        color: 'white',
+        borderRadius: '12px',
+        boxShadow: '0 10px 40px rgba(16, 185, 129, 0.3)',
+        fontWeight: '500',
+        padding: '14px 20px',
+        fontSize: '14px',
+        border: '1px solid rgba(255,255,255,0.1)',
+      },
     });
+    const persisted = await this.persistEvent(NOTIFICATION_TYPES.REPORT_UPDATED, data);
+    if (!persisted) {
+      this.addToContext('success', message, {
+        eventType: NOTIFICATION_TYPES.REPORT_UPDATED,
+        identifier: identifier || data.reportId,
+        reportData: data,
+        reportName,
+        localOnly: true,
+      });
+    }
   }
 
-  // ✅ Report Deleted (CRUD)
-  reportDeletedAction(reportName, reportData = {}, identifier = null) {
-    const data = {
-      reportName: reportName,
-      reportId: reportData.id || reportData._id || identifier,
-      reportType: reportData.reportType || this.currentReportContext.reportType || 'Report',
-      location: reportData.location || reportData.site || this.currentReportContext.location,
-      customerName: reportData.customerName || reportData.customer || this.currentReportContext.customerName,
-      ...reportData
-    };
-
+  async reportDeletedAction(reportName, reportData = {}, identifier = null) {
+    const data = asReportData(reportName, reportData, identifier);
     const message = getDetailedReportMessage(NOTIFICATION_TYPES.REPORT_DELETED, data);
-    this.success(message, {
-      type: NOTIFICATION_TYPES.REPORT_DELETED,
-      identifier: identifier || data.reportId || `delete_${Date.now()}`,
-      reportData: data,
-      reportName: reportName,
+    toast.success(message, {
+      ...toastConfig,
+      style: {
+        background: 'linear-gradient(135deg, #10b981, #059669)',
+        color: 'white',
+        borderRadius: '12px',
+        boxShadow: '0 10px 40px rgba(16, 185, 129, 0.3)',
+        fontWeight: '500',
+        padding: '14px 20px',
+        fontSize: '14px',
+        border: '1px solid rgba(255,255,255,0.1)',
+      },
     });
+    const persisted = await this.persistEvent(NOTIFICATION_TYPES.REPORT_DELETED, data);
+    if (!persisted) {
+      this.addToContext('success', message, {
+        eventType: NOTIFICATION_TYPES.REPORT_DELETED,
+        identifier: identifier || data.reportId,
+        reportData: data,
+        reportName,
+        localOnly: true,
+      });
+    }
   }
 
-  // ✅ Bulk Delete
   bulkDeleted(count, reportType = 'Report') {
     const data = {
       reportName: count,
@@ -337,24 +393,21 @@ class NotificationService {
     });
   }
 
-  // ✅ Welcome
   welcome(userName = '') {
     this.info(`Welcome${userName ? ` ${userName}` : ''}!`, {
-      type: 'welcome',
+      eventType: 'welcome',
       noAutoClose: true,
       autoClose: 4000,
+      localOnly: true,
     });
   }
 
-  // ✅ Dismiss all
   dismissAll() {
     toast.dismiss();
   }
 }
 
-// Export the notification types for use in components
 export { NOTIFICATION_TYPES, REPORT_TYPES };
 
-// ✅ Export a singleton instance
 const notificationService = new NotificationService();
 export default notificationService;

@@ -13,7 +13,8 @@ export default function Signup() {
         email: "",
         phone: "",
         password: "",
-        confirmPassword: ""
+        confirmPassword: "",
+        role: "USER"
     });
 
     const [showPassword, setShowPassword] = useState(false);
@@ -64,7 +65,8 @@ export default function Signup() {
                 name: formData.name,
                 email: formData.email,
                 phone: formData.phone,
-                password: formData.password
+                password: formData.password,
+                role: formData.role
             });
 
             alert("Registration Successful");
@@ -158,6 +160,17 @@ export default function Signup() {
                     value={formData.confirmPassword}
                     onChange={handleChange}
                 />
+
+                <select
+                    className="input"
+                    name="role"
+                    value={formData.role}
+                    onChange={handleChange}
+                    aria-label="Account type"
+                >
+                    <option value="USER">User</option>
+                    <option value="ADMIN">Admin</option>
+                </select>
 
                 <button
                     className="login-btn"

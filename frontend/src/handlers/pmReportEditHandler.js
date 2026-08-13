@@ -203,7 +203,12 @@ export const handleUpdateSuccess = (result, navigate, toast, notificationService
     // Show success messages
     toast.success('✅ Report updated successfully!');
     if (notificationService) {
-        notificationService.reportUpdated('PM Report', result.id);
+        notificationService.reportUpdated('PM Report', {
+            id: result?.id,
+            reportType: 'PM Report',
+            reportName: result?.serviceReportNo,
+            createdBy: localStorage.getItem('userName') || ''
+        });
     }
 
     // Navigate back to reports list after delay

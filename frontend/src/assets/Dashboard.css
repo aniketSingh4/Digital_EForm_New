@@ -2176,6 +2176,7 @@
     color: #0f172a;
     line-height: 1.4;
     margin-bottom: 4px;
+    white-space: pre-line;
 }
 
 .notification-meta {
@@ -2219,6 +2220,11 @@
 .notification-type.info {
     background: #dbeafe;
     color: #1e40af;
+}
+
+.notification-type.admin {
+    background: #e0e7ff;
+    color: #3730a3;
 }
 
 /* Notification Dismiss Button */

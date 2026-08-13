@@ -434,7 +434,25 @@ const PreVisitReportForm = ({ onSuccess, onCancel, initialData, isEdit = false }
         message: isEditMode ? 'Report updated successfully!' : 'Report created successfully!'
       });
 
-      notificationService.success(isEditMode ? 'Report updated successfully!' : 'Report created successfully!');
+      if (isEditMode) {
+        notificationService.reportUpdated('Pre-Visit Checklist', {
+          id: reportResult.id,
+          reportType: 'Pre-Visit Checklist',
+          reportName: formData.companyName,
+          customerName: formData.customerName || formData.companyName,
+          location: formData.siteAddress,
+          createdBy: localStorage.getItem('userName') || ''
+        });
+      } else {
+        notificationService.reportCreated('Pre-Visit Checklist', {
+          id: reportResult.id,
+          reportType: 'Pre-Visit Checklist',
+          reportName: formData.companyName,
+          customerName: formData.customerName || formData.companyName,
+          location: formData.siteAddress,
+          createdBy: localStorage.getItem('userName') || ''
+        });
+      }
 
       setTimeout(() => {
         if (onSuccess) {

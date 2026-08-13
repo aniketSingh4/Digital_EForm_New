@@ -82,6 +82,7 @@ const authService = {
 
     //Logout — clear auth only (cache cleared on explicit logout / 401)
     logout: () => {
+        const email = localStorage.getItem("userEmail");
         localStorage.removeItem("token");
         localStorage.removeItem("userName");
         localStorage.removeItem("userRole");
@@ -89,6 +90,9 @@ const authService = {
         localStorage.removeItem("dashboard_data");
         localStorage.removeItem("dashboard_timestamp");
         localStorage.removeItem("notifications");
+        if (email) {
+            localStorage.removeItem(`notifications_${email}`);
+        }
     },
 
     /** Clear auth tokens without wiping report caches (used when opening login page) */

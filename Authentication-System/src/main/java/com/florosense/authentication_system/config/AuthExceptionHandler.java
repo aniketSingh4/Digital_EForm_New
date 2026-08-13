@@ -41,6 +41,12 @@ public class AuthExceptionHandler {
         if (lower.contains("already registered")) {
             return ResponseEntity.status(HttpStatus.CONFLICT).body(new ApiResponse(false, message));
         }
+        if (lower.contains("not found")) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(new ApiResponse(false, message));
+        }
+        if (lower.contains("unauthorized")) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(new ApiResponse(false, message));
+        }
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body(new ApiResponse(false, message));
     }

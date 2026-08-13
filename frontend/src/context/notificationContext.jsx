@@ -1,8 +1,13 @@
 // src/context/NotificationContext.js
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import notificationService from '../services/notificationService';
+import notificationApi, { mapServerNotification } from '../services/notificationApi';
 
 const NotificationContext = createContext();
+
+const getCurrentEmail = () => localStorage.getItem('userEmail') || '';
+
+const storageKeyFor = (email) => (email ? `notifications_${email}` : 'notifications');
 
 export const useNotification = () => {
     const context = useContext(NotificationContext);
@@ -15,79 +20,123 @@ export const useNotification = () => {
 export const NotificationProvider = ({ children }) => {
     const [notifications, setNotifications] = useState([]);
     const [unreadCount, setUnreadCount] = useState(0);
+    const emailRef = useRef(getCurrentEmail());
+    const hasLoadedRef = useRef(false);
 
-    // Load notifications from localStorage on mount
+    const addNotification = useCallback((notification) => {
+        const email = getCurrentEmail();
+        const newNotification = {
+            id: Date.now().toString(),
+            timestamp: new Date().toISOString(),
+            read: false,
+            localOnly: true,
+            audience: 'USER',
+            recipientEmail: email,
+            ...notification
+        };
+
+        setNotifications(prev => [newNotification, ...prev].slice(0, 100));
+    }, []);
+
+    const refreshFromServer = useCallback(async () => {
+        const email = getCurrentEmail();
+        emailRef.current = email;
+        if (!email || !localStorage.getItem('token')) {
+            return;
+        }
+        try {
+            const data = await notificationApi.list();
+            const mapped = Array.isArray(data) ? data.map(mapServerNotification) : [];
+            setNotifications(prev => {
+                const localOnly = prev.filter((item) => (
+                    item.localOnly && (!item.recipientEmail || item.recipientEmail === email)
+                ));
+                const merged = [...mapped, ...localOnly];
+                const seen = new Set();
+                return merged.filter((item) => {
+                    const key = String(item.id);
+                    if (seen.has(key)) {
+                        return false;
+                    }
+                    seen.add(key);
+                    return true;
+                }).slice(0, 100);
+            });
+        } catch (error) {
+            console.error('Error loading notifications from server:', error);
+        }
+    }, []);
+
     useEffect(() => {
-        const savedNotifications = localStorage.getItem('notifications');
+        const email = getCurrentEmail();
+        emailRef.current = email;
+        const savedNotifications = localStorage.getItem(storageKeyFor(email));
         if (savedNotifications) {
             try {
                 const parsed = JSON.parse(savedNotifications);
                 setNotifications(parsed);
-                const unread = parsed.filter(n => !n.read).length;
-                setUnreadCount(unread);
             } catch (e) {
                 console.error('Error loading notifications:', e);
             }
         }
 
-        // Register the callback with notificationService
-        notificationService.setNotificationCallback((notification) => {
-            addNotification(notification);
-        });
+        notificationService.setNotificationCallback(addNotification);
+        notificationService.setRefreshCallback(refreshFromServer);
+        hasLoadedRef.current = true;
+        refreshFromServer();
 
-        // Cleanup on unmount
         return () => {
             notificationService.setNotificationCallback(null);
+            notificationService.setRefreshCallback(null);
         };
-    }, []);
+    }, [addNotification, refreshFromServer]);
 
-    // Save notifications to localStorage whenever they change
     useEffect(() => {
-        localStorage.setItem('notifications', JSON.stringify(notifications));
-        const unread = notifications.filter(n => !n.read).length;
-        setUnreadCount(unread);
+        if (!hasLoadedRef.current) {
+            return;
+        }
+        const email = emailRef.current || getCurrentEmail();
+        localStorage.setItem(storageKeyFor(email), JSON.stringify(notifications));
+        setUnreadCount(notifications.filter(n => !n.read).length);
     }, [notifications]);
 
-    const addNotification = (notification) => {
-        const newNotification = {
-            id: Date.now().toString(),
-            timestamp: new Date().toISOString(),
-            read: false,
-            ...notification
-        };
-        
-        setNotifications(prev => [newNotification, ...prev]);
-        
-        // Limit notifications to 100
+    const dismissNotification = useCallback((id) => {
         setNotifications(prev => {
-            if (prev.length > 100) {
-                return prev.slice(0, 100);
+            const item = prev.find(n => String(n.id) === String(id));
+            if (item && (item.persisted || item.serverId)) {
+                notificationApi.delete(item.serverId || item.id).catch((error) => {
+                    console.error('Failed to delete notification:', error);
+                });
             }
-            return prev;
+            return prev.filter(n => String(n.id) !== String(id));
         });
-    };
+    }, []);
 
-    const dismissNotification = (id) => {
-        setNotifications(prev => prev.filter(n => n.id !== id));
-    };
+    const markAsRead = useCallback((id) => {
+        setNotifications(prev => {
+            const item = prev.find(n => String(n.id) === String(id));
+            if (item && (item.persisted || item.serverId) && !item.read) {
+                notificationApi.markRead(item.serverId || item.id).catch((error) => {
+                    console.error('Failed to mark notification read:', error);
+                });
+            }
+            return prev.map(n => String(n.id) === String(id) ? { ...n, read: true } : n);
+        });
+    }, []);
 
-    const markAsRead = (id) => {
-        setNotifications(prev => 
-            prev.map(n => 
-                n.id === id ? { ...n, read: true } : n
-            )
-        );
-    };
+    const markAllAsRead = useCallback(() => {
+        notificationApi.markAllRead().catch((error) => {
+            console.error('Failed to mark all notifications read:', error);
+        });
+        setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+    }, []);
 
-    const markAllAsRead = () => {
-        setNotifications(prev => 
-            prev.map(n => ({ ...n, read: true }))
-        );
-    };
-
-    const clearAllNotifications = () => {
+    const clearAllNotifications = useCallback(() => {
+        notificationApi.clearAll().catch((error) => {
+            console.error('Failed to clear notifications:', error);
+        });
         setNotifications([]);
-    };
+    }, []);
 
     const value = {
         notifications,
@@ -96,7 +145,8 @@ export const NotificationProvider = ({ children }) => {
         dismissNotification,
         markAsRead,
         markAllAsRead,
-        clearAllNotifications
+        clearAllNotifications,
+        refreshNotifications: refreshFromServer
     };
 
     return (

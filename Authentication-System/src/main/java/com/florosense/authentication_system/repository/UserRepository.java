@@ -1,5 +1,6 @@
 package com.florosense.authentication_system.repository;
 
+import java.util.List;
 import java.util.Optional;
 
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -13,5 +14,7 @@ public interface UserRepository extends JpaRepository<Users, Long>
 	boolean existsByEmail(String email);
 
 	boolean existsByPhone(String phone);
+
+	List<Users> findByRoleIgnoreCase(String role);
 
 }

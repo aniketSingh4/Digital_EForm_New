@@ -196,7 +196,10 @@ export default function PMReportWizard() {
         }
     };
 
-    const handleSubmit = async () => {
+    const handleSubmit = async (payload) => {
+        if (payload && payload.type === 'final') {
+            return;
+        }
         try {
             setSaving(true);
             
@@ -313,9 +316,23 @@ export default function PMReportWizard() {
             localStorage.removeItem('dashboard_timestamp');
             
             if (isEditMode) {
-                notificationService.reportUpdated('PM Report', id);
+                notificationService.reportUpdated('PM Report', {
+                    id: result.id || id,
+                    reportType: 'PM Report',
+                    reportName: payload.serviceReportNo || result.serviceReportNo,
+                    customerName: payload.clientName,
+                    location: payload.siteName,
+                    createdBy: localStorage.getItem('userName') || ''
+                });
             } else {
-                notificationService.reportCreated('PM Report', result.id);
+                notificationService.reportCreated('PM Report', {
+                    id: result.id,
+                    reportType: 'PM Report',
+                    reportName: payload.serviceReportNo || result.serviceReportNo,
+                    customerName: payload.clientName,
+                    location: payload.siteName,
+                    createdBy: localStorage.getItem('userName') || ''
+                });
             }
 
             // Navigate back to reports list

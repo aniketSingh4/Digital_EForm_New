@@ -61,11 +61,10 @@ export default function Dashboard() {
     const navigate = useNavigate();
     const {
         notifications,
-        unreadCount,
-        addNotification,
         dismissNotification,
         markAllAsRead,
-        clearAllNotifications
+        clearAllNotifications,
+        refreshNotifications
     } = useNotification();
 
     const [openMenu, setOpenMenu] = useState(false);
@@ -117,6 +116,8 @@ export default function Dashboard() {
 
     const userName = localStorage.getItem("userName") || "User";
     const userRole = localStorage.getItem("userRole") || "USER";
+    const userEmail = localStorage.getItem("userEmail") || "";
+    const isAdminUser = (userRole || "").toUpperCase() === "ADMIN";
 
     // Show welcome notification on first load (only once)
     useEffect(() => {
@@ -126,6 +127,12 @@ export default function Dashboard() {
             sessionStorage.setItem('welcome_shown', 'true');
         }
     }, [userName]);
+
+    useEffect(() => {
+        if (refreshNotifications) {
+            refreshNotifications();
+        }
+    }, [refreshNotifications, userEmail]);
 
     useEffect(() => {
         const timer = setInterval(() => {
@@ -319,9 +326,15 @@ export default function Dashboard() {
         localStorage.removeItem(CACHE_TIMESTAMP_KEY);
         sessionStorage.removeItem('welcome_shown');
         setTimeout(() => {
+            const email = localStorage.getItem("userEmail");
+            if (email) {
+                localStorage.removeItem(`notifications_${email}`);
+            }
+            localStorage.removeItem("notifications");
             localStorage.removeItem("token");
             localStorage.removeItem("userName");
             localStorage.removeItem("userRole");
+            localStorage.removeItem("userEmail");
             navigate("/login");
         }, 1000);
     };
@@ -374,7 +387,10 @@ export default function Dashboard() {
         return "Good Evening";
     };
 
-    const getNotificationIcon = (type) => {
+    const getNotificationIcon = (type, audience) => {
+        if (audience === 'ADMIN') {
+            return <FaShieldAlt style={{ color: '#6366f1' }} />;
+        }
         switch (type) {
             case 'success': return <FaCheckCircle style={{ color: '#10b981' }} />;
             case 'error': return <FaExclamationTriangle style={{ color: '#ef4444' }} />;
@@ -396,9 +412,30 @@ export default function Dashboard() {
         return `${days}d ago`;
     };
 
-    const filteredNotifications = notificationFilter === 'all'
-        ? notifications
-        : notifications.filter(n => n.type === notificationFilter);
+    const scopedNotifications = notifications.filter((n) => {
+        const recipient = (n.recipientEmail || "").toLowerCase();
+        const current = userEmail.toLowerCase();
+        if (current && recipient && recipient !== current) {
+            return false;
+        }
+        if (!isAdminUser && n.audience === "ADMIN") {
+            return false;
+        }
+        return true;
+    });
+
+    const filteredNotifications = (() => {
+        if (notificationFilter === "admin") {
+            return scopedNotifications.filter((n) => n.audience === "ADMIN");
+        }
+        const ownOrLocal = scopedNotifications.filter((n) => n.audience !== "ADMIN");
+        if (notificationFilter === "all") {
+            return ownOrLocal;
+        }
+        return ownOrLocal.filter((n) => n.type === notificationFilter);
+    })();
+
+    const scopedUnreadCount = scopedNotifications.filter((n) => !n.read).length;
 
     const filteredFeatures = features.filter(feature =>
         feature.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -469,8 +506,8 @@ export default function Dashboard() {
                             aria-label="Notifications"
                         >
                             <FaBell size={20} />
-                            {unreadCount > 0 && (
-                                <span className="notification-badge">{unreadCount}</span>
+                            {scopedUnreadCount > 0 && (
+                                <span className="notification-badge">{scopedUnreadCount}</span>
                             )}
                         </button>
 
@@ -480,12 +517,12 @@ export default function Dashboard() {
                                     <div className="notification-title">
                                         <FaBell />
                                         <span>Notifications</span>
-                                        {unreadCount > 0 && (
-                                            <span className="unread-count">{unreadCount} new</span>
+                                        {scopedUnreadCount > 0 && (
+                                            <span className="unread-count">{scopedUnreadCount} new</span>
                                         )}
                                     </div>
                                     <div className="notification-actions">
-                                        {notifications.length > 0 && (
+                                        {scopedNotifications.length > 0 && (
                                             <>
                                                 <button
                                                     className="mark-read-btn"
@@ -519,6 +556,14 @@ export default function Dashboard() {
                                     >
                                         All
                                     </button>
+                                    {isAdminUser && (
+                                        <button
+                                            className={`filter-btn ${notificationFilter === 'admin' ? 'active' : ''}`}
+                                            onClick={() => setNotificationFilter('admin')}
+                                        >
+                                            Admin
+                                        </button>
+                                    )}
                                     <button
                                         className={`filter-btn ${notificationFilter === 'success' ? 'active' : ''}`}
                                         onClick={() => setNotificationFilter('success')}
@@ -559,17 +604,17 @@ export default function Dashboard() {
                                                 className={`notification-item ${!notif.read ? 'unread' : ''}`}
                                             >
                                                 <div className="notification-icon">
-                                                    {getNotificationIcon(notif.type)}
+                                                    {getNotificationIcon(notif.type, notif.audience)}
                                                 </div>
                                                 <div className="notification-content">
-                                                    <div className="notification-text">{notif.text}</div>
+                                                    <div className="notification-text">{notif.summary || notif.text}</div>
                                                     <div className="notification-meta">
                                                         <span className="notification-time">
                                                             <FaClockIcon size={12} />
                                                             {getNotificationTime(notif.timestamp)}
                                                         </span>
-                                                        <span className={`notification-type ${notif.type}`}>
-                                                            {notif.type}
+                                                        <span className={`notification-type ${notif.audience === 'ADMIN' ? 'admin' : notif.type}`}>
+                                                            {notif.audience === 'ADMIN' ? 'admin' : notif.type}
                                                         </span>
                                                     </div>
                                                 </div>
@@ -584,7 +629,7 @@ export default function Dashboard() {
                                     )}
                                 </div>
 
-                                {notifications.length > 0 && (
+                                {scopedNotifications.length > 0 && (
                                     <div className="notification-footer">
                                         <button onClick={handleMarkAllRead}>
                                             Mark all as read
