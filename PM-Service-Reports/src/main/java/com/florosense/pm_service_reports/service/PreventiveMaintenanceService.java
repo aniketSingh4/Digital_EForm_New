@@ -19,6 +19,8 @@ public interface PreventiveMaintenanceService
 
     List<PMReportSummaryResponse> getAllReports();
 
+    long getReportCount();
+
     PMReportResponse updateReport(Long id, PMReportRequest request);
 
     void deleteReport(Long id);

@@ -5,9 +5,9 @@ import authService from "../services/authService";
 export default function Login() {
     const navigate = useNavigate();
 
-    //clear token on page load to ensure a fresh login session
+    //clear auth session on page load (keep report caches until logout/401)
     useEffect(() => {
-        authService.logout();
+        authService.clearAuthSession();
     }, []);
 
     const [formData, setFormData] = useState({
@@ -45,7 +45,11 @@ export default function Login() {
             });
 
             localStorage.setItem("token", data.token);
-            localStorage.setItem("userName", formData.username);
+            localStorage.setItem("userName", data.name || formData.username);
+            localStorage.setItem("userRole", (data.role || "USER").toUpperCase());
+            if (data.email) {
+                localStorage.setItem("userEmail", data.email);
+            }
 
             navigate("/dashboard", { replace: true });
 

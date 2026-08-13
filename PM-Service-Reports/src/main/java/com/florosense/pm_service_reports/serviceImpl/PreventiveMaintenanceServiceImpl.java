@@ -4,6 +4,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -39,11 +41,18 @@ public class PreventiveMaintenanceServiceImpl implements PreventiveMaintenanceSe
     }
     
     @Override
+    @Cacheable(value = "pmReportList", key = "'all'")
     public List<PMReportSummaryResponse> getAllReports() {
         List<PreventiveMaintenanceReport> reports = repository.findAll();
         return reports.stream()
             .map(mapper::toSummaryDTO)
             .collect(Collectors.toList());
+    }
+
+    @Override
+    @Cacheable(value = "pmReportCount", key = "'count'")
+    public long getReportCount() {
+        return repository.count();
     }
 
     // Helper method to convert String to ChecklistCategory enum
@@ -140,6 +149,7 @@ public class PreventiveMaintenanceServiceImpl implements PreventiveMaintenanceSe
 
 
     @Override
+    @CacheEvict(value = {"pmReportList", "pmReportCount", "pmReportById"}, allEntries = true)
     public PMReportResponse saveReport(PMReportRequest request) {
         System.out.println("========================================");
         System.out.println("📝 Saving report: " + request.getServiceReportNo());
@@ -318,6 +328,7 @@ public class PreventiveMaintenanceServiceImpl implements PreventiveMaintenanceSe
     }
 
     @Override
+    @Cacheable(value = "pmReportById", key = "#id")
     public PMReportResponse getReport(Long id) {
         PreventiveMaintenanceReport report =
                 repository.findById(id)
@@ -331,6 +342,7 @@ public class PreventiveMaintenanceServiceImpl implements PreventiveMaintenanceSe
 
     @Override
     @Transactional
+    @CacheEvict(value = {"pmReportList", "pmReportCount", "pmReportById"}, allEntries = true)
     public PMReportResponse updateReport(
             Long id,
             PMReportRequest request) 
@@ -440,6 +452,7 @@ public class PreventiveMaintenanceServiceImpl implements PreventiveMaintenanceSe
     }
 
     @Override
+    @CacheEvict(value = {"pmReportList", "pmReportCount", "pmReportById"}, allEntries = true)
     public void deleteReport(Long id) {
         PreventiveMaintenanceReport report =
                 repository.findById(id)

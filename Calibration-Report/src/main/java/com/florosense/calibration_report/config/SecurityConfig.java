@@ -1,4 +1,4 @@
-package com.florosense.pm_service_reports.config;
+package com.florosense.calibration_report.config;
 
 import java.util.Arrays;
 
@@ -15,7 +15,7 @@ import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
-import com.florosense.pm_service_reports.security.JwtAuthFilter;
+import com.florosense.calibration_report.security.JwtAuthFilter;
 
 @Configuration
 @EnableWebSecurity

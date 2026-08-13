@@ -2,6 +2,8 @@ package com.florosense.calibration_report.serviceImpl;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
@@ -46,6 +48,7 @@ public class CalibrationReportServiceImpl implements CalibrationReportService {
         "documented for necessary action.";
     
     @Override
+    @CacheEvict(value = {"calibrationReportList", "calibrationReportCount"}, allEntries = true)
     public CalibrationReportDTO createReport(CreateCalibrationReportRequest request) {
         log.info("Creating new calibration report for client: {}", request.getClientName());
         
@@ -81,6 +84,7 @@ public class CalibrationReportServiceImpl implements CalibrationReportService {
     }
     
     @Override
+    @Cacheable(value = "calibrationReportList", key = "'all'")
     public List<CalibrationReportDTO> getAllReports() {
         log.debug("Fetching all calibration reports");
         return reportRepository.findAll().stream()
@@ -89,6 +93,7 @@ public class CalibrationReportServiceImpl implements CalibrationReportService {
     }
     
     @Override
+    @CacheEvict(value = {"calibrationReportList", "calibrationReportCount"}, allEntries = true)
     public CalibrationReportDTO updateReport(String id, CreateCalibrationReportRequest request) {
         log.info("Updating calibration report with ID: {}", id);
         
@@ -104,6 +109,7 @@ public class CalibrationReportServiceImpl implements CalibrationReportService {
     }
     
     @Override
+    @CacheEvict(value = {"calibrationReportList", "calibrationReportCount"}, allEntries = true)
     public void deleteReport(String id) {
         log.info("Deleting calibration report with ID: {}", id);
         
@@ -117,6 +123,7 @@ public class CalibrationReportServiceImpl implements CalibrationReportService {
     }
     
     @Override
+    @Cacheable(value = "calibrationReportCount", key = "'count'")
     public long getReportCount() {
         log.debug("Fetching total report count");
         return reportRepository.count();

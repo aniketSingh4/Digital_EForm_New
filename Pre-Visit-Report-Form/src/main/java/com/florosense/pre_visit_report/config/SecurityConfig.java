@@ -1,4 +1,4 @@
-package com.florosense.pm_service_reports.config;
+package com.florosense.pre_visit_report.config;
 
 import java.util.Arrays;
 
@@ -15,7 +15,7 @@ import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
-import com.florosense.pm_service_reports.security.JwtAuthFilter;
+import com.florosense.pre_visit_report.security.JwtAuthFilter;
 
 @Configuration
 @EnableWebSecurity
@@ -37,6 +37,7 @@ public class SecurityConfig {
             .authorizeHttpRequests(authz -> authz
                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                 .requestMatchers("/uploads/**").permitAll()
+                .requestMatchers("/swagger-ui/**", "/v3/api-docs/**", "/swagger-ui.html").permitAll()
                 .requestMatchers(HttpMethod.PUT, "/api/**").hasRole("ADMIN")
                 .requestMatchers(HttpMethod.PATCH, "/api/**").hasRole("ADMIN")
                 .requestMatchers(HttpMethod.DELETE, "/api/**").hasRole("ADMIN")

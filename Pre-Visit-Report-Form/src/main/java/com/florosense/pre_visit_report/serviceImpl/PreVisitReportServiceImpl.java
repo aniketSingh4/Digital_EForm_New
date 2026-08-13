@@ -13,6 +13,8 @@ import com.florosense.pre_visit_report.service.PreVisitReportService;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -52,6 +54,7 @@ public class PreVisitReportServiceImpl implements PreVisitReportService {
     // ========================================
 
     @Override
+    @CacheEvict(value = {"preVisitReportList", "preVisitReportCount"}, allEntries = true)
     public PreVisitReportDTO createReport(PreVisitReportDTO reportDTO) {
         log.info("Received DTO: {}", reportDTO);
         
@@ -85,6 +88,7 @@ public class PreVisitReportServiceImpl implements PreVisitReportService {
     }
 
     @Override
+    @CacheEvict(value = {"preVisitReportList", "preVisitReportCount"}, allEntries = true)
     public PreVisitReportDTO updateReport(Long id, PreVisitReportDTO reportDTO) {
         log.info("Updating pre-visit report with ID: {}", id);
 
@@ -111,6 +115,7 @@ public class PreVisitReportServiceImpl implements PreVisitReportService {
 
     @Override
     @Transactional(readOnly = true)
+    @Cacheable(value = "preVisitReportList", key = "'all'")
     public List<PreVisitReportDTO> getAllReports() {
         log.info("Fetching all pre-visit reports");
         return repository.findAll().stream()
@@ -146,6 +151,7 @@ public class PreVisitReportServiceImpl implements PreVisitReportService {
     }
 
     @Override
+    @CacheEvict(value = {"preVisitReportList", "preVisitReportCount"}, allEntries = true)
     public void deleteReport(Long id) {
         log.info("Deleting pre-visit report with ID: {}", id);
         if (!repository.existsById(id)) {
@@ -167,6 +173,7 @@ public class PreVisitReportServiceImpl implements PreVisitReportService {
 
     @Override
     @Transactional(readOnly = true)
+    @Cacheable(value = "preVisitReportCount", key = "'count'")
     public long getReportCount() {
         return repository.count();
     }

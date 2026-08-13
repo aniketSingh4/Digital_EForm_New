@@ -67,7 +67,8 @@ const authService = {
             return {
                 email: payload.email || payload.sub,
                 userId: payload.userId || payload.id,
-                // Add any other fields from your JWT
+                role: payload.role || null,
+                name: payload.name || null,
             };
         } catch (error) {
             console.error("getUserFromToken: Error:", error);
@@ -75,14 +76,23 @@ const authService = {
         }
     },
 
-    //Logout
+    //Logout — clear auth only (cache cleared on explicit logout / 401)
     logout: () => {
         localStorage.removeItem("token");
         localStorage.removeItem("userName");
+        localStorage.removeItem("userRole");
+        localStorage.removeItem("userEmail");
         localStorage.removeItem("dashboard_data");
         localStorage.removeItem("dashboard_timestamp");
         localStorage.removeItem("notifications");
-        // Clear any other stored data
+    },
+
+    /** Clear auth tokens without wiping report caches (used when opening login page) */
+    clearAuthSession: () => {
+        localStorage.removeItem("token");
+        localStorage.removeItem("userName");
+        localStorage.removeItem("userRole");
+        localStorage.removeItem("userEmail");
     },
 
     //Check if token exists
@@ -94,6 +104,10 @@ const authService = {
     //Get stored token
     getToken: () => {
         return localStorage.getItem("token");
+    },
+
+    getRole: () => {
+        return localStorage.getItem("userRole");
     },
 
     //Check token validity without decoding

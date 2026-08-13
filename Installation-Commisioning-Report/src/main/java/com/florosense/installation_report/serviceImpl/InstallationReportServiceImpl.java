@@ -10,6 +10,8 @@ import com.florosense.installation_report.repository.InstallationSiteImageReposi
 import com.florosense.installation_report.service.InstallationReportService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -38,6 +40,7 @@ public class InstallationReportServiceImpl implements InstallationReportService 
 
     @Override
     @Transactional
+    @CacheEvict(value = {"installationReportList", "installationReportCount"}, allEntries = true)
     public InstallationReportResponse createReport(InstallationReportRequest request) 
     {
         log.info("Creating new installation report");
@@ -94,6 +97,7 @@ public class InstallationReportServiceImpl implements InstallationReportService 
     
     @Override
     @Transactional
+    @CacheEvict(value = {"installationReportList", "installationReportCount"}, allEntries = true)
     public InstallationReportResponse updateReport(Long id, InstallationReportRequest request) {
         log.info("Updating installation report with ID: {}", id);
         
@@ -169,6 +173,7 @@ public class InstallationReportServiceImpl implements InstallationReportService 
     
     @Override
     @Transactional(readOnly = true)
+    @Cacheable(value = "installationReportList", key = "'all'")
     public List<InstallationReportResponse> getAllReports() {
         log.info("Fetching all installation reports");
         
@@ -202,6 +207,7 @@ public class InstallationReportServiceImpl implements InstallationReportService 
     
     @Override
     @Transactional
+    @CacheEvict(value = {"installationReportList", "installationReportCount"}, allEntries = true)
     public void deleteReport(Long id) {
         log.info("Deleting installation report with ID: {}", id);
         

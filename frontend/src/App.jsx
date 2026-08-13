@@ -19,6 +19,7 @@ import InstallationReportList from './components/installationReport/Installation
 import InstallationReportDetail from './components/installationReport/InstallationReportDetails';
 import PMReportView from "./components/pm/PMReportView";
 import ProtectedRoute from "./components/ProtectedRoute";
+import AdminRoute from "./components/AdminRoute";
 
 function App() {
   return (
@@ -61,7 +62,9 @@ function App() {
         } />
         <Route path="/pm-reports/edit/:id" element={
           <ProtectedRoute>
-            <PMReportWizard />
+            <AdminRoute redirectTo="/pm-reports/view-all">
+              <PMReportWizard />
+            </AdminRoute>
           </ProtectedRoute>
         } />
         <Route path="/pm-reports/view/:id" element={
@@ -93,7 +96,9 @@ function App() {
         } />
         <Route path="/previsit/edit/:id" element={
           <ProtectedRoute>
-            <PreVisitReportForm />
+            <AdminRoute redirectTo="/previsit/view-all">
+              <PreVisitReportForm />
+            </AdminRoute>
           </ProtectedRoute>
         } />
         <Route path="/previsit/:id" element={
@@ -119,7 +124,9 @@ function App() {
         } />
         <Route path="/calibration-reports/edit/:id" element={
           <ProtectedRoute>
-            <CalibrationReportForm />
+            <AdminRoute redirectTo="/calibration-reports">
+              <CalibrationReportForm />
+            </AdminRoute>
           </ProtectedRoute>
         } />
         <Route path="/calibration-reports/view/:id" element={
@@ -141,7 +148,9 @@ function App() {
         } />
         <Route path="/installation-reports/edit/:id" element={
           <ProtectedRoute>
-            <InstallationReportForm />
+            <AdminRoute redirectTo="/installation-reports">
+              <InstallationReportForm />
+            </AdminRoute>
           </ProtectedRoute>
         } />
         <Route path="/installation-reports/view/:id" element={

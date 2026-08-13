@@ -37,7 +37,7 @@ public class PreventiveMaintenanceController
 
     @GetMapping("/count")
     public ResponseEntity<Long> getCount() {
-        return ResponseEntity.ok(repository.count());
+        return ResponseEntity.ok(service.getReportCount());
     }
     
     @GetMapping("/sensor/{sensorId}/count")
