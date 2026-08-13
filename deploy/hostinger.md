@@ -1,13 +1,13 @@
-# Deploy backends on 72.60.74.221 (no domain)
+# Deploy backends on 72.60.74.221 (port 80)
 
-This VPS (`srv997517`, user `dev_user`) already has Docker. Other stacks are present (`nginx:alpine`, `postgres:15-alpine`, Redis, sensor-bridge, duton-dashboard). **Do not bind ports 80 or 443.** The e-form APIs listen on **9080**.
+This VPS (`srv997517`, user `dev_user`) already has Docker. The e-form APIs listen on **port 80** so Hostinger’s cloud firewall allows them. Duton-nginx (and anything else bound to 80/443) must be stopped first.
 
 **How you reach the APIs**
 
-- From your PC: `http://72.60.74.221:9080/api/...`
+- From your PC: `http://72.60.74.221/api/...`
 - Docker names (`auth`, `pm`, `previsit`, `calibration`, `installation`) work **only inside** Docker. They are not public hostnames.
 
-**Do not connect the live frontend yet.** The site is HTTPS; this API is HTTP. Browsers block mixed content (`https://digitalform.florosense.com` → `http://72.60.74.221:9080`). Test with curl, Postman, or a local Vite app. Keep production on Render until you have HTTPS.
+**Do not connect the live frontend yet.** The site is HTTPS; this API is HTTP. Browsers block mixed content (`https://digitalform.florosense.com` → `http://72.60.74.221`). Test with curl, Postman, or a local Vite app. Keep production on Render until you have HTTPS.
 
 **RAM:** 4 GB minimum, 8 GB recommended. On 4 GB set `JAVA_OPTS=-Xmx256m` in `.env`.
 
@@ -39,19 +39,35 @@ sudo systemctl status postgresql --no-pager
 
 - If `docker compose version` fails: `sudo usermod -aG docker dev_user`, then log out and SSH in again.
 - Note whether Postgres is a **host** service (`postgresql` active) or a **container** (`docker ps` shows postgres).
-- Confirm **9080 is free**. If it is taken, set another port as `NGINX_HTTP_PORT` in `.env`.
+- Confirm **80 is free** after Step 3. If it is taken, stop the container that publishes 80.
 
 ---
 
-## Step 3 — Open firewall port 9080
+## Step 3 — Free port 80 and allow it
+
+Hostinger already allows **80**. Stop Duton/nginx (and anything else) bound to 80 or 443 so eform-nginx can use 80. **Do not stop** `duton-postgres` or Redis — the e-form APIs use that database.
+
+```bash
+docker ps --format 'table {{.Names}}\t{{.Image}}\t{{.Ports}}'
+```
+
+Typical names: `duton-nginx`. Stop and prevent restart:
+
+```bash
+docker stop duton-nginx
+docker update --restart=no duton-nginx
+```
+
+If other containers show `0.0.0.0:80` or `0.0.0.0:443`, stop those the same way (not postgres). Then:
 
 ```bash
 sudo ufw allow OpenSSH
-sudo ufw allow 9080/tcp
+sudo ufw allow 80/tcp
 sudo ufw status
+ss -tlnp | grep -E ':80|:443'
 ```
 
-Do not open 80/443 for this project. Do not stop the other Nginx/apps on this VPS.
+Port 80 should now be unused. Do not start Duton-nginx again while eform uses 80.
 
 ---
 
@@ -92,11 +108,11 @@ nano .env
 
 Paste the generated string as `JWT_SECRET`. Fill in:
 
-- `NGINX_HTTP_PORT=9080`
+- `NGINX_HTTP_PORT=80`
 - `API_DOMAIN=72.60.74.221`
 - `SPRING_DATASOURCE_URL=jdbc:postgresql://host.docker.internal:5432/Digital_EForm`
 - `SPRING_DATASOURCE_USERNAME` and `SPRING_DATASOURCE_PASSWORD` (your real Postgres user)
-- `CORS_ALLOWED_ORIGINS=http://localhost:5173,https://digitalform.florosense.com`
+- `CORS_ALLOWED_ORIGINS=http://localhost:5173,http://127.0.0.1:5173,https://digitalform.florosense.com`
 - `JAVA_OPTS=-Xmx512m` (use `-Xmx256m` if `free -h` shows under ~5 GB RAM)
 
 Save in nano: `Ctrl+O`, Enter, `Ctrl+X`.
@@ -186,7 +202,7 @@ Wait until `auth`, `pm`, `previsit`, `calibration`, and `installation` are **hea
 **On the VPS:**
 
 ```bash
-curl -s http://127.0.0.1:9080/
+curl -s http://127.0.0.1/
 # expect: eform-api
 
 docker compose exec auth wget -qO- http://127.0.0.1:8080/actuator/health
@@ -201,23 +217,23 @@ Each health line should include `"status":"UP"`.
 **From your PC** (PowerShell):
 
 ```powershell
-curl http://72.60.74.221:9080/
-curl.exe -i -X POST http://72.60.74.221:9080/api/auth/login -H "Content-Type: application/json" -d "{\"email\":\"YOUR_USER@example.com\",\"password\":\"YOUR_PASS\"}"
+curl http://72.60.74.221/
+curl.exe -i -X POST http://72.60.74.221/api/auth/login -H "Content-Type: application/json" -d "{\"email\":\"YOUR_USER@example.com\",\"password\":\"YOUR_PASS\"}"
 ```
 
-- Timeout = Hostinger/firewall blocking 9080
+- Timeout = Hostinger/firewall blocking 80, or Duton-nginx still bound to 80
 - 502 = API container not ready
 - 400/401 = Nginx reached Auth (good)
 
 | URL | Service |
 |-----|---------|
-| `http://72.60.74.221:9080/api/auth/...` | Auth (`/login` uses `email` + `password`) |
-| `http://72.60.74.221:9080/api/pm_reports/...` | PM |
-| `http://72.60.74.221:9080/api/previsit-reports/...` | Pre-visit |
-| `http://72.60.74.221:9080/api/calibration-reports/...` | Calibration |
-| `http://72.60.74.221:9080/api/installation-reports/...` | Installation |
-| `http://72.60.74.221:9080/uploads/previsit-images/...` | Pre-visit files |
-| `http://72.60.74.221:9080/uploads/installation-images/...` | Installation files |
+| `http://72.60.74.221/api/auth/...` | Auth (`/login` uses `email` + `password`) |
+| `http://72.60.74.221/api/pm_reports/...` | PM |
+| `http://72.60.74.221/api/previsit-reports/...` | Pre-visit |
+| `http://72.60.74.221/api/calibration-reports/...` | Calibration |
+| `http://72.60.74.221/api/installation-reports/...` | Installation |
+| `http://72.60.74.221/uploads/previsit-images/...` | Pre-visit files |
+| `http://72.60.74.221/uploads/installation-images/...` | Installation files |
 
 In Postman: login, copy the JWT, send `Authorization: Bearer <token>` to the report APIs. Create one report per module and upload images. Then on the VPS:
 
@@ -228,7 +244,7 @@ ls ~/eform/data/previsit-uploads ~/eform/data/installation-uploads
 
 Files must still be there.
 
-Optional UI: on your PC run the frontend with every `VITE_*` URL set to `http://72.60.74.221:9080` (no trailing slash). That is local HTTP → VPS HTTP, so mixed-content does not apply.
+Optional UI: on your PC run the frontend with every `VITE_*` URL set to `http://72.60.74.221` (no trailing slash). That is local HTTP → VPS HTTP, so mixed-content does not apply.
 
 ---
 
@@ -246,19 +262,31 @@ docker compose ps
 docker compose down    # stops only eform-* containers; keeps ~/eform/data
 ```
 
-This Compose project uses container names `eform-*`. `docker compose down` does not remove sensor-bridge, duton-dashboard, Redis, or the shared Postgres image.
+This Compose project uses container names `eform-*`. `docker compose down` does not remove sensor-bridge, Redis, or Postgres. Stop `duton-nginx` yourself if it is still bound to 80.
 
-### `Unable to connect` / `ERR_CONNECTION_TIMED_OUT` from your PC to `:9080`
+### Already deployed on 9080 — switch to port 80
 
-Hostinger’s **cloud firewall** usually allows only **22, 80, and 443**. Port 9080 works on the VPS (`curl http://127.0.0.1:9080/`) but is blocked from the internet. `ufw` on the VM does not open the Hostinger panel firewall.
+On the VPS:
 
-**Option A — test now with an SSH tunnel** (leave this PowerShell window open):
+```bash
+docker ps --format 'table {{.Names}}\t{{.Ports}}'
+docker stop duton-nginx
+docker update --restart=no duton-nginx
+# repeat docker stop / docker update --restart=no for any other container showing 0.0.0.0:80 or :443
+# do NOT stop duton-postgres
 
-```powershell
-ssh -L 9080:127.0.0.1:9080 dev_user@72.60.74.221
+cd ~/eform
+# set NGINX_HTTP_PORT=80 in .env (nano .env)
+grep NGINX_HTTP_PORT .env
+docker compose up -d nginx
+curl -s http://127.0.0.1/
 ```
 
-In `frontend/.env` set every `VITE_*` URL to `http://localhost:9080`, restart Vite, then register/login.
+You want `eform-api`. From Windows: `curl http://72.60.74.221/` must also return `eform-api`.
+
+### `Unable to connect` / `ERR_CONNECTION_TIMED_OUT` to port 80
+
+Duton-nginx is still bound to 80, or eform-nginx is not published on 80. Run the switch steps above. Hostinger already allows 80; you do not need a new hPanel rule for 9080.
 
 **Option B — use port 80 through duton-nginx** (already public)
 
