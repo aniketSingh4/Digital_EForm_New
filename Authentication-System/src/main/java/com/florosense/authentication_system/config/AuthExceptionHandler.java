@@ -30,9 +30,14 @@ public class AuthExceptionHandler {
     @ExceptionHandler(RuntimeException.class)
     public ResponseEntity<ApiResponse> handleRuntime(RuntimeException ex) {
         String message = ex.getMessage() != null ? ex.getMessage() : "Request failed";
-        HttpStatus status = message.toLowerCase().contains("already registered")
-                ? HttpStatus.CONFLICT
-                : HttpStatus.BAD_REQUEST;
-        return ResponseEntity.status(status).body(new ApiResponse(false, message));
+        String lower = message.toLowerCase();
+        if (lower.contains("already registered")) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(new ApiResponse(false, message));
+        }
+        if (lower.contains("base64") || lower.contains("jwt secret")) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(new ApiResponse(false, "Authentication service misconfigured"));
+        }
+        return ResponseEntity.badRequest().body(new ApiResponse(false, message));
     }
 }

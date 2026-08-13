@@ -23,11 +23,16 @@ public class JwtService {
         if (secretKey == null || secretKey.isBlank()) {
             throw new IllegalStateException("JWT secret is not configured");
         }
+        String trimmed = secretKey.trim().replace("\n", "").replace("\r", "");
         byte[] keyBytes;
         try {
-            keyBytes = Decoders.BASE64.decode(secretKey);
-        } catch (IllegalArgumentException e) {
-            keyBytes = secretKey.getBytes(StandardCharsets.UTF_8);
+            keyBytes = Decoders.BASE64.decode(trimmed);
+        } catch (RuntimeException e) {
+            try {
+                keyBytes = Decoders.BASE64URL.decode(trimmed);
+            } catch (RuntimeException e2) {
+                keyBytes = trimmed.getBytes(StandardCharsets.UTF_8);
+            }
         }
         if (keyBytes.length < 32) {
             throw new IllegalStateException("JWT secret must be at least 32 bytes");
