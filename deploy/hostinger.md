@@ -1,55 +1,49 @@
-# Deploy backend microservices on Hostinger (IP access, no domain)
+# Deploy backends on 72.60.74.221 (no domain)
 
-This VPS (`srv997517`, user `dev_user`) already has Docker. Other stacks are present (`nginx:alpine`, `postgres:15-alpine`, `redis`, sensor-bridge, duton-dashboard). **Do not bind ports 80 or 443.** The e-form APIs listen on **9080**.
+This VPS (`srv997517`, user `dev_user`) already has Docker. Other stacks are present (`nginx:alpine`, `postgres:15-alpine`, Redis, sensor-bridge, duton-dashboard). **Do not bind ports 80 or 443.** The e-form APIs listen on **9080**.
 
-There is no domain yet. From your laptop you call:
+**How you reach the APIs**
 
-`http://YOUR_SERVER_IP:9080/api/...`
+- From your PC: `http://72.60.74.221:9080/api/...`
+- Docker names (`auth`, `pm`, `previsit`, `calibration`, `installation`) work **only inside** Docker. They are not public hostnames.
 
-Docker Compose service names (`auth`, `pm`, `previsit`, `calibration`, `installation`) resolve **only inside** the `eform` Docker network. They are not public hostnames.
+**Do not connect the live frontend yet.** The site is HTTPS; this API is HTTP. Browsers block mixed content (`https://digitalform.florosense.com` → `http://72.60.74.221:9080`). Test with curl, Postman, or a local Vite app. Keep production on Render until you have HTTPS.
 
-**Do not point the live HTTPS frontend at this HTTP IP.** Browsers block mixed content (`https://digitalform.florosense.com` → `http://IP:9080`). Test APIs with `curl`, Postman, or a local Vite app. Switch the production frontend only after you have HTTPS (or keep using Render until then).
-
-**RAM:** 4 GB minimum, 8 GB recommended. On 4 GB set `JAVA_OPTS=-Xmx256m`.
+**RAM:** 4 GB minimum, 8 GB recommended. On 4 GB set `JAVA_OPTS=-Xmx256m` in `.env`.
 
 ---
 
-## 1. Inspect the server (do this first)
+## Step 1 — SSH into the server
+
+On your Windows PC, open PowerShell or Windows Terminal:
+
+```powershell
+ssh dev_user@72.60.74.221
+```
+
+You should see a prompt like `dev_user@srv997517:~$`.
+
+---
+
+## Step 2 — Confirm Docker (already installed)
+
+You already have Docker images. Only confirm Compose works:
 
 ```bash
-hostname          # srv997517
+docker compose version
 free -h
 docker ps --format 'table {{.Names}}\t{{.Image}}\t{{.Ports}}'
 ss -tlnp | grep -E ':80|:443|:5432|:9080'
 sudo systemctl status postgresql --no-pager
 ```
 
-Note:
-
-- Which ports are already taken (especially 80, 443, 5432).
-- Whether Postgres is a **host** service (`systemctl`) or a **container** (`docker ps` showing `postgres`).
-- This stack will use **9080**. If 9080 is busy, set `NGINX_HTTP_PORT` in `.env` to another free port.
+- If `docker compose version` fails: `sudo usermod -aG docker dev_user`, then log out and SSH in again.
+- Note whether Postgres is a **host** service (`postgresql` active) or a **container** (`docker ps` shows postgres).
+- Confirm **9080 is free**. If it is taken, set another port as `NGINX_HTTP_PORT` in `.env`.
 
 ---
 
-## 2. Docker is already installed — skip the installer
-
-You already ran `docker images` as `dev_user`. Confirm Compose:
-
-```bash
-docker compose version
-```
-
-If that fails, you are not in the `docker` group:
-
-```bash
-sudo usermod -aG docker "$USER"
-# log out and back in, then retry
-```
-
----
-
-## 3. Open only the API port
+## Step 3 — Open firewall port 9080
 
 ```bash
 sudo ufw allow OpenSSH
@@ -57,111 +51,107 @@ sudo ufw allow 9080/tcp
 sudo ufw status
 ```
 
-Do not open 8086–8090. Do not steal 80/443 from the other apps.
+Do not open 80/443 for this project. Do not stop the other Nginx/apps on this VPS.
 
 ---
 
-## 4. Copy the project onto the VPS
+## Step 4 — Copy the project to the server
 
-From your Windows PC (PowerShell), replace `YOUR_SERVER_IP`:
+**Option A — from your Windows PC** (new PowerShell window, not the SSH session):
 
 ```powershell
-scp -r C:\Users\admin\Desktop\Digital_Installation_PM_Visit_E-Form_System dev_user@YOUR_SERVER_IP:/home/dev_user/eform
+scp -r C:\Users\admin\Desktop\Digital_Installation_PM_Visit_E-Form_System dev_user@72.60.74.221:/home/dev_user/eform
 ```
 
-Or on the VPS, clone from git:
+**Option B — git clone** (if the repo is on GitHub):
 
 ```bash
 cd ~
 git clone YOUR_REPO_URL eform
-cd ~/eform
 ```
 
-Then:
+Then on the VPS:
+
+```bash
+cd ~/eform
+ls docker-compose.yml
+```
+
+---
+
+## Step 5 — Create `.env` (secrets)
 
 ```bash
 cd ~/eform
 cp .env.example .env
 mkdir -p data/previsit-uploads data/installation-uploads
 sudo chown -R 100:100 data
-```
-
-Edit `.env` (`nano .env`):
-
-| Variable | What to put |
-|----------|-------------|
-| `NGINX_HTTP_PORT` | `9080` unless that port is taken |
-| `API_DOMAIN` | The VPS public IP (label only) |
-| `SPRING_DATASOURCE_URL` | See step 5 |
-| `SPRING_DATASOURCE_USERNAME` / `PASSWORD` | Real Postgres user |
-| `JWT_SECRET` | One long random string, **same for all five services** |
-| `CORS_ALLOWED_ORIGINS` | `http://localhost:5173,https://digitalform.florosense.com` |
-| `JAVA_OPTS` | `-Xmx512m` or `-Xmx256m` |
-
-Generate a JWT secret:
-
-```bash
 openssl rand -base64 48
+nano .env
 ```
+
+Paste the generated string as `JWT_SECRET`. Fill in:
+
+- `NGINX_HTTP_PORT=9080`
+- `API_DOMAIN=72.60.74.221`
+- `SPRING_DATASOURCE_URL=jdbc:postgresql://host.docker.internal:5432/Digital_EForm`
+- `SPRING_DATASOURCE_USERNAME` and `SPRING_DATASOURCE_PASSWORD` (your real Postgres user)
+- `CORS_ALLOWED_ORIGINS=http://localhost:5173,https://digitalform.florosense.com`
+- `JAVA_OPTS=-Xmx512m` (use `-Xmx256m` if `free -h` shows under ~5 GB RAM)
+
+Save in nano: `Ctrl+O`, Enter, `Ctrl+X`.
+
+`JWT_SECRET` must be the **same** for all five services (one value in this file is enough; Compose passes it to every container).
 
 ---
 
-## 5. Point the containers at PostgreSQL
+## Step 6 — Create the database and allow Docker to connect
 
-### If Postgres is installed on the host (`systemctl` is active)
+**If Postgres is installed on the host:**
 
 ```bash
 sudo -u postgres psql -c "SHOW config_file;"
 sudo -u postgres psql -c "SHOW hba_file;"
+sudo -u postgres psql -c 'CREATE DATABASE "Digital_EForm";'
 ```
 
-Set `listen_addresses = '*'` in `postgresql.conf`. In `pg_hba.conf` add:
+In `postgresql.conf` set `listen_addresses = '*'`. In `pg_hba.conf` add:
 
 ```
 host    all    all    172.16.0.0/12    scram-sha-256
 ```
 
-(Use `md5` if that is how the user was created.)
+(Use `md5` if that is how the user was created.) Then:
 
 ```bash
-sudo -u postgres psql -c 'CREATE DATABASE "Digital_EForm";'
 sudo systemctl reload postgresql
 ```
 
-`.env` URL:
-
-```
-SPRING_DATASOURCE_URL=jdbc:postgresql://host.docker.internal:5432/Digital_EForm
-```
-
-### If Postgres is already a Docker container (you have `postgres:15-alpine`)
+**If Postgres is already a Docker container** (you have `postgres:15-alpine`):
 
 ```bash
 docker ps --filter ancestor=postgres:15-alpine
-```
-
-If it publishes `5432` on the host, the same `host.docker.internal` URL works. If it is only on another Compose network, either publish 5432 or put `Digital_EForm` on that instance and set the JDBC host to that container name (you would then attach this stack to that network — prefer publishing 5432 for a first test).
-
-Create the database:
-
-```bash
 docker exec -it CONTAINER_NAME psql -U postgres -c 'CREATE DATABASE "Digital_EForm";'
 ```
 
-Test from a throwaway container:
+If that container publishes `5432` on the host, keep `host.docker.internal` in the JDBC URL.
+
+Test (replace `USER` and `PASSWORD`):
 
 ```bash
 docker run --rm --add-host=host.docker.internal:host-gateway postgres:15-alpine \
   psql "postgresql://USER:PASSWORD@host.docker.internal:5432/Digital_EForm" -c 'SELECT 1;'
 ```
 
+You want `1` printed.
+
 ---
 
-## 6. Build and start (does not touch existing images)
+## Step 7 — Build and start
 
-This creates **new** images (`eform-auth`, etc.) and containers (`eform-auth`, `eform-nginx`, …). It does not replace sensor-bridge, duton-dashboard, or the existing `nginx:alpine` / `postgres` images.
+This creates **new** containers named `eform-*`. It does not replace sensor-bridge, duton-dashboard, Redis, or the existing Nginx.
 
-Maven builds are heavy. If RAM is low, build one service at a time:
+First boot can take several minutes (Maven download + Hibernate tables). If RAM is low, build one service at a time:
 
 ```bash
 cd ~/eform
@@ -176,23 +166,24 @@ docker compose up -d
 Otherwise:
 
 ```bash
+cd ~/eform
 docker compose up -d --build
 ```
 
-Wait a few minutes (Hibernate creates tables; healthchecks have a 90s start period):
+Watch status:
 
 ```bash
 docker compose ps
 docker compose logs -f
 ```
 
-Every service should become `healthy`. Nginx stays down until the five APIs are healthy.
+Wait until `auth`, `pm`, `previsit`, `calibration`, and `installation` are **healthy**. Nginx starts only after that. Exit logs with `Ctrl+C` (containers keep running).
 
 ---
 
-## 7. Test the backends (no frontend yet)
+## Step 8 — Test backends (before frontend)
 
-Replace `YOUR_SERVER_IP` with the VPS public IP. From the VPS:
+**On the VPS:**
 
 ```bash
 curl -s http://127.0.0.1:9080/
@@ -205,53 +196,56 @@ docker compose exec calibration wget -qO- http://127.0.0.1:8080/actuator/health
 docker compose exec installation wget -qO- http://127.0.0.1:8080/actuator/health
 ```
 
-From your laptop (firewall must allow 9080):
+Each health line should include `"status":"UP"`.
 
-```bash
-curl -s http://YOUR_SERVER_IP:9080/
-curl -i -X POST http://YOUR_SERVER_IP:9080/api/auth/login \
-  -H "Content-Type: application/json" \
-  -d '{"email":"YOUR_USER@example.com","password":"YOUR_PASS"}'
+**From your PC** (PowerShell):
+
+```powershell
+curl http://72.60.74.221:9080/
+curl.exe -i -X POST http://72.60.74.221:9080/api/auth/login -H "Content-Type: application/json" -d "{\"email\":\"YOUR_USER@example.com\",\"password\":\"YOUR_PASS\"}"
 ```
 
-A 400/401 means Nginx reached Auth. A 502/504 means the API is not up. A timeout means 9080 is blocked.
+- Timeout = Hostinger/firewall blocking 9080
+- 502 = API container not ready
+- 400/401 = Nginx reached Auth (good)
 
-| Call this URL | Reaches container |
-|---------------|-------------------|
-| `http://IP:9080/api/auth/...` | auth |
-| `http://IP:9080/api/pm_reports/...` | pm |
-| `http://IP:9080/api/previsit-reports/...` | previsit |
-| `http://IP:9080/api/calibration-reports/...` | calibration |
-| `http://IP:9080/api/installation-reports/...` | installation |
-| `http://IP:9080/uploads/previsit-images/...` | previsit |
-| `http://IP:9080/uploads/installation-images/...` | installation |
+| URL | Service |
+|-----|---------|
+| `http://72.60.74.221:9080/api/auth/...` | Auth (`/login` uses `email` + `password`) |
+| `http://72.60.74.221:9080/api/pm_reports/...` | PM |
+| `http://72.60.74.221:9080/api/previsit-reports/...` | Pre-visit |
+| `http://72.60.74.221:9080/api/calibration-reports/...` | Calibration |
+| `http://72.60.74.221:9080/api/installation-reports/...` | Installation |
+| `http://72.60.74.221:9080/uploads/previsit-images/...` | Pre-visit files |
+| `http://72.60.74.221:9080/uploads/installation-images/...` | Installation files |
 
-Use Postman: login, copy the JWT, send `Authorization: Bearer <token>` to the report APIs. Create one report in each module and upload a pre-visit and installation image. Then:
+In Postman: login, copy the JWT, send `Authorization: Bearer <token>` to the report APIs. Create one report per module and upload images. Then on the VPS:
 
 ```bash
 docker compose restart previsit installation
+ls ~/eform/data/previsit-uploads ~/eform/data/installation-uploads
 ```
 
-Files must still exist under `~/eform/data/`.
+Files must still be there.
 
-Optional: run the frontend **locally** (`npm run dev`) with all `VITE_*` URLs set to `http://YOUR_SERVER_IP:9080` (no trailing slash). That is HTTP-to-HTTP, so mixed-content does not apply.
-
----
-
-## 8. Leave the production frontend on Render until HTTPS exists
-
-The live site `https://digitalform.florosense.com` cannot call `http://YOUR_SERVER_IP:9080`. When you have a domain and a certificate, set every `VITE_*` URL to `https://api.yourdomain.com`, rebuild the frontend, then retire the Render APIs.
-
-Until then, keep Render as the production API.
+Optional UI: on your PC run the frontend with every `VITE_*` URL set to `http://72.60.74.221:9080` (no trailing slash). That is local HTTP → VPS HTTP, so mixed-content does not apply.
 
 ---
 
-## Useful commands
+## Step 9 — Leave production frontend on Render
+
+Do not change `https://digitalform.florosense.com` yet. After you later add a domain and HTTPS, set all `VITE_*` URLs to that origin, rebuild the frontend, then retire Render.
+
+---
+
+## If something fails
 
 ```bash
 docker compose logs -f auth
 docker compose ps
-docker compose down          # stops eform containers only; keeps ./data
+docker compose down    # stops only eform-* containers; keeps ~/eform/data
 ```
+
+Common issues: wrong DB password, Postgres not allowing `172.16.0.0/12`, port 9080 already in use, or out-of-memory during `docker compose build`.
 
 This Compose project uses container names `eform-*`. `docker compose down` does not remove sensor-bridge, duton-dashboard, Redis, or the shared Postgres image.

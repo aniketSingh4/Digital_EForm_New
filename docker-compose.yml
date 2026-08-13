@@ -116,7 +116,7 @@ services:
     restart: unless-stopped
     ports:
       # Avoid 80/443 — this VPS already has other Nginx/app stacks.
-      # Access APIs at http://SERVER_IP:9080/api/...
+      # Access APIs at http://72.60.74.221:9080/api/...
       - "${NGINX_HTTP_PORT:-9080}:80"
     volumes:
       - ./nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
