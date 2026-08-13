@@ -1,16 +1,16 @@
 package com.florosense.authentication_system.dto;
 
-import jakarta.validation.constraints.Email;
+import com.fasterxml.jackson.annotation.JsonAlias;
+
 import jakarta.validation.constraints.NotBlank;
 
-public class LoginRequest 
-{
+public class LoginRequest {
 
-    @Email
-    @NotBlank
+    @NotBlank(message = "Email is required")
+    @JsonAlias({ "username", "userName" })
     private String email;
 
-    @NotBlank
+    @NotBlank(message = "Password is required")
     private String password;
 
     public LoginRequest() {

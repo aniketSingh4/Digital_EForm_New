@@ -57,9 +57,15 @@ export default function Login() {
 
         } catch (error) {
             console.error("Error:", error);
+            const data = error.response?.data;
+            const serverMessage =
+                (typeof data === "string" && data) ||
+                data?.message ||
+                data?.error ||
+                null;
 
             if (error.response) {
-                setError(error.response.data?.message || "Login Failed");
+                setError(serverMessage || "Login Failed");
             } else if (error.code === "ECONNABORTED") {
                 setError(`Request timed out. Cannot reach ${env.AUTH_SERVICE_URL}`);
             } else {

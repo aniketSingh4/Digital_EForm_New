@@ -8,7 +8,11 @@ const authService = {
     },
 
     login: async (loginData) => {
-        const response = await api.post("/auth/login", loginData);
+        const payload = {
+            email: (loginData.email || loginData.username || "").trim(),
+            password: loginData.password,
+        };
+        const response = await api.post("/auth/login", payload);
         return response.data;
     },
 

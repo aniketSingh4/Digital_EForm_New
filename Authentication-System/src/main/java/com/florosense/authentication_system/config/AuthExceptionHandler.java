@@ -2,6 +2,7 @@ package com.florosense.authentication_system.config;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -27,6 +28,12 @@ public class AuthExceptionHandler {
         return ResponseEntity.badRequest().body(new ApiResponse(false, message));
     }
 
+    @ExceptionHandler(HttpMessageNotReadableException.class)
+    public ResponseEntity<ApiResponse> handleUnreadable(HttpMessageNotReadableException ex) {
+        return ResponseEntity.badRequest()
+                .body(new ApiResponse(false, "Invalid login request body"));
+    }
+
     @ExceptionHandler(RuntimeException.class)
     public ResponseEntity<ApiResponse> handleRuntime(RuntimeException ex) {
         String message = ex.getMessage() != null ? ex.getMessage() : "Request failed";
@@ -34,10 +41,7 @@ public class AuthExceptionHandler {
         if (lower.contains("already registered")) {
             return ResponseEntity.status(HttpStatus.CONFLICT).body(new ApiResponse(false, message));
         }
-        if (lower.contains("base64") || lower.contains("jwt secret")) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(new ApiResponse(false, "Authentication service misconfigured"));
-        }
-        return ResponseEntity.badRequest().body(new ApiResponse(false, message));
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(new ApiResponse(false, message));
     }
 }

@@ -33,11 +33,8 @@ public class JwtService {
         try {
             keyBytes = Decoders.BASE64.decode(trimmed);
         } catch (RuntimeException e) {
-            try {
-                keyBytes = Decoders.BASE64URL.decode(trimmed);
-            } catch (RuntimeException e2) {
-                keyBytes = trimmed.getBytes(StandardCharsets.UTF_8);
-            }
+            // Raw secrets (UUIDs, openssl strings with '-') are not standard Base64
+            keyBytes = trimmed.getBytes(StandardCharsets.UTF_8);
         }
         if (keyBytes.length < 32) {
             throw new IllegalStateException("JWT secret must be at least 32 bytes");
