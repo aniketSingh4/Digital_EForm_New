@@ -246,6 +246,71 @@ docker compose ps
 docker compose down    # stops only eform-* containers; keeps ~/eform/data
 ```
 
-Common issues: wrong DB password, Postgres not allowing `172.16.0.0/12`, port 9080 already in use, or out-of-memory during `docker compose build`.
-
 This Compose project uses container names `eform-*`. `docker compose down` does not remove sensor-bridge, duton-dashboard, Redis, or the shared Postgres image.
+
+### `password authentication failed for user "postgres"` (SQLState 28P01)
+
+The images built. The app reached Postgres, but the password in `~/eform/.env` is not the password Postgres expects. Typical causes: leftover `change-me` from `.env.example`, or the local-dev password `root`.
+
+**1. Set a password you know** (on the VPS):
+
+If Postgres is a host service:
+
+```bash
+sudo -u postgres psql -c "ALTER USER postgres PASSWORD 'PickAStrongPassword';"
+```
+
+If Postgres is a Docker container, replace `CONTAINER_NAME`:
+
+```bash
+docker ps --filter ancestor=postgres:15-alpine
+docker exec -it CONTAINER_NAME psql -U postgres -c "ALTER USER postgres PASSWORD 'PickAStrongPassword';"
+```
+
+**2. Put that same password in `.env`:**
+
+```bash
+cd ~/eform
+nano .env
+```
+
+Set:
+
+```
+SPRING_DATASOURCE_USERNAME=postgres
+SPRING_DATASOURCE_PASSWORD=PickAStrongPassword
+```
+
+If the password contains `$`, `#`, or spaces, wrap it in single quotes: `SPRING_DATASOURCE_PASSWORD='P@ss$word'`.
+
+Save: `Ctrl+O`, Enter, `Ctrl+X`.
+
+**3. Confirm Docker can log in:**
+
+```bash
+docker run --rm --add-host=host.docker.internal:host-gateway postgres:15-alpine \
+  psql "postgresql://postgres:PickAStrongPassword@host.docker.internal:5432/Digital_EForm" -c 'SELECT 1;'
+```
+
+You want `1`. If this fails, the password or database name is still wrong — do not restart Compose yet.
+
+**4. Recreate the API containers so they pick up `.env`:**
+
+```bash
+cd ~/eform
+docker compose up -d
+```
+
+Compose recreates containers when env values change. If they do not restart:
+
+```bash
+docker compose up -d --force-recreate
+```
+
+Then check:
+
+```bash
+docker compose logs -f auth
+```
+
+You should see Tomcat started, not `28P01`. Exit logs with `Ctrl+C`.
