@@ -115,8 +115,9 @@ services:
     container_name: eform-nginx
     restart: unless-stopped
     ports:
-      - "80:80"
-      - "443:443"
+      # Avoid 80/443 — this VPS already has other Nginx/app stacks.
+      # Access APIs at http://SERVER_IP:9080/api/...
+      - "${NGINX_HTTP_PORT:-9080}:80"
     volumes:
       - ./nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
       - ./nginx/proxy_params:/etc/nginx/conf.d/proxy_params:ro
