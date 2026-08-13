@@ -36,7 +36,7 @@ COPY --from=builder /app/target/Installation-Commisioning-Report-0.0.1-SNAPSHOT.
 EXPOSE 8080
 
 # Health check using Spring Boot Actuator
-HEALTHCHECK --interval=30s --timeout=3s --start-period=10s --retries=3 \
+HEALTHCHECK --interval=30s --timeout=5s --start-period=90s --retries=5 \
     CMD wget --quiet --tries=1 --spider http://localhost:${PORT:-8080}/actuator/health || exit 1
 
 # Run the application - BIND TO 0.0.0.0 AND USE PORT FROM ENV

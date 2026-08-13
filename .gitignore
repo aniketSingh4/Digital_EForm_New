@@ -31,6 +31,15 @@
 !.env.example
 !**/.env.example
 
+# Uploaded report images (bind-mounted on the VPS)
+/data/
+
+# Let's Encrypt material copied into the Nginx container
+nginx/certs/*
+!nginx/certs/.gitkeep
+nginx/www/*
+!nginx/www/.gitkeep
+
 # OS
 .DS_Store
 Thumbs.db
