@@ -67,7 +67,7 @@ public class AuthServiceImpl implements AuthService {
 
 	        Authentication authentication = authenticationManager.authenticate(
 	                new UsernamePasswordAuthenticationToken(
-	                        request.getEmail(),
+	                        request.getEmail() != null ? request.getEmail().trim() : "",
 	                        request.getPassword()));
 
 	        CustomUserDetails userDetails =

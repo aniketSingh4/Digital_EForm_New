@@ -248,28 +248,57 @@ docker compose down    # stops only eform-* containers; keeps ~/eform/data
 
 This Compose project uses container names `eform-*`. `docker compose down` does not remove sensor-bridge, duton-dashboard, Redis, or the shared Postgres image.
 
-### `ERR_CONNECTION_TIMED_OUT` from the browser (`http://72.60.74.221:9080`)
+### `Unable to connect` / `ERR_CONNECTION_TIMED_OUT` from your PC to `:9080`
 
-The APIs are healthy on the VPS, but Hostinger's **cloud firewall** (or your ISP) is blocking port 9080 from the internet. `ufw` on the VM is not enough.
+Hostinger’s **cloud firewall** usually allows only **22, 80, and 443**. Port 9080 works on the VPS (`curl http://127.0.0.1:9080/`) but is blocked from the internet. `ufw` on the VM does not open the Hostinger panel firewall.
 
-1. In Hostinger hPanel: Firewall / Security → allow **TCP 9080**.
-2. On the VPS: `sudo ufw allow 9080/tcp`
-3. From your Windows PC: `curl http://72.60.74.221:9080/` — you must see `eform-api` before the frontend can register.
-
-Temporary test without opening 9080 — SSH tunnel, then point Vite at localhost:
+**Option A — test now with an SSH tunnel** (leave this PowerShell window open):
 
 ```powershell
 ssh -L 9080:127.0.0.1:9080 dev_user@72.60.74.221
 ```
 
-Set every `VITE_*` URL in `frontend/.env` to `http://localhost:9080` and restart Vite.
+In `frontend/.env` set every `VITE_*` URL to `http://localhost:9080`, restart Vite, then register/login.
 
-After changing Auth Java code, rebuild that service:
+**Option B — use port 80 through duton-nginx** (already public)
+
+On the VPS:
 
 ```bash
-cd ~/eform
-docker compose up -d --build auth
+docker network connect eform_eform duton-nginx
+docker exec duton-nginx nginx -T 2>/dev/null | grep -n "listen"
 ```
+
+Find the host path of duton’s nginx config:
+
+```bash
+docker inspect duton-nginx --format '{{range .Mounts}}{{.Source}} -> {{.Destination}}{{println}}{{end}}'
+```
+
+Inside the `server { listen 80; ... }` block, add the contents of `nginx/duton-eform-location.conf` (location `/eform/`). Then:
+
+```bash
+docker exec duton-nginx nginx -t
+docker exec duton-nginx nginx -s reload
+```
+
+From your PC:
+
+```powershell
+curl.exe http://72.60.74.221/eform/
+```
+
+You should see `eform-api`. Then set every `VITE_*` URL to `http://72.60.74.221/eform` (no trailing slash) and restart Vite.
+
+After `docker compose down` / `up`, run `docker network connect eform_eform duton-nginx` again.
+
+**Option C — open 9080 in Hostinger**
+
+hPanel → VPS → Firewall → allow TCP **9080**. Then `curl.exe http://72.60.74.221:9080/` from Windows must return `eform-api`.
+
+---
+
+### `password authentication failed for user "postgres"` (SQLState 28P01)
 
 The images built. The app reached Postgres, but the password in `~/eform/.env` is not the password Postgres expects. Typical causes: leftover `change-me` from `.env.example`, or the local-dev password `root`.
 
