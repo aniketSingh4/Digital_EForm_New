@@ -5,10 +5,12 @@ import { FaArrowLeft, FaFilePdf, FaPrint, FaEdit, FaDownload } from "react-icons
 import { calibrationReportService } from "../../services/CalibrationReportService";
 import "./ReportView.css";
 import notificationService from "../../services/notificationService";
+import { canModifyReports } from "../../utils/roles";
 
 const ReportView = () => {
     const navigate = useNavigate();
     const { id } = useParams();
+    const isAdminUser = canModifyReports();
     const [report, setReport] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
@@ -122,9 +124,11 @@ const ReportView = () => {
                     <h1>Calibration Report</h1>
                 </div>
                 <div className="header-right">
+                    {isAdminUser && (
                     <button className="btn-edit" onClick={() => navigate(`/calibration-reports/edit/${id}`)}>
                         <FaEdit /> Edit
                     </button>
+                    )}
                     <button className="btn-pdf" onClick={() => { /* PDF generation logic */ }}>
                         <FaFilePdf /> PDF
                     </button>
@@ -357,9 +361,11 @@ const ReportView = () => {
                     <FaArrowLeft /> Back to Reports
                 </button>
                 <div className="footer-actions">
+                    {isAdminUser && (
                     <button className="btn-edit" onClick={() => navigate(`/calibration-reports/edit/${id}`)}>
                         <FaEdit /> Edit Report
                     </button>
+                    )}
                     <button className="btn-pdf" onClick={() => { /* PDF generation logic */ }}>
                         <FaFilePdf /> Download PDF
                     </button>

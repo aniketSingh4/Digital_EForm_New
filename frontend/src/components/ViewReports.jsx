@@ -40,10 +40,13 @@ import html2canvas from "html2canvas";
 import "../assets/ViewReports.css";
 import { handleEditNavigation } from '../handlers/pmReportEditHandler';
 import notificationService from '../services/notificationService';
+import { canModifyReports, getAuthHeaders } from '../utils/roles';
+import { getCached, setCached, invalidate, LIST_CACHE_TTL } from '../utils/cache';
 
 export default function ViewReports() {
     const navigate = useNavigate();
     const { featureId } = useParams();
+    const isAdminUser = canModifyReports();
     const [reports, setReports] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
@@ -328,19 +331,28 @@ export default function ViewReports() {
         fetchReports();
     }, [featureId]);
 
-    const fetchReports = async () => {
+    const fetchReports = async (forceRefresh = false) => {
         setLoading(true);
         setError(null);
         setUsingMockData(false);
 
+        const cacheKey = 'pm_reports_list';
+
         try {
+            if (!forceRefresh) {
+                const cached = getCached(cacheKey);
+                if (cached && Array.isArray(cached)) {
+                    setReports(cached);
+                    setTotalReports(cached.length);
+                    setLoading(false);
+                    return;
+                }
+            }
+
             const url = `${API_BASE_URL}${config.apiEndpoint}`;
             const response = await fetch(url, {
                 method: 'GET',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Accept': 'application/json'
-                }
+                headers: getAuthHeaders({ Accept: 'application/json' })
             });
 
             if (!response.ok) {
@@ -383,6 +395,7 @@ export default function ViewReports() {
             } else {
                 setReports(transformedReports);
                 setTotalReports(transformedReports.length);
+                setCached(cacheKey, transformedReports, LIST_CACHE_TTL);
                 setError(null);
             }
         } catch (err) {
@@ -403,10 +416,7 @@ export default function ViewReports() {
 
             const response = await fetch(url, {
                 method: 'GET',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Accept': 'application/json'
-                }
+                headers: getAuthHeaders({ Accept: 'application/json' })
             });
 
             if (!response.ok) {
@@ -1267,9 +1277,7 @@ export default function ViewReports() {
             const url = `${API_BASE_URL}${config.apiEndpoint}/${editedReport.id}`;
             const response = await fetch(url, {
                 method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
+                headers: getAuthHeaders(),
                 body: JSON.stringify(editedReport)
             });
 
@@ -1278,6 +1286,9 @@ export default function ViewReports() {
             }
 
             const updatedData = await response.json();
+            invalidate('pm_reports');
+            localStorage.removeItem('dashboard_data');
+            localStorage.removeItem('dashboard_timestamp');
 
             setReports(prevReports =>
                 prevReports.map(r =>
@@ -1349,15 +1360,16 @@ export default function ViewReports() {
         try {
             const response = await fetch(`${API_BASE_URL}${config.apiEndpoint}/${id}`, {
                 method: 'DELETE',
-                headers: {
-                    'Content-Type': 'application/json',
-                }
+                headers: getAuthHeaders()
             });
 
             if (!response.ok) {
                 throw new Error(`Failed to delete report: ${response.status}`);
             }
 
+            invalidate('pm_reports');
+            localStorage.removeItem('dashboard_data');
+            localStorage.removeItem('dashboard_timestamp');
             setReports(reports.filter(report => report.id !== id));
             setShowDeleteModal(false);
             notificationService.success("Report Delete", "✅ Report deleted successfully!");
@@ -1523,6 +1535,7 @@ export default function ViewReports() {
                                                     <FaEye />
                                                     <span className="btn-label">View</span>
                                                 </button>
+                                                {isAdminUser && (
                                                 <button
                                                     className="action-btn edit-btn"
                                                     onClick={() => handleEdit(report)}
@@ -1531,6 +1544,7 @@ export default function ViewReports() {
                                                     <FaEdit />
                                                     <span className="btn-label">Edit</span>
                                                 </button>
+                                                )}
                                                 <button
                                                     className="action-btn pdf-btn"
                                                     onClick={() => generatePDF(report)}
@@ -1540,6 +1554,7 @@ export default function ViewReports() {
                                                     {generatingPDF ? <FaSpinner className="spinning" /> : <FaFilePdf />}
                                                     <span className="btn-label">PDF</span>
                                                 </button>
+                                                {isAdminUser && (
                                                 <button
                                                     className="action-btn delete-btn"
                                                     onClick={() => {
@@ -1551,6 +1566,7 @@ export default function ViewReports() {
                                                     <FaTrash />
                                                     <span className="btn-label">Delete</span>
                                                 </button>
+                                                )}
                                             </div>
                                         </td>
                                     </tr>
@@ -1724,12 +1740,14 @@ export default function ViewReports() {
                             <button className="btn-cancel" onClick={() => setShowViewModal(false)}>
                                 Close
                             </button>
+                            {isAdminUser && (
                             <button className="btn-edit" onClick={() => {
                                 setShowViewModal(false);
                                 handleEdit(viewingReport);
                             }}>
                                 <FaEdit /> Edit
                             </button>
+                            )}
                             <button className="btn-pdf" onClick={() => {
                                 generatePDF(viewingReport);
                             }} disabled={generatingPDF}>

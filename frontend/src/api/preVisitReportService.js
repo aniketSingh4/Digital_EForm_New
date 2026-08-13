@@ -1,7 +1,9 @@
 // src/api/preVisitReportService.js
 import axios from 'axios';
+import { getCached, setCached, invalidate, LIST_CACHE_TTL } from '../utils/cache';
 
 const PREVISIT_API_BASE_URL = 'https://previsit-reports.onrender.com/api';
+const LIST_CACHE_KEY = 'previsit_reports_list';
 
 const preVisitApiClient = axios.create({
   baseURL: PREVISIT_API_BASE_URL,
@@ -19,7 +21,6 @@ preVisitApiClient.interceptors.request.use(
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
-    //console.log('[Pre-Visit] Request:', config.method.toUpperCase(), config.url);
     return config;
   },
   (error) => Promise.reject(error)
@@ -27,17 +28,14 @@ preVisitApiClient.interceptors.request.use(
 
 // Response interceptor
 preVisitApiClient.interceptors.response.use(
-  (response) => {
-    //console.log('[Pre-Visit] Response:', response.status, response.config.url);
-    return response;
-  },
+  (response) => response,
   (error) => {
     console.error('[Pre-Visit] API Error:', error.response?.status, error.response?.data);
-    if (error.response?.status === 401) {
+    if (error.response?.status === 401 || error.response?.status === 403) {
       localStorage.removeItem('token');
+      localStorage.removeItem('userRole');
       window.location.href = '/login';
     }
-    // Return empty array for 404 to prevent UI crash
     if (error.response?.status === 404) {
       console.warn('[Pre-Visit] Endpoint not found, returning empty array');
       return { data: [] };
@@ -46,18 +44,25 @@ preVisitApiClient.interceptors.response.use(
   }
 );
 
-const preVisitReportService = {
-  // ========================================
-  // REPORT CRUD OPERATIONS
-  // ========================================
+const clearPreVisitCaches = () => {
+  invalidate('previsit_reports');
+  localStorage.removeItem('dashboard_data');
+  localStorage.removeItem('dashboard_timestamp');
+};
 
+const preVisitReportService = {
   //Get all reports - GET /previsit-reports
-  getAllReports: async () => {
+  getAllReports: async (options = {}) => {
     try {
-      //console.log('[Pre-Visit] Fetching all reports from: /previsit-reports');
+      const { forceRefresh = false } = options;
+      if (!forceRefresh) {
+        const cached = getCached(LIST_CACHE_KEY);
+        if (cached) return cached;
+      }
       const response = await preVisitApiClient.get('/previsit-reports');
-      //console.log('[Pre-Visit] Reports fetched:', response.data?.length || 0, 'records');
-      return response.data || [];
+      const data = response.data || [];
+      setCached(LIST_CACHE_KEY, data, LIST_CACHE_TTL);
+      return data;
     } catch (error) {
       console.error('[Pre-Visit] Error in getAllReports:', error);
       return [];
@@ -67,7 +72,6 @@ const preVisitReportService = {
   //Get report by ID - GET /previsit-reports/{id}
   getReportById: async (id) => {
     try {
-      //console.log('[Pre-Visit] Fetching report:', id);
       const response = await preVisitApiClient.get(`/previsit-reports/${id}`);
       return response.data;
     } catch (error) {
@@ -79,9 +83,8 @@ const preVisitReportService = {
   // Create report - POST /previsit-reports
   createReport: async (reportData) => {
     try {
-      //console.log('[Pre-Visit] Creating report:', reportData.companyName);
       const response = await preVisitApiClient.post('/previsit-reports', reportData);
-      //console.log('[Pre-Visit] Report created with ID:', response.data?.id);
+      clearPreVisitCaches();
       return response.data;
     } catch (error) {
       console.error('[Pre-Visit] Error creating report:', error);
@@ -92,9 +95,8 @@ const preVisitReportService = {
   //Update report - PUT /previsit-reports/{id}
   updateReport: async (id, reportData) => {
     try {
-      //console.log('[Pre-Visit] Updating report:', id);
       const response = await preVisitApiClient.put(`/previsit-reports/${id}`, reportData);
-      //console.log('[Pre-Visit] Report updated:', id);
+      clearPreVisitCaches();
       return response.data;
     } catch (error) {
       console.error('[Pre-Visit] Error updating report:', error);
@@ -105,9 +107,8 @@ const preVisitReportService = {
   //Delete report - DELETE /previsit-reports/{id}
   deleteReport: async (id) => {
     try {
-      //console.log('[Pre-Visit] Deleting report:', id);
       await preVisitApiClient.delete(`/previsit-reports/${id}`);
-      //console.log('[Pre-Visit] Report deleted:', id);
+      clearPreVisitCaches();
       return true;
     } catch (error) {
       console.error('[Pre-Visit] Error deleting report:', error);

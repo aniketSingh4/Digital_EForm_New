@@ -1,63 +1,80 @@
-// src/services/calibrationReportService.js
+// src/services/CalibrationReportService.js
 import axios from 'axios';
+import { getCached, setCached, invalidate, LIST_CACHE_TTL } from '../utils/cache';
 
 const API_URL = 'https://calibration-reports.onrender.com/api/calibration-reports';
+const LIST_CACHE_KEY = 'calibration_reports_list';
+
+const api = axios.create({
+  baseURL: API_URL,
+  headers: {
+    'Content-Type': 'application/json',
+  },
+  timeout: 30000,
+});
+
+api.interceptors.request.use((config) => {
+  const token = localStorage.getItem('token');
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
+});
+
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response && (error.response.status === 401 || error.response.status === 403)) {
+      localStorage.removeItem('token');
+      localStorage.removeItem('userName');
+      localStorage.removeItem('userRole');
+      if (!window.location.pathname.includes('/login')) {
+        window.location.href = '/login';
+      }
+    }
+    return Promise.reject(error);
+  }
+);
 
 export const calibrationReportService = {
-    // Create a new report
-    async createReport(data) {
-        try {
-            const response = await axios.post(API_URL, data);
-            //console.log('API Response:', response.data);
-            //Your API returns the DTO directly in response.data
-            return response.data;
-        } catch (error) {
-            console.error('Error creating report:', error);
-            throw error;
-        }
-    },
+  async createReport(data) {
+    const response = await api.post('', data);
+    invalidate('calibration_reports');
+    localStorage.removeItem('dashboard_data');
+    localStorage.removeItem('dashboard_timestamp');
+    return response.data;
+  },
 
-    // Update an existing report
-    async updateReport(id, data) {
-        try {
-            const response = await axios.put(`${API_URL}/${id}`, data);
-            return response.data;
-        } catch (error) {
-            console.error('Error updating report:', error);
-            throw error;
-        }
-    },
+  async updateReport(id, data) {
+    const response = await api.put(`/${id}`, data);
+    invalidate('calibration_reports');
+    localStorage.removeItem('dashboard_data');
+    localStorage.removeItem('dashboard_timestamp');
+    return response.data;
+  },
 
-    // Get a single report by ID
-    async getReportById(id) {
-        try {
-            const response = await axios.get(`${API_URL}/${id}`);
-            return response.data;
-        } catch (error) {
-            console.error('Error fetching report:', error);
-            throw error;
-        }
-    },
+  async getReportById(id) {
+    const response = await api.get(`/${id}`);
+    return response.data;
+  },
 
-    // Get all reports
-    async getAllReports() {
-        try {
-            const response = await axios.get(API_URL);
-            return response.data;
-        } catch (error) {
-            console.error('Error fetching reports:', error);
-            throw error;
-        }
-    },
-
-    // Delete a report
-    async deleteReport(id) {
-        try {
-            const response = await axios.delete(`${API_URL}/${id}`);
-            return response.data;
-        } catch (error) {
-            console.error('Error deleting report:', error);
-            throw error;
-        }
+  async getAllReports(options = {}) {
+    const { forceRefresh = false } = options;
+    if (!forceRefresh) {
+      const cached = getCached(LIST_CACHE_KEY);
+      if (cached) return cached;
     }
+    const response = await api.get('');
+    const data = response.data;
+    setCached(LIST_CACHE_KEY, data, LIST_CACHE_TTL);
+    return data;
+  },
+
+  async deleteReport(id) {
+    const response = await api.delete(`/${id}`);
+    invalidate('calibration_reports');
+    localStorage.removeItem('dashboard_data');
+    localStorage.removeItem('dashboard_timestamp');
+    return response.data;
+  },
 };

@@ -1,5 +1,6 @@
 // src/api/pmReportService.js
 import axios from 'axios';
+import { invalidate } from '../utils/cache';
 
 // Get API URL
 const getApiUrl = () => {
@@ -32,18 +33,17 @@ apiClient.interceptors.request.use(
 );
 
 apiClient.interceptors.response.use(
-  (response) => {
-    // console.log(`${response.status} ${response.config.url}`);
-    return response;
-  },
+  (response) => response,
   (error) => {
-    if (error.response) {
-      // console.error('API Error Response:', error.response.data);
-      // console.error('Status:', error.response.status);
-    } else if (error.request) {
-      // console.error('No response from server:', error.request);
-    } else {
-      // console.error('Request error:', error.message);
+    if (error.response && (error.response.status === 401 || error.response.status === 403)) {
+      localStorage.removeItem('token');
+      localStorage.removeItem('userName');
+      localStorage.removeItem('userRole');
+      localStorage.removeItem('dashboard_data');
+      localStorage.removeItem('dashboard_timestamp');
+      if (!window.location.pathname.includes('/login')) {
+        window.location.href = '/login';
+      }
     }
     return Promise.reject(error);
   }
@@ -310,6 +310,9 @@ export const submitPMReport = async (formData) => {
     const response = await apiClient.post('/pm_reports', payload);
 
     // console.log("Submit success:", response.data);
+    invalidate('pm_reports');
+    localStorage.removeItem('dashboard_data');
+    localStorage.removeItem('dashboard_timestamp');
     return {
       success: true,
       data: response.data,
@@ -362,6 +365,9 @@ export const updatePMReport = async (id, formData, onProgress) => {
     });
 
     // console.log("Update success:", response.data);
+    invalidate('pm_reports');
+    localStorage.removeItem('dashboard_data');
+    localStorage.removeItem('dashboard_timestamp');
     return {
       success: true,
       data: response.data,
@@ -418,6 +424,9 @@ export const submitPMReportWithProgress = async (formData, onProgress) => {
     });
 
     // console.log("Submit success:", response.data);
+    invalidate('pm_reports');
+    localStorage.removeItem('dashboard_data');
+    localStorage.removeItem('dashboard_timestamp');
     return {
       success: true,
       data: response.data,
@@ -474,6 +483,9 @@ export const updatePMReportWithProgress = async (id, formData, onProgress) => {
     });
 
     //console.log("Update success:", response.data);
+    invalidate('pm_reports');
+    localStorage.removeItem('dashboard_data');
+    localStorage.removeItem('dashboard_timestamp');
     return {
       success: true,
       data: response.data,

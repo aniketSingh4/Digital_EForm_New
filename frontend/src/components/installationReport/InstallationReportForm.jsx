@@ -5,8 +5,12 @@ import axios from 'axios';
 import { FaImage, FaUpload, FaTrash } from 'react-icons/fa';
 import './InstallationReportForm.css';
 import notificationService from '../../services/notificationService';
+import { getAuthHeaders } from '../../utils/roles';
+import { invalidate } from '../../utils/cache';
 
 const API_BASE_URL = 'https://installation-reports.onrender.com/api/installation-reports';
+
+const authConfig = () => ({ headers: getAuthHeaders() });
 
 const InstallationReportForm = () => {
   const navigate = useNavigate();
@@ -72,7 +76,7 @@ const InstallationReportForm = () => {
 
   const generateReportNumber = async () => {
     try {
-      const response = await axios.get(`${API_BASE_URL}/generate-report-number`);
+      const response = await axios.get(`${API_BASE_URL}/generate-report-number`, authConfig());
       setGeneratedReportNo(response.data);
     } catch (error) {
       console.error('Error generating report number:', error);
@@ -86,7 +90,7 @@ const InstallationReportForm = () => {
   const fetchReportData = async () => {
     try {
       setLoading(true);
-      const response = await axios.get(`${API_BASE_URL}/${id}`);
+      const response = await axios.get(`${API_BASE_URL}/${id}`, authConfig());
       const data = response.data;
       const formattedDate = data.date ? data.date.slice(0, 16) : '';
       
@@ -231,14 +235,17 @@ const InstallationReportForm = () => {
 
       let response;
       if (isEditMode) {
-        response = await axios.put(`${API_BASE_URL}/${id}`, submitData);
+        response = await axios.put(`${API_BASE_URL}/${id}`, submitData, authConfig());
         notificationService.success('Report updated successfully!');
       } else {
-        response = await axios.post(API_BASE_URL, submitData);
+        response = await axios.post(API_BASE_URL, submitData, authConfig());
         notificationService.success('Report created successfully!');
       }
 
       const reportId = response.data.id;
+      invalidate('installation_reports');
+      localStorage.removeItem('dashboard_data');
+      localStorage.removeItem('dashboard_timestamp');
 
       // Upload images after report is created/updated
       if (imageFiles.length > 0) {
@@ -251,7 +258,7 @@ const InstallationReportForm = () => {
 
         await axios.post(`${API_BASE_URL}/images/upload/${reportId}`, formData, {
           headers: {
-            'Content-Type': 'multipart/form-data',
+            Authorization: `Bearer ${localStorage.getItem('token') || ''}`,
           },
         });
         

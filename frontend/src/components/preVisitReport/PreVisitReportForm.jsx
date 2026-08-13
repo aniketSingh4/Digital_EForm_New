@@ -6,6 +6,8 @@ import "./PreVisitReport.css";
 import notificationService from '../../services/notificationService';
 import { toast } from 'react-toastify';
 import { FaSpinner, FaFileImage, FaTrash, FaUpload } from 'react-icons/fa';
+import { getAuthHeaders } from '../../utils/roles';
+import { invalidate } from '../../utils/cache';
 
 const CHECKLIST_ITEMS = [
   { id: 1, fieldName: 'Confirm Availability of Stabilized power supply (230 V)' },
@@ -70,7 +72,7 @@ const PreVisitReportForm = ({ onSuccess, onCancel, initialData, isEdit = false }
     try {
       setLoading(true);
       const response = await fetch(`${API_BASE_URL}/${id}`, {
-        headers: { 'Content-Type': 'application/json' }
+        headers: getAuthHeaders()
       });
 
       if (!response.ok) {
@@ -310,13 +312,13 @@ const PreVisitReportForm = ({ onSuccess, onCancel, initialData, isEdit = false }
       if (isEditMode && id) {
         reportResponse = await fetch(`${API_BASE_URL}/${id}`, {
           method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
+          headers: getAuthHeaders(),
           body: JSON.stringify(payload)
         });
       } else {
         reportResponse = await fetch(API_BASE_URL, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: getAuthHeaders(),
           body: JSON.stringify(payload)
         });
       }
@@ -332,6 +334,9 @@ const PreVisitReportForm = ({ onSuccess, onCancel, initialData, isEdit = false }
 
       const reportResult = await reportResponse.json();
       const reportId = reportResult.id;
+      invalidate('previsit_reports');
+      localStorage.removeItem('dashboard_data');
+      localStorage.removeItem('dashboard_timestamp');
 
       // ✅ Step 2: Upload images using FormData (bulk upload)
       if (imageFiles.length > 0) {
@@ -351,6 +356,9 @@ const PreVisitReportForm = ({ onSuccess, onCancel, initialData, isEdit = false }
             `${API_BASE_URL}/images/upload/${reportId}`,
             {
               method: 'POST',
+              headers: {
+                Authorization: `Bearer ${localStorage.getItem('token') || ''}`
+              },
               body: imageFormData
             }
           );
@@ -384,6 +392,9 @@ const PreVisitReportForm = ({ onSuccess, onCancel, initialData, isEdit = false }
                   `${API_BASE_URL}/images/upload/${reportId}`,
                   {
                     method: 'POST',
+                    headers: {
+                      Authorization: `Bearer ${localStorage.getItem('token') || ''}`
+                    },
                     body: singleFormData
                   }
                 );

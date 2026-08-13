@@ -1,3 +1,6 @@
+import { getAuthHeaders } from '../utils/roles';
+import { invalidate } from '../utils/cache';
+
 const API_BASE_URL = 'https://pm-reports.onrender.com/api/pm_reports';
 
 /**
@@ -8,7 +11,7 @@ const API_BASE_URL = 'https://pm-reports.onrender.com/api/pm_reports';
 export const fetchReportForEdit = async (id) => {
     try {
         const response = await fetch(`${API_BASE_URL}/${id}`, {
-            headers: { 'Content-Type': 'application/json' }
+            headers: getAuthHeaders()
         });
 
         if (!response.ok) {
@@ -155,9 +158,7 @@ export const updateReport = async (payload, id) => {
     try {
         const response = await fetch(`${API_BASE_URL}/${id}`, {
             method: 'PUT',
-            headers: {
-                'Content-Type': 'application/json',
-            },
+            headers: getAuthHeaders(),
             body: JSON.stringify(payload)
         });
 
@@ -167,6 +168,9 @@ export const updateReport = async (payload, id) => {
         }
 
         const result = await response.json();
+        invalidate('pm_reports');
+        localStorage.removeItem('dashboard_data');
+        localStorage.removeItem('dashboard_timestamp');
         return result;
     } catch (error) {
         console.error('Error updating report:', error);
@@ -243,7 +247,9 @@ export const checkReportNumberExists = async (reportNo, excludeId = null) => {
     try {
         // This assumes your API has a check endpoint
         // If not, you may need to fetch all reports and check locally
-        const response = await fetch(`${API_BASE_URL}/check?reportNo=${encodeURIComponent(reportNo)}`);
+        const response = await fetch(`${API_BASE_URL}/check?reportNo=${encodeURIComponent(reportNo)}`, {
+            headers: getAuthHeaders()
+        });
         if (response.status === 404) return false;
         if (response.ok) {
             const data = await response.json();

@@ -25,12 +25,14 @@ import {
   FaFilter,
   FaPlusCircle
 } from 'react-icons/fa';
-import { calibrationReportService } from '../../services/calibrationReportService';
+import { calibrationReportService } from '../../services/CalibrationReportService';
 import notificationService from '../../services/notificationService';
+import { canModifyReports } from '../../utils/roles';
 import './ReportList.css';
 
 const ReportList = () => {
   const navigate = useNavigate();
+  const isAdminUser = canModifyReports();
   const [reports, setReports] = useState([]);
   const [filteredReports, setFilteredReports] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -278,7 +280,7 @@ const ReportList = () => {
         </button>
         <h1>Calibration Reports</h1>
         <div className="header-actions">
-          {selectedReports.length > 0 && (
+          {isAdminUser && selectedReports.length > 0 && (
             <button className="bulk-delete-btn" onClick={handleBulkDelete}>
               <FaTrash /> Delete ({selectedReports.length})
             </button>
@@ -396,6 +398,7 @@ const ReportList = () => {
                           <FaEye />
                           <span className="btn-label">View</span>
                         </button>
+                        {isAdminUser && (
                         <button
                           className="action-btn edit-btn"
                           onClick={() => handleEdit(report)}
@@ -404,6 +407,7 @@ const ReportList = () => {
                           <FaEdit />
                           <span className="btn-label">Edit</span>
                         </button>
+                        )}
                         <button
                           className="action-btn pdf-btn"
                           onClick={() => handlePDF(report)}
@@ -413,6 +417,7 @@ const ReportList = () => {
                           {actionLoading === `pdf-${report.id}` ? <FaSpinner className="spinning" /> : <FaFilePdf />}
                           <span className="btn-label">PDF</span>
                         </button>
+                        {isAdminUser && (
                         <button
                           className="action-btn delete-btn"
                           onClick={() => handleDelete(report)}
@@ -422,6 +427,7 @@ const ReportList = () => {
                           {actionLoading === report.id ? <FaSpinner className="spinning" /> : <FaTrash />}
                           <span className="btn-label">Delete</span>
                         </button>
+                        )}
                       </div>
                     </td>
                   </tr>

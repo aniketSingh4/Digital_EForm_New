@@ -24,11 +24,13 @@ import {
 } from "react-icons/fa";
 import { calibrationReportService } from "../../services/CalibrationReportService";  //Import Fixed
 import notificationService from "../../services/notificationService";
+import { canModifyReports, getAuthHeaders } from "../../utils/roles";
 import jsPDF from 'jspdf';
 import "./CalibrationViewAll.css";
 
 const CalibrationViewAll = () => {
     const navigate = useNavigate();
+    const isAdminUser = canModifyReports();
     const [reports, setReports] = useState([]);
     const [filteredReports, setFilteredReports] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -306,9 +308,7 @@ const CalibrationViewAll = () => {
 
             // Fetch full report details - using the same pattern as Previsit
             const response = await fetch(`https://calibration-reports.onrender.com/api/calibration-reports/${reportId}`, {
-                headers: {
-                    'Content-Type': 'application/json',
-                }
+                headers: getAuthHeaders()
             });
 
             if (!response.ok) {
@@ -1000,7 +1000,7 @@ const CalibrationViewAll = () => {
                 </button>
                 <h1>Calibration Reports</h1>
                 <div className="header-actions">
-                    {selectedReports.length > 0 && (
+                    {isAdminUser && selectedReports.length > 0 && (
                         <button className="bulk-delete-btn" onClick={handleBulkDelete}>
                             <FaTrash /> Delete ({selectedReports.length})
                         </button>
@@ -1120,6 +1120,7 @@ const CalibrationViewAll = () => {
                                                     <FaEye />
                                                     <span className="btn-label">View</span>
                                                 </button>
+                                                {isAdminUser && (
                                                 <button
                                                     className="action-btn edit-btn"
                                                     onClick={() => handleEdit(report)}
@@ -1128,6 +1129,7 @@ const CalibrationViewAll = () => {
                                                     <FaEdit />
                                                     <span className="btn-label">Edit</span>
                                                 </button>
+                                                )}
                                                 <button
                                                     className="action-btn pdf-btn"
                                                     onClick={() => handlePDF(report)}
@@ -1137,6 +1139,7 @@ const CalibrationViewAll = () => {
                                                     {actionLoading === `pdf-${reportId}` ? <FaSpinner className="spinning" /> : <FaFilePdf />}
                                                     <span className="btn-label">PDF</span>
                                                 </button>
+                                                {isAdminUser && (
                                                 <button
                                                     className="action-btn delete-btn"
                                                     onClick={() => handleDelete(report)}
@@ -1146,6 +1149,7 @@ const CalibrationViewAll = () => {
                                                     {actionLoading === reportId ? <FaSpinner className="spinning" /> : <FaTrash />}
                                                     <span className="btn-label">Delete</span>
                                                 </button>
+                                                )}
                                             </div>
                                         </td>
                                     </tr>

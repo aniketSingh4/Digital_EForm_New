@@ -1,6 +1,7 @@
 // src/components/pm/Step1BasicInfo.jsx
 import React, { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { generateServiceReportNo, preloadCounters } from "../../utils/ReportNumberGenerator";
+import { getAuthHeaders } from "../../utils/roles";
 
 export default function Step1BasicInfo({ formData, setFormData, onNext, onBackToDashboard }) {
     // Initialize report from formData or empty object
@@ -37,7 +38,9 @@ export default function Step1BasicInfo({ formData, setFormData, onNext, onBackTo
         try {
             setIsLoadingCount(true);
             // Fetch from backend API
-            const response = await fetch(`https://pm-reports.onrender.com/api/pm_reports/sensor/${sensorId}/count`);
+            const response = await fetch(`https://pm-reports.onrender.com/api/pm_reports/sensor/${sensorId}/count`, {
+                headers: getAuthHeaders()
+            });
             if (response.ok) {
                 const data = await response.json();
                 const count = data.count || 0;

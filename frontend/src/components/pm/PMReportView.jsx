@@ -24,6 +24,7 @@ import {
     FaFileAlt
 } from 'react-icons/fa';
 import notificationService from '../../services/notificationService';
+import { getAuthHeaders, canModifyReports } from '../../utils/roles';
 import './PMReportView.css';
 
 const API_BASE_URL = 'https://pm-reports.onrender.com/api/pm_reports';
@@ -31,6 +32,7 @@ const API_BASE_URL = 'https://pm-reports.onrender.com/api/pm_reports';
 const PMReportView = () => {
     const navigate = useNavigate();
     const { id } = useParams();
+    const isAdminUser = canModifyReports();
     const [report, setReport] = useState(null);
     const [loading, setLoading] = useState(true);
     const [actionLoading, setActionLoading] = useState(null);
@@ -45,7 +47,7 @@ const PMReportView = () => {
         try {
             setLoading(true);
             const response = await fetch(`${API_BASE_URL}/${id}`, {
-                headers: { 'Content-Type': 'application/json' }
+                headers: getAuthHeaders()
             });
 
             if (!response.ok) {

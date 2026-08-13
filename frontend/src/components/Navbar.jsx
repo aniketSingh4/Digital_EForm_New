@@ -8,9 +8,12 @@ export default function Navbar() {
     const navigate = useNavigate();
 
     const logout = () => {
-
         localStorage.removeItem("token");
-
+        localStorage.removeItem("userName");
+        localStorage.removeItem("userRole");
+        localStorage.removeItem("userEmail");
+        localStorage.removeItem("dashboard_data");
+        localStorage.removeItem("dashboard_timestamp");
         navigate("/");
     };
 

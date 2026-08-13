@@ -13,6 +13,8 @@ import "../assets/Step6Reviews.css";
 import notificationService from '../services/notificationService';
 import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import { getAuthHeaders } from '../utils/roles';
+import { invalidate } from '../utils/cache';
 
 export default function PMReportWizard() {
     const navigate = useNavigate();
@@ -109,7 +111,7 @@ export default function PMReportWizard() {
         try {
             setLoading(true);
             const response = await fetch(`https://pm-reports.onrender.com/api/pm_reports/${id}`, {
-                headers: { 'Content-Type': 'application/json' }
+                headers: getAuthHeaders()
             });
 
             if (!response.ok) {
@@ -287,9 +289,7 @@ export default function PMReportWizard() {
 
             response = await fetch(url, {
                 method: method,
-                headers: {
-                    'Content-Type': 'application/json',
-                },
+                headers: getAuthHeaders(),
                 body: JSON.stringify(payload)
             });
 
@@ -307,6 +307,9 @@ export default function PMReportWizard() {
             }
 
             const result = await response.json();
+            invalidate('pm_reports');
+            localStorage.removeItem('dashboard_data');
+            localStorage.removeItem('dashboard_timestamp');
             
             if (isEditMode) {
                 notificationService.reportUpdated('PM Report', id);

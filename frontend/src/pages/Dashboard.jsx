@@ -49,6 +49,7 @@ import { useNotification } from "../context/notificationContext"; //Fixing the I
 import notificationService from "../services/notificationService"; //Fixing the notificationService.jsx file
 import "../assets/Dashboard.css";
 import { FaSync } from "react-icons/fa";
+import { getAuthHeaders } from "../utils/roles";
 
 //Cache keys
 const CACHE_KEY = 'dashboard_data';
@@ -114,7 +115,7 @@ export default function Dashboard() {
     const isFetching = useRef(false);
 
     const userName = localStorage.getItem("userName") || "User";
-    const userRole = localStorage.getItem("userRole") || "Admin";
+    const userRole = localStorage.getItem("userRole") || "USER";
 
     // Show welcome notification on first load (only once)
     useEffect(() => {
@@ -165,16 +166,16 @@ export default function Dashboard() {
         try {
             const results = await Promise.allSettled([
                 fetch('https://pm-reports.onrender.com/api/pm_reports/count', {
-                    headers: { 'Content-Type': 'application/json' }
+                    headers: getAuthHeaders()
                 }).then(res => res.ok ? res.json() : 0).catch(() => 0),
                 fetch('https://previsit-reports.onrender.com/api/previsit-reports/count', {
-                    headers: { 'Content-Type': 'application/json' }
+                    headers: getAuthHeaders()
                 }).then(res => res.ok ? res.json() : 0).catch(() => 0),
                 fetch('https://calibration-reports.onrender.com/api/calibration-reports/count', {
-                    headers: { 'Content-Type': 'application/json' }
+                    headers: getAuthHeaders()
                 }).then(res => res.ok ? res.json() : 0).catch(() => 0),
                 fetch('https://installation-reports.onrender.com/api/installation-reports', {
-                    headers: { 'Content-Type': 'application/json' }
+                    headers: getAuthHeaders()
                 }).then(res => res.ok ? res.json() : [])
                     .then(data => Array.isArray(data) ? data.length : 0)
                     .catch(() => 0)

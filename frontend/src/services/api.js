@@ -45,6 +45,7 @@ api.interceptors.response.use(
             // Clear all stored data
             localStorage.removeItem("token");
             localStorage.removeItem("userName");
+            localStorage.removeItem("userRole");
             localStorage.removeItem("dashboard_data");
             localStorage.removeItem("dashboard_timestamp");
             localStorage.removeItem("notifications");

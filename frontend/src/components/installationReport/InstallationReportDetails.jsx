@@ -30,6 +30,7 @@ import {
     FaTrash
 } from 'react-icons/fa';
 import notificationService from '../../services/notificationService';
+import { getAuthHeaders, canModifyReports } from '../../utils/roles';
 import './InstallationReportDetails.css';
 
 const API_BASE_URL = 'https://installation-reports.onrender.com/api/installation-reports';
@@ -38,6 +39,7 @@ const IMAGE_BASE_URL = 'https://installation-reports.onrender.com';
 const InstallationReportDetails = () => {
     const { id } = useParams();
     const navigate = useNavigate();
+    const isAdminUser = canModifyReports();
     const [report, setReport] = useState(null);
     const [loading, setLoading] = useState(true);
     const [actionLoading, setActionLoading] = useState(null);
@@ -52,7 +54,9 @@ const InstallationReportDetails = () => {
     const fetchReportDetails = async () => {
         try {
             setLoading(true);
-            const response = await axios.get(`${API_BASE_URL}/${id}`);
+            const response = await axios.get(`${API_BASE_URL}/${id}`, {
+                headers: getAuthHeaders()
+            });
             //console.log('📥 Report data:', response.data);
             //console.log('📸 Site images:', response.data.siteImages);
             setReport(response.data);
@@ -122,7 +126,9 @@ const InstallationReportDetails = () => {
         try {
             setDeleteLoading(imageId);
 
-            const response = await axios.delete(`${API_BASE_URL}/images/${imageId}`);
+            const response = await axios.delete(`${API_BASE_URL}/images/${imageId}`, {
+                headers: getAuthHeaders()
+            });
 
             if (response.status === 200 || response.data.success !== false) {
                 setReport(prevReport => ({
@@ -315,9 +321,11 @@ const InstallationReportDetails = () => {
                     </div>
                 </div>
                 <div className="header-right">
+                    {isAdminUser && (
                     <button className="btn-edit" onClick={handleEdit}>
                         <FaEdit /> Edit
                     </button>
+                    )}
                     <button className="btn-pdf" onClick={handlePDF} disabled={actionLoading === 'pdf'}>
                         {actionLoading === 'pdf' ? <FaSpinner className="spinning" /> : <FaFilePdf />} PDF
                     </button>

@@ -28,12 +28,16 @@ import {
   FaPlusCircle
 } from "react-icons/fa";
 import notificationService from '../../services/notificationService';
+import { canModifyReports, getAuthHeaders } from '../../utils/roles';
+import { getCached, setCached, invalidate, LIST_CACHE_TTL } from '../../utils/cache';
 import "./InstallationReportList.css";
 
 const API_BASE_URL = 'https://installation-reports.onrender.com/api/installation-reports';
+const LIST_CACHE_KEY = 'installation_reports_list';
 
 const InstallationReportList = () => {
   const navigate = useNavigate();
+  const isAdminUser = canModifyReports();
   const [reports, setReports] = useState([]);
   const [filteredReports, setFilteredReports] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -60,13 +64,25 @@ const InstallationReportList = () => {
     applyFilters();
   }, [reports, searchTerm]);
 
-  const fetchReports = async () => {
+  const fetchReports = async (forceRefresh = false) => {
     try {
       setLoading(true);
       setError(null);
-      const response = await axios.get(API_BASE_URL);
+      if (!forceRefresh) {
+        const cached = getCached(LIST_CACHE_KEY);
+        if (cached && Array.isArray(cached)) {
+          setReports(cached);
+          setFilteredReports(cached);
+          setLoading(false);
+          return;
+        }
+      }
+      const response = await axios.get(API_BASE_URL, {
+        headers: getAuthHeaders()
+      });
       setReports(response.data);
       setFilteredReports(response.data);
+      setCached(LIST_CACHE_KEY, response.data, LIST_CACHE_TTL);
     } catch (err) {
       setError('Failed to load reports. Please try again.');
       notificationService.error('Failed to fetch Installation Reports');
@@ -114,11 +130,16 @@ const InstallationReportList = () => {
     if (window.confirm('Are you sure you want to delete this report?')) {
       try {
         setActionLoading(id);
-        await axios.delete(`${API_BASE_URL}/${id}`);
+        await axios.delete(`${API_BASE_URL}/${id}`, {
+          headers: getAuthHeaders()
+        });
+        invalidate('installation_reports');
+        localStorage.removeItem('dashboard_data');
+        localStorage.removeItem('dashboard_timestamp');
         setSelectedReports(selectedReports.filter(reportId => reportId !== id));
         notificationService.success('Installation Report deleted successfully!');
 
-        fetchReports();
+        fetchReports(true);
       } catch (error) {
         notificationService.error('Failed to delete Installation Report');
       } finally {
@@ -138,13 +159,18 @@ const InstallationReportList = () => {
       try {
         setActionLoading('bulk');
         for (const id of selectedReports) {
-          await axios.delete(`${API_BASE_URL}/${id}`);
+          await axios.delete(`${API_BASE_URL}/${id}`, {
+            headers: getAuthHeaders()
+          });
         }
+        invalidate('installation_reports');
+        localStorage.removeItem('dashboard_data');
+        localStorage.removeItem('dashboard_timestamp');
         setSelectedReports([]);
         setSelectAll(false);
         
         notificationService.success(`${selectedReports.length} Installation Report(s) deleted successfully!`);
-        fetchReports();
+        fetchReports(true);
       } catch (error) 
       {
         notificationService.error('Failed to delete selected reports');
@@ -185,7 +211,9 @@ const InstallationReportList = () => {
       setActionLoading(`pdf-${report.id}`);
 
       // Fetch full report details
-      const response = await axios.get(`${API_BASE_URL}/${report.id}`);
+      const response = await axios.get(`${API_BASE_URL}/${report.id}`, {
+        headers: getAuthHeaders()
+      });
       const reportData = response.data;
 
       const doc = new jsPDF('p', 'mm', 'a4');
@@ -874,7 +902,7 @@ const InstallationReportList = () => {
         </button>
         <h1>Installation Reports</h1>
         <div className="header-actions">
-          {selectedReports.length > 0 && (
+          {isAdminUser && selectedReports.length > 0 && (
             <button className="bulk-delete-btn" onClick={handleBulkDelete}>
               <FaTrash /> Delete ({selectedReports.length})
             </button>
@@ -992,6 +1020,7 @@ const InstallationReportList = () => {
                           <FaEye />
                           <span className="btn-label">View</span>
                         </button>
+                        {isAdminUser && (
                         <button
                           className="action-btn edit-btn"
                           onClick={() => handleEdit(report)}
@@ -1000,6 +1029,7 @@ const InstallationReportList = () => {
                           <FaEdit />
                           <span className="btn-label">Edit</span>
                         </button>
+                        )}
                         <button
                           className="action-btn pdf-btn"
                           onClick={() => handlePDF(report)}
@@ -1009,6 +1039,7 @@ const InstallationReportList = () => {
                           {actionLoading === `pdf-${report.id}` ? <FaSpinner className="spinning" /> : <FaFilePdf />}
                           <span className="btn-label">PDF</span>
                         </button>
+                        {isAdminUser && (
                         <button
                           className="action-btn delete-btn"
                           onClick={() => handleDelete(report.id)}
@@ -1018,6 +1049,7 @@ const InstallationReportList = () => {
                           {actionLoading === report.id ? <FaSpinner className="spinning" /> : <FaTrash />}
                           <span className="btn-label">Delete</span>
                         </button>
+                        )}
                       </div>
                     </td>
                   </tr>

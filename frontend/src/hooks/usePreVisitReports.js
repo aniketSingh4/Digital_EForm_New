@@ -8,12 +8,11 @@ export const usePreVisitReports = () => {
   const [error, setError] = useState(null);
   const [totalCount, setTotalCount] = useState(0);
 
-  // ✅ FIXED: Fetch all reports - uses /previsit-reports (not /view-all)
-  const fetchReports = useCallback(async () => {
+  const fetchReports = useCallback(async (forceRefresh = false) => {
     try {
       setLoading(true);
       setError(null);
-      const data = await preVisitReportService.getAllReports();
+      const data = await preVisitReportService.getAllReports({ forceRefresh });
       setReports(data);
       setTotalCount(data.length);
     } catch (err) {
@@ -45,7 +44,7 @@ export const usePreVisitReports = () => {
     try {
       await preVisitReportService.deleteReport(id);
       // Refresh the list after deletion
-      await fetchReports();
+      await fetchReports(true);
       return true;
     } catch (err) {
       console.error('Error deleting report:', err);

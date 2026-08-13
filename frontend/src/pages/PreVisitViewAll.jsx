@@ -30,9 +30,11 @@ import { jsPDF } from 'jspdf';
 import 'jspdf-autotable';
 import "../assets/PreVisitViewAll.css";
 import notificationService from "../services/notificationService";
+import { canModifyReports, getAuthHeaders } from "../utils/roles";
 
 const PreVisitViewAll = () => {
     const navigate = useNavigate();
+    const isAdminUser = canModifyReports();
     const [searchTerm, setSearchTerm] = useState('');
     const [currentPage, setCurrentPage] = useState(1);
     const [itemsPerPage] = useState(10);
@@ -174,9 +176,7 @@ const PreVisitViewAll = () => {
             //console.log('Generating PDF for report:', report.id);
 
             const response = await fetch(`https://previsit-reports.onrender.com/api/previsit-reports/${report.id}`, {
-                headers: {
-                    'Content-Type': 'application/json',
-                }
+                headers: getAuthHeaders()
             });
 
             if (!response.ok) {
@@ -653,7 +653,7 @@ const PreVisitViewAll = () => {
                 </button>
                 <h1>Pre-Visit Reports</h1>
                 <div className="header-actions">
-                    {selectedReports.length > 0 && (
+                    {isAdminUser && selectedReports.length > 0 && (
                         <button className="bulk-delete-btn" onClick={handleBulkDelete}>
                             <FaTrash /> Delete ({selectedReports.length})
                         </button>
@@ -766,6 +766,7 @@ const PreVisitViewAll = () => {
                                                     <FaEye />
                                                     <span className="btn-label">View</span>
                                                 </button>
+                                                {isAdminUser && (
                                                 <button
                                                     className="action-btn edit-btn"
                                                     onClick={() => handleEdit(report)}
@@ -774,6 +775,7 @@ const PreVisitViewAll = () => {
                                                     <FaEdit />
                                                     <span className="btn-label">Edit</span>
                                                 </button>
+                                                )}
                                                 <button
                                                     className="action-btn pdf-btn"
                                                     onClick={() => handlePDF(report)}
@@ -783,6 +785,7 @@ const PreVisitViewAll = () => {
                                                     {actionLoading === `pdf-${report.id}` ? <FaSpinner className="spinning" /> : <FaFilePdf />}
                                                     <span className="btn-label">PDF</span>
                                                 </button>
+                                                {isAdminUser && (
                                                 <button
                                                     className="action-btn delete-btn"
                                                     onClick={() => handleDelete(report.id)}
@@ -792,6 +795,7 @@ const PreVisitViewAll = () => {
                                                     {actionLoading === report.id ? <FaSpinner className="spinning" /> : <FaTrash />}
                                                     <span className="btn-label">Delete</span>
                                                 </button>
+                                                )}
                                             </div>
                                         </td>
                                     </tr>
