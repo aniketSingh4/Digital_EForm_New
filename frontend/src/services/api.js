@@ -15,7 +15,9 @@ api.interceptors.request.use(
         config.metadata = { startTime: new Date() };
         
         const token = localStorage.getItem("token");
-        if (token) {
+        const url = config.url || "";
+        const isPublicAuth = url.includes("/auth/login") || url.includes("/auth/register");
+        if (token && !isPublicAuth) {
             config.headers.Authorization = `Bearer ${token}`;
         }
         return config;

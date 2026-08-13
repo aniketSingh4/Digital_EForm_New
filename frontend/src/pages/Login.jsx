@@ -39,8 +39,9 @@ export default function Login() {
         setError("");
 
         try {
+            authService.clearAuthSession();
             const data = await authService.login({
-                email: formData.username,
+                email: formData.username.trim(),
                 password: formData.password
             });
 

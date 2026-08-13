@@ -11,7 +11,7 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 @Configuration
 public class CorsConfig {
 
-    @Value("${cors.allowed.origins:http://localhost:5173,http://localhost:3000,https://digitalform.florosense.com}")
+    @Value("${cors.allowed.origins:http://localhost:5173,http://127.0.0.1:5173,http://localhost:3000,https://digitalform.florosense.com}")
     private String allowedOrigins;
 
     @Bean
