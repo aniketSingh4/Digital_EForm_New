@@ -96,8 +96,13 @@ const InstallationReportDetails = () => {
         try {
             setActionLoading('pdf');
             await new Promise(resolve => setTimeout(resolve, 1500));
-            toast.success('PDF generated successfully!');
-            notificationService.pdfGenerated(report?.reportNo || 'Installation Report');
+            notificationService.reportDownloaded('Installation & Commissioning Report', {
+                id: report?.id,
+                reportType: 'Installation & Commissioning Report',
+                reportName: report?.reportNo,
+                customerName: report?.customerName || report?.companyName,
+                location: report?.siteAddress,
+            });
         } catch (error) {
             console.error('PDF generation failed:', error);
             toast.error('Failed to generate PDF');

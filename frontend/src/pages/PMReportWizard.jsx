@@ -197,7 +197,7 @@ export default function PMReportWizard() {
     };
 
     const handleSubmit = async (payload) => {
-        if (payload && payload.type === 'final') {
+        if (payload && (payload.type === 'final' || payload.type === 'pdf')) {
             return;
         }
         try {

@@ -138,7 +138,14 @@ const InstallationReportList = () => {
         localStorage.removeItem('dashboard_data');
         localStorage.removeItem('dashboard_timestamp');
         setSelectedReports(selectedReports.filter(reportId => reportId !== id));
-        notificationService.success('Installation Report deleted successfully!');
+        const deleted = reports.find((item) => item.id === id) || {};
+        notificationService.reportDeletedAction('Installation & Commissioning Report', {
+          id,
+          reportType: 'Installation & Commissioning Report',
+          reportName: deleted.reportNo,
+          customerName: deleted.customerName || deleted.companyName,
+          location: deleted.siteAddress,
+        });
 
         fetchReports(true);
       } catch (error) {
@@ -167,10 +174,11 @@ const InstallationReportList = () => {
         invalidate('installation_reports');
         localStorage.removeItem('dashboard_data');
         localStorage.removeItem('dashboard_timestamp');
+        const deletedCount = selectedReports.length;
         setSelectedReports([]);
         setSelectAll(false);
         
-        notificationService.success(`${selectedReports.length} Installation Report(s) deleted successfully!`);
+        notificationService.bulkDeleted(deletedCount, 'Installation & Commissioning Report');
         fetchReports(true);
       } catch (error) 
       {
@@ -801,7 +809,13 @@ const InstallationReportList = () => {
       const fileName = `Installation_Report_${reportData.reportNo || 'Report'}_${new Date().toISOString().split('T')[0]}.pdf`;
       doc.save(fileName);
 
-      notificationService.pdfGenerated(reportData.reportNo || 'Installation Report');
+      notificationService.reportDownloaded('Installation & Commissioning Report', {
+        id: reportData.id || report.id,
+        reportType: 'Installation & Commissioning Report',
+        reportName: reportData.reportNo || report.reportNo,
+        customerName: reportData.customerName || reportData.companyName,
+        location: reportData.siteAddress,
+      });
 
     } catch (error) {
 

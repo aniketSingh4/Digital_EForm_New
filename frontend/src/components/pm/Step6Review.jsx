@@ -432,8 +432,13 @@ export default function Step6Review({
                     fileName: fileName
                 });
             }
-            notificationService.success(`✅ PDF generated successfully!\n📄 ${fileName}`);
-            //alert(`✅ PDF generated successfully!\n📄 ${fileName}`);
+            notificationService.reportDownloaded('PM Report', {
+                id: report.id,
+                reportType: 'PM Report',
+                reportName: report.serviceReportNo,
+                customerName: report.clientName,
+                location: report.siteName,
+            });
 
         } catch (error) {
             notificationService.error(error.message || "Failed to generate PDF");

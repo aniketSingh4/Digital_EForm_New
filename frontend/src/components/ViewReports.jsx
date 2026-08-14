@@ -1131,13 +1131,17 @@ export default function ViewReports() {
             doc.save(fileName);
 
             setPdfProgress(100);
-            //alert("✅ PDF generated successfully!");
-            notificationService.success("PDF Generation", `✅ PDF generated successfully: ${fileName}`);
+            notificationService.reportDownloaded('PM Report', {
+                id: fullDetails.id || report.id,
+                reportType: 'PM Report',
+                reportName: fullDetails.serviceReportNo || report.serviceReportNo,
+                customerName: fullDetails.clientName || report.clientName,
+                location: fullDetails.siteName || report.siteName,
+            });
 
         } catch (error) {
             console.error("PDF Generation Error:", error);
-            //alert(`❌ Failed to generate PDF: ${error.message}`);
-            notificationService.error("PDF Generation", `❌ Failed to generate PDF: ${error.message}`);
+            notificationService.error(`Failed to generate PDF: ${error.message}`);
         } finally {
             setPdfProgress(0);
         }
@@ -1169,8 +1173,9 @@ export default function ViewReports() {
             }
         }
 
-        //alert(`✅ Generated ${successCount} PDFs successfully!${failedCount > 0 ? `\n❌ Failed: ${failedCount}` : ''}`);
-        notificationService.success("Bulk PDF Generation", `✅ Generated ${successCount} PDFs successfully!${failedCount > 0 ? `\n❌ Failed: ${failedCount}` : ''}`);
+        if (failedCount > 0) {
+            notificationService.error(`Generated ${successCount} PDFs. Failed: ${failedCount}.`);
+        }
         setSelectedReports([]);
         setSelectAll(false);
     };
@@ -1311,7 +1316,13 @@ export default function ViewReports() {
             setEditedReport(null);
 
             //alert("✅ Report updated successfully!");
-            notificationService.success("Report Update", "✅ Report updated successfully!");
+            notificationService.reportUpdated('PM Report', {
+                id: updatedData.id,
+                reportType: 'PM Report',
+                reportName: updatedData.serviceReportNo || editedReport.serviceReportNo,
+                customerName: updatedData.clientName || editedReport.clientName,
+                location: updatedData.siteName || editedReport.siteName,
+            });
 
         } catch (err) {
             console.error("Error updating report:", err);
@@ -1324,7 +1335,7 @@ export default function ViewReports() {
     // Action handlers
     const handleView = async (report) => {
         if (!report || !report.id) {
-            notificationService.error("Invalid Report", "❌ Invalid report data");
+            notificationService.error("Invalid report data");
             return;
         }
 
@@ -1342,11 +1353,11 @@ export default function ViewReports() {
                 setViewingReport(fullDetails);
                 setShowViewModal(true);
             } else {
-                notificationService.error("Report Details", "❌ Could not load report details. Please try again.");
+                notificationService.error("Could not load report details. Please try again.");
             }
         } catch (error) {
             console.error("❌ Error loading report details:", error);
-            notificationService.error("Report Details", `❌ Failed to load report details: ${error.message}`);
+            notificationService.error(`Failed to load report details: ${error.message}`);
         }
     };
 
@@ -1358,7 +1369,14 @@ export default function ViewReports() {
         if (usingMockData) {
             setReports(reports.filter(report => report.id !== id));
             setShowDeleteModal(false);
-            notificationService.success("Report Delete", "✅ Report deleted successfully (Demo mode)!");
+            const demoReport = reports.find((item) => item.id === id) || {};
+            notificationService.reportDeletedAction('PM Report', {
+                id,
+                reportType: 'PM Report',
+                reportName: demoReport.serviceReportNo,
+                customerName: demoReport.clientName,
+                location: demoReport.siteName,
+            });
             return;
         }
 
@@ -1377,10 +1395,17 @@ export default function ViewReports() {
             localStorage.removeItem('dashboard_timestamp');
             setReports(reports.filter(report => report.id !== id));
             setShowDeleteModal(false);
-            notificationService.success("Report Delete", "✅ Report deleted successfully!");
+            const deletedReport = reports.find((item) => item.id === id) || {};
+            notificationService.reportDeletedAction('PM Report', {
+                id,
+                reportType: 'PM Report',
+                reportName: deletedReport.serviceReportNo,
+                customerName: deletedReport.clientName,
+                location: deletedReport.siteName,
+            });
         } catch (err) {
             console.error("Error deleting report:", err);
-            notificationService.error("Report Delete", `❌ Failed to delete report: ${err.message}`);
+            notificationService.error(`Failed to delete report: ${err.message}`);
         }
     };
 

@@ -113,7 +113,13 @@ const PMReportView = () => {
         try {
             setActionLoading('pdf');
             // Add PDF generation logic here
-            notificationService.pdfGenerated(report?.serviceReportNo || 'PM Report');
+            notificationService.reportDownloaded('PM Report', {
+                id: report?.id,
+                reportType: 'PM Report',
+                reportName: report?.serviceReportNo,
+                customerName: report?.clientName,
+                location: report?.siteName,
+            });
         } catch (error) {
             notificationService.error('Failed to generate PDF');
         } finally {

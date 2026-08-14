@@ -221,8 +221,14 @@ const CalibrationViewAll = () => {
             setActionLoading(reportId);
             await calibrationReportService.deleteReport(reportId);
             setSelectedReports(selectedReports.filter(id => id !== reportId));
-            notificationService.reportDeleted('Calibration Report', reportId);
-            notificationService.success('Report deleted successfully!');
+            notificationService.reportDeletedAction('Calibration Report', {
+                id: reportId,
+                reportType: 'Calibration Report',
+                reportName: report.reportNo,
+                customerName: report.clientName,
+                location: report.siteName,
+                equipment: report.sensorId,
+            });
             fetchReports();
         } catch (error) {
             notificationService.error('Failed to delete Calibration Report');
@@ -244,9 +250,10 @@ const CalibrationViewAll = () => {
             for (const id of selectedReports) {
                 await calibrationReportService.deleteReport(id);
             }
+            const deletedCount = selectedReports.length;
             setSelectedReports([]);
             setSelectAll(false);
-            notificationService.bulkDeleted(selectedReports.length);
+            notificationService.bulkDeleted(deletedCount, 'Calibration Report');
             fetchReports();
         } catch (error) {
             notificationService.error('Failed to delete selected reports');
@@ -895,8 +902,14 @@ const CalibrationViewAll = () => {
             const fileName = `Calibration_Report_${safeString(fullReport.reportNo || 'Report')}_${new Date().toISOString().split('T')[0]}.pdf`;
             doc.save(fileName);
 
-            toast.success('PDF generated successfully!');
-            //notificationService.pdfGenerated(fullReport.reportNo || 'Calibration Report');
+            notificationService.reportDownloaded('Calibration Report', {
+                id: fullReport.id,
+                reportType: 'Calibration Report',
+                reportName: fullReport.reportNo,
+                customerName: fullReport.clientName,
+                location: fullReport.siteName,
+                equipment: fullReport.sensorId,
+            });
 
         } catch (error) {
             console.error("PDF Generation Error:", error);

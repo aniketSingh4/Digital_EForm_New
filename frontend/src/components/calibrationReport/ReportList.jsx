@@ -113,7 +113,14 @@ const ReportList = () => {
       setActionLoading(reportId);
       await calibrationReportService.deleteReport(reportId);
       setSelectedReports(selectedReports.filter(id => id !== reportId));
-      notificationService.success('Report deleted successfully!');
+      notificationService.reportDeletedAction('Calibration Report', {
+        id: reportId,
+        reportType: 'Calibration Report',
+        reportName: report.reportNo,
+        customerName: report.clientName,
+        location: report.siteName,
+        equipment: report.sensorId,
+      });
       fetchReports();
     } catch (error) {
       notificationService.error('Failed to delete Calibration Report');
@@ -134,10 +141,10 @@ const ReportList = () => {
         for (const id of selectedReports) {
           await calibrationReportService.deleteReport(id);
         }
+        const deletedCount = selectedReports.length;
         setSelectedReports([]);
         setSelectAll(false);
-        //notificationService.bulkDeleted(selectedReports.length);
-        notificationService.success(`${selectedReports.length} report(s) deleted successfully!`);
+        notificationService.bulkDeleted(deletedCount, 'Calibration Report');
         fetchReports();
       } catch (error) {
         notificationService.error('Failed to delete selected reports');
@@ -177,7 +184,14 @@ const ReportList = () => {
       setActionLoading(`pdf-${report.id}`);
       // PDF generation logic here
       //notificationService.pdfGenerated(report.reportNo || 'Calibration Report');
-      notificationService.success('PDF generated successfully!');
+      notificationService.reportDownloaded('Calibration Report', {
+        id: report.id,
+        reportType: 'Calibration Report',
+        reportName: report.reportNo,
+        customerName: report.clientName,
+        location: report.siteName,
+        equipment: report.sensorId,
+      });
     } catch (error) {
       notificationService.error('Failed to generate PDF');
     } finally {

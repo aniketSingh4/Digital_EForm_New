@@ -58,7 +58,14 @@ const PreVisitReportList = ({ onEdit, refreshTrigger }) => {
       setActionLoading(id);
       await preVisitReportService.deleteReport(id);
       await fetchReports();
-      notificationService.success('Report deleted successfully!');
+      const deleted = reports.find((item) => item.id === id) || {};
+      notificationService.reportDeletedAction('Pre-Visit Checklist', {
+        id,
+        reportType: 'Pre-Visit Checklist',
+        reportName: deleted.companyName,
+        customerName: deleted.customerName || deleted.companyName,
+        location: deleted.siteAddress,
+      });
     } catch (error) {
       notificationService.error(error.message || 'Failed to delete report');
     } finally {

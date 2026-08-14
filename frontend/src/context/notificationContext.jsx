@@ -1,6 +1,6 @@
 // src/context/NotificationContext.js
 import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
-import notificationService from '../services/notificationService';
+import notificationService, { isReportActionType } from '../services/notificationService';
 import notificationApi, { mapServerNotification } from '../services/notificationApi';
 
 const NotificationContext = createContext();
@@ -8,6 +8,16 @@ const NotificationContext = createContext();
 const getCurrentEmail = () => localStorage.getItem('userEmail') || '';
 
 const storageKeyFor = (email) => (email ? `notifications_${email}` : 'notifications');
+
+const isActionNotification = (item) => {
+    if (!item) {
+        return false;
+    }
+    if (item.persisted || item.serverId) {
+        return true;
+    }
+    return isReportActionType(item.eventType);
+};
 
 export const useNotification = () => {
     const context = useContext(NotificationContext);
@@ -49,7 +59,9 @@ export const NotificationProvider = ({ children }) => {
             const mapped = Array.isArray(data) ? data.map(mapServerNotification) : [];
             setNotifications(prev => {
                 const localOnly = prev.filter((item) => (
-                    item.localOnly && (!item.recipientEmail || item.recipientEmail === email)
+                    item.localOnly
+                    && isActionNotification(item)
+                    && (!item.recipientEmail || item.recipientEmail === email)
                 ));
                 const merged = [...mapped, ...localOnly];
                 const seen = new Set();
@@ -74,7 +86,7 @@ export const NotificationProvider = ({ children }) => {
         if (savedNotifications) {
             try {
                 const parsed = JSON.parse(savedNotifications);
-                setNotifications(parsed);
+                setNotifications(Array.isArray(parsed) ? parsed.filter(isActionNotification) : []);
             } catch (e) {
                 console.error('Error loading notifications:', e);
             }
@@ -96,8 +108,13 @@ export const NotificationProvider = ({ children }) => {
             return;
         }
         const email = emailRef.current || getCurrentEmail();
-        localStorage.setItem(storageKeyFor(email), JSON.stringify(notifications));
-        setUnreadCount(notifications.filter(n => !n.read).length);
+        const actionable = notifications.filter(isActionNotification);
+        if (actionable.length !== notifications.length) {
+            setNotifications(actionable);
+            return;
+        }
+        localStorage.setItem(storageKeyFor(email), JSON.stringify(actionable));
+        setUnreadCount(actionable.filter(n => !n.read).length);
     }, [notifications]);
 
     const dismissNotification = useCallback((id) => {

@@ -8,7 +8,7 @@ const apiClient = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
-  timeout: 30000,
+  timeout: 120000,
 });
 
 // Interceptors
@@ -289,44 +289,103 @@ export const transformDataForAPI = (formData, isEditMode = false) => {
   return apiPayload;
 };
 
+const getServiceReportNoFromPayload = (formData, payload) =>
+  payload?.serviceReportNo
+  || formData?.serviceReportNo
+  || formData?.report?.serviceReportNo
+  || '';
+
+const shouldLookupExistingReport = (error) => {
+  if (!error) {
+    return false;
+  }
+  const status = error.response?.status;
+  if (status === 409 || (status >= 500 && status < 600)) {
+    return true;
+  }
+  return !error.response && (!!error.request || error.code === 'ECONNABORTED' || error.code === 'ERR_NETWORK');
+};
+
+export const fetchPMReportByNumber = async (serviceReportNo) => {
+  if (!serviceReportNo) {
+    return null;
+  }
+  const response = await apiClient.get(
+    `/pm_reports/by-number/${encodeURIComponent(serviceReportNo)}`,
+    { timeout: 20000 }
+  );
+  return response.data;
+};
+
+const recoverCreatedReport = async (error, formData, payload) => {
+  if (!shouldLookupExistingReport(error)) {
+    return null;
+  }
+  const serviceReportNo = getServiceReportNoFromPayload(formData, payload);
+  if (!serviceReportNo) {
+    return null;
+  }
+  const lookup = async () => {
+    try {
+      return await fetchPMReportByNumber(serviceReportNo);
+    } catch {
+      return null;
+    }
+  };
+  let existing = await lookup();
+  if (!existing && (!error.response || error.code === 'ECONNABORTED')) {
+    await new Promise((resolve) => setTimeout(resolve, 1500));
+    existing = await lookup();
+  }
+  return existing || null;
+};
+
+const successResult = (data) => {
+  invalidate('pm_reports');
+  localStorage.removeItem('dashboard_data');
+  localStorage.removeItem('dashboard_timestamp');
+  return {
+    success: true,
+    data,
+    error: null
+  };
+};
+
+const failureMessage = (error) => {
+  if (error.response) {
+    const data = error.response.data;
+    if (typeof data === 'string' && data.trim()) {
+      return data;
+    }
+    return data?.message || data?.error || `Server error: ${error.response.status}`;
+  }
+  if (error.code === 'ECONNABORTED') {
+    return 'The request timed out. Checking whether the report was saved...';
+  }
+  if (error.request) {
+    return 'No response from server. Please check your network connection.';
+  }
+  return error.message || 'Failed to submit report';
+};
+
 /**
  * Submit PM Report to API (CREATE)
  */
 export const submitPMReport = async (formData) => {
+  const payload = transformDataForAPI(formData, false);
   try {
-    const payload = transformDataForAPI(formData, false);
-
-    // console.log("Submitting payload:", JSON.stringify(payload, null, 2));
-
-    const response = await apiClient.post('/pm_reports', payload);
-
-    // console.log("Submit success:", response.data);
-    invalidate('pm_reports');
-    localStorage.removeItem('dashboard_data');
-    localStorage.removeItem('dashboard_timestamp');
-    return {
-      success: true,
-      data: response.data,
-      error: null
-    };
-
+    const response = await apiClient.post('/pm_reports', payload, { timeout: 120000 });
+    return successResult(response.data);
   } catch (error) {
-    console.error("Submit error:", error);
-
-    let errorMessage = error.message;
-    if (error.response) {
-      errorMessage = error.response.data?.message ||
-        error.response.data?.error ||
-        `Server error: ${error.response.status}`;
-      console.error("Response data:", error.response.data);
-    } else if (error.request) {
-      errorMessage = 'No response from server. Please check your network connection.';
+    const recovered = await recoverCreatedReport(error, formData, payload);
+    if (recovered) {
+      return successResult(recovered);
     }
-
+    console.error("Submit error:", error);
     return {
       success: false,
       data: null,
-      error: errorMessage
+      error: failureMessage(error)
     };
   }
 };
@@ -390,18 +449,15 @@ export const updatePMReport = async (id, formData, onProgress) => {
  * Submit PM Report with progress tracking (CREATE)
  */
 export const submitPMReportWithProgress = async (formData, onProgress) => {
+  let payload = formData;
+
+  if (formData.report) {
+    payload = transformDataForAPI(formData, false);
+  }
+
   try {
-    let payload = formData;
-
-    // If it has a 'report' property, it's the raw form data
-    if (formData.report) {
-      payload = transformDataForAPI(formData, false);
-    }
-
-    // console.log("Submitting payload:", JSON.stringify(payload, null, 2));
-    // console.log("Checklists in payload:", payload.checklists?.length || 0);
-
     const response = await apiClient.post('/pm_reports', payload, {
+      timeout: 120000,
       onUploadProgress: (progressEvent) => {
         if (progressEvent.total) {
           const percentCompleted = Math.round(
@@ -414,33 +470,17 @@ export const submitPMReportWithProgress = async (formData, onProgress) => {
       }
     });
 
-    // console.log("Submit success:", response.data);
-    invalidate('pm_reports');
-    localStorage.removeItem('dashboard_data');
-    localStorage.removeItem('dashboard_timestamp');
-    return {
-      success: true,
-      data: response.data,
-      error: null
-    };
-
+    return successResult(response.data);
   } catch (error) {
-    // console.error("Submit error:", error);
-
-    let errorMessage = error.message;
-    if (error.response) {
-      errorMessage = error.response.data?.message ||
-        error.response.data?.error ||
-        `Server error: ${error.response.status}`;
-      console.error("Response data:", error.response.data);
-    } else if (error.request) {
-      errorMessage = 'No response from server. Please check your network connection.';
+    const recovered = await recoverCreatedReport(error, formData, payload);
+    if (recovered) {
+      return successResult(recovered);
     }
 
     return {
       success: false,
       data: null,
-      error: errorMessage
+      error: failureMessage(error)
     };
   }
 };

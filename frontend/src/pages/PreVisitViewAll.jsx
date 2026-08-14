@@ -100,7 +100,14 @@ const PreVisitViewAll = () => {
                 setActionLoading(id);
                 await deleteReport(id);
                 setSelectedReports(selectedReports.filter(reportId => reportId !== id));
-                notificationService.success('Report deleted successfully!', { type: 'REPORT_DELETED', identifier: id });
+                const deleted = reports.find((item) => item.id === id) || {};
+                notificationService.reportDeletedAction('Pre-Visit Checklist', {
+                    id,
+                    reportType: 'Pre-Visit Checklist',
+                    reportName: deleted.companyName,
+                    customerName: deleted.customerName || deleted.companyName,
+                    location: deleted.siteAddress,
+                });
             } catch (error) {
                 notificationService.error('Failed to delete report. Please try again.', { type: 'REPORT_DELETION_FAILED', identifier: id });
             } finally {
@@ -122,9 +129,10 @@ const PreVisitViewAll = () => {
                 for (const id of selectedReports) {
                     await deleteReport(id);
                 }
+                const deletedCount = selectedReports.length;
                 setSelectedReports([]);
                 setSelectAll(false);
-                notificationService.success(`${selectedReports.length} report(s) deleted successfully!`, { type: 'REPORTS_DELETED', identifier: selectedReports });
+                notificationService.bulkDeleted(deletedCount, 'Pre-Visit Checklist');
             } catch (error) {
                 notificationService.error('Failed to delete selected reports. Please try again.', { type: 'REPORTS_DELETION_FAILED', identifier: selectedReports });
             } finally {
@@ -557,7 +565,13 @@ const PreVisitViewAll = () => {
             const fileName = generateFileName(reportData);
             doc.save(fileName);
 
-            notificationService.success(`PDF generated successfully!\n ${fileName}`);
+            notificationService.reportDownloaded('Pre-Visit Checklist', {
+                id: reportData.id || report.id,
+                reportType: 'Pre-Visit Checklist',
+                reportName: reportData.companyName || report.companyName,
+                customerName: reportData.customerName || reportData.companyName || report.companyName,
+                location: reportData.siteAddress || report.siteAddress,
+            });
         } catch (error) {
             notificationService.error(`Failed to generate PDF: ${error.message}`);
         } finally {

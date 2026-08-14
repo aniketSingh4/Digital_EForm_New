@@ -342,18 +342,10 @@ export default function Dashboard() {
     const totalReports = Object.values(reportCounts).reduce((a, b) => a + b, 0);
 
     const handleViewAll = (feature) => {
-        notificationService.info(`Opening ${feature.title}`, { 
-            autoClose: 3000,
-            identifier: `view_${feature.id}`
-        });
         navigate(feature.viewAllPath);
     };
 
     const handleCreateNew = (feature) => {
-        notificationService.info(`Creating new ${feature.title}`, { 
-            autoClose: 3000,
-            identifier: `create_${feature.id}`
-        });
         navigate(feature.path);
     };
 
