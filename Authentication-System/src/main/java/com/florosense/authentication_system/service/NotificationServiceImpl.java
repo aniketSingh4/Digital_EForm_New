@@ -40,7 +40,9 @@ public class NotificationServiceImpl implements NotificationService {
     @Override
     @Transactional
     public List<NotificationResponse> create(String actorEmail, NotificationRequest request) {
-        Users actor = userRepository.findByEmail(actorEmail)
+        String normalizedActorEmail = normalizeEmail(actorEmail);
+        Users actor = userRepository.findByEmailIgnoreCase(normalizedActorEmail)
+                .or(() -> userRepository.findByEmail(actorEmail))
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
         String type = normalizeType(request.getType());
@@ -50,35 +52,39 @@ public class NotificationServiceImpl implements NotificationService {
         saved.add(notificationRepository.save(buildNotification(
                 type,
                 AUDIENCE_USER,
-                actorEmail,
+                normalizedActorEmail,
                 actorName,
-                actorEmail,
+                normalizedActorEmail,
                 request,
                 buildSummary(type, actorName, request, true))));
 
         if (ADMIN_FANOUT_TYPES.contains(type)) {
-            List<Users> admins = userRepository.findByRoleIgnoreCase(AUDIENCE_ADMIN);
+            List<Users> admins = userRepository.findByRoleIgnoreCaseIn(List.of("ADMIN", "ROLE_ADMIN"));
+            if (admins.isEmpty()) {
+                admins = userRepository.findByRoleIgnoreCase(AUDIENCE_ADMIN);
+            }
             for (Users admin : admins) {
                 saved.add(notificationRepository.save(buildNotification(
                         type,
                         AUDIENCE_ADMIN,
-                        admin.getEmail(),
+                        normalizeEmail(admin.getEmail()),
                         actorName,
-                        actorEmail,
+                        normalizedActorEmail,
                         request,
                         buildSummary(type, actorName, request, false))));
             }
         }
 
         return saved.stream()
-                .filter(notification -> actorEmail.equalsIgnoreCase(notification.getRecipientEmail()))
+                .filter(notification -> normalizedActorEmail.equalsIgnoreCase(notification.getRecipientEmail()))
                 .map(NotificationResponse::from)
                 .toList();
     }
 
     @Override
     public List<NotificationResponse> listForUser(String recipientEmail) {
-        return notificationRepository.findByRecipientEmailOrderByCreatedAtDesc(recipientEmail).stream()
+        return notificationRepository
+                .findByRecipientEmailIgnoreCaseOrderByCreatedAtDesc(normalizeEmail(recipientEmail)).stream()
                 .map(NotificationResponse::from)
                 .toList();
     }
@@ -86,7 +92,8 @@ public class NotificationServiceImpl implements NotificationService {
     @Override
     @Transactional
     public NotificationResponse markRead(Long id, String recipientEmail) {
-        AppNotification notification = notificationRepository.findByIdAndRecipientEmail(id, recipientEmail)
+        AppNotification notification = notificationRepository
+                .findByIdAndRecipientEmailIgnoreCase(id, normalizeEmail(recipientEmail))
                 .orElseThrow(() -> new RuntimeException("Notification not found"));
         notification.setReadFlag(true);
         return NotificationResponse.from(notificationRepository.save(notification));
@@ -96,7 +103,7 @@ public class NotificationServiceImpl implements NotificationService {
     @Transactional
     public void markAllRead(String recipientEmail) {
         List<AppNotification> notifications = notificationRepository
-                .findByRecipientEmailOrderByCreatedAtDesc(recipientEmail);
+                .findByRecipientEmailIgnoreCaseOrderByCreatedAtDesc(normalizeEmail(recipientEmail));
         for (AppNotification notification : notifications) {
             notification.setReadFlag(true);
         }
@@ -106,7 +113,8 @@ public class NotificationServiceImpl implements NotificationService {
     @Override
     @Transactional
     public void delete(Long id, String recipientEmail) {
-        AppNotification notification = notificationRepository.findByIdAndRecipientEmail(id, recipientEmail)
+        AppNotification notification = notificationRepository
+                .findByIdAndRecipientEmailIgnoreCase(id, normalizeEmail(recipientEmail))
                 .orElseThrow(() -> new RuntimeException("Notification not found"));
         notificationRepository.delete(notification);
     }
@@ -114,7 +122,7 @@ public class NotificationServiceImpl implements NotificationService {
     @Override
     @Transactional
     public void clearAll(String recipientEmail) {
-        notificationRepository.deleteByRecipientEmail(recipientEmail);
+        notificationRepository.deleteByRecipientEmailIgnoreCase(normalizeEmail(recipientEmail));
     }
 
     private AppNotification buildNotification(
@@ -210,5 +218,9 @@ public class NotificationServiceImpl implements NotificationService {
 
     private String blankToNull(String value) {
         return value == null || value.isBlank() ? null : value.trim();
+    }
+
+    private String normalizeEmail(String email) {
+        return email == null ? "" : email.trim().toLowerCase(Locale.ROOT);
     }
 }
