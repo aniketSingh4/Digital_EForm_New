@@ -103,7 +103,6 @@ export default function Dashboard() {
     const [hoveredCard, setHoveredCard] = useState(null);
     const [currentTime, setCurrentTime] = useState(new Date());
     const [showNotifications, setShowNotifications] = useState(false);
-    const [notificationFilter, setNotificationFilter] = useState('all');
     const [isRefreshing, setIsRefreshing] = useState(false);
     
     // Modal states
@@ -118,6 +117,7 @@ export default function Dashboard() {
     const userRole = localStorage.getItem("userRole") || "USER";
     const userEmail = localStorage.getItem("userEmail") || "";
     const isAdminUser = (userRole || "").toUpperCase() === "ADMIN";
+    const [notificationFilter, setNotificationFilter] = useState(isAdminUser ? "admin" : "all");
 
     // Show welcome notification on first load (only once)
     useEffect(() => {
@@ -133,6 +133,16 @@ export default function Dashboard() {
             refreshNotifications();
         }
     }, [refreshNotifications, userEmail]);
+
+    useEffect(() => {
+        if (!refreshNotifications) {
+            return undefined;
+        }
+        const intervalId = setInterval(() => {
+            refreshNotifications();
+        }, 20000);
+        return () => clearInterval(intervalId);
+    }, [refreshNotifications]);
 
     useEffect(() => {
         const timer = setInterval(() => {
@@ -420,11 +430,10 @@ export default function Dashboard() {
         if (notificationFilter === "admin") {
             return scopedNotifications.filter((n) => n.audience === "ADMIN");
         }
-        const ownOrLocal = scopedNotifications.filter((n) => n.audience !== "ADMIN");
         if (notificationFilter === "all") {
-            return ownOrLocal;
+            return scopedNotifications;
         }
-        return ownOrLocal.filter((n) => n.type === notificationFilter);
+        return scopedNotifications.filter((n) => n.type === notificationFilter);
     })();
 
     const scopedUnreadCount = scopedNotifications.filter((n) => !n.read).length;

@@ -112,12 +112,12 @@ export default function Step4Summary({ formData, setFormData }) {
                             <span className="radio-label">System Operational</span>
                         </label>
 
-                        <label className={summary.siteCondition === "SYSTEM_OPERATIONAL_WITH_ISSUES" ? "selected" : ""}>
+                        <label className={summary.siteCondition === "SYSTEM_OPERATIONAL_WITH_OBSERVATION" || summary.siteCondition === "SYSTEM_OPERATIONAL_WITH_ISSUES" ? "selected" : ""}>
                             <input
                                 type="radio"
                                 name="siteCondition"
-                                value="SYSTEM_OPERATIONAL_WITH_ISSUES"
-                                checked={summary.siteCondition === "SYSTEM_OPERATIONAL_WITH_ISSUES"}
+                                value="SYSTEM_OPERATIONAL_WITH_OBSERVATION"
+                                checked={summary.siteCondition === "SYSTEM_OPERATIONAL_WITH_OBSERVATION" || summary.siteCondition === "SYSTEM_OPERATIONAL_WITH_ISSUES"}
                                 onChange={handleChange}
                             />
                             <span className="radio-label">Operational with Observation</span>

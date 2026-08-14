@@ -52,8 +52,8 @@ export const formatReportForEdit = (data) => {
         summary: {
             observation: data.observation || '',
             recommendation: data.recommendation || '',
-            pmStatus: data.preventiveMaintenanceStatus || 'SATISFACTORY',
-            siteCondition: data.siteConditionAfterPm || 'SYSTEM_OPERATIONAL'
+            pmStatus: data.preventiveMaintenanceStatus || data.summary?.preventiveMaintenanceStatus || '',
+            siteCondition: data.siteConditionAfterPm || data.summary?.siteConditionAfterPm || ''
         },
         signoff: {
             clientRepresentativeName: data.signOff?.clientRepresentativeName || '',
@@ -134,8 +134,8 @@ export const prepareUpdatePayload = (formData, id) => {
         engineerName: reportData.engineerName || '',
         observation: formData.summary?.observation || '',
         recommendation: formData.summary?.recommendation || '',
-        preventiveMaintenanceStatus: formData.summary?.pmStatus || 'SATISFACTORY',
-        siteConditionAfterPm: formData.summary?.siteCondition || 'SYSTEM_OPERATIONAL',
+        preventiveMaintenanceStatus: formData.summary?.pmStatus || '',
+        siteConditionAfterPm: formData.summary?.siteCondition || '',
         checklists: formData.checklists || [],
         signOff: {
             clientRepresentativeName: formData.signoff?.clientRepresentativeName || '',

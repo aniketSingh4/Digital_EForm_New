@@ -77,7 +77,7 @@ const mapInspectionStatus = (status) => {
  * Map PM Status to enum values expected by backend
  */
 const mapPMStatus = (status) => {
-  if (!status) return "SATISFACTORY";
+  if (!status) return "";
 
   const statusStr = String(status).trim().toUpperCase();
 
@@ -90,29 +90,29 @@ const mapPMStatus = (status) => {
     "REQUIRES ATTENTION": "REQUIRES_ATTENTION"
   };
 
-  return statusMap[statusStr] || "SATISFACTORY";
+  return statusMap[statusStr] || statusStr;
 };
 
 /**
  * Map Site Condition to enum values expected by backend
  */
 const mapSiteCondition = (condition) => {
-  if (!condition) return "SYSTEM_OPERATIONAL";
+  if (!condition) return "";
 
-  const conditionStr = String(condition).trim().toUpperCase();
+  const conditionStr = String(condition).trim().toUpperCase().replace(/ /g, "_");
 
   const conditionMap = {
     "SYSTEM_OPERATIONAL": "SYSTEM_OPERATIONAL",
     "SYSTEM_NOT_OPERATIONAL": "SYSTEM_NOT_OPERATIONAL",
-    "SYSTEM_OPERATIONAL_WITH_ISSUES": "SYSTEM_OPERATIONAL_WITH_ISSUES",
-    "SYSTEM OPERATIONAL": "SYSTEM_OPERATIONAL",
-    "SYSTEM NOT OPERATIONAL": "SYSTEM_NOT_OPERATIONAL",
-    "SYSTEM OPERATIONAL WITH ISSUES": "SYSTEM_OPERATIONAL_WITH_ISSUES",
+    "SYSTEM_OPERATIONAL_WITH_OBSERVATION": "SYSTEM_OPERATIONAL_WITH_OBSERVATION",
+    "SYSTEM_OPERATIONAL_WITH_ISSUES": "SYSTEM_OPERATIONAL_WITH_OBSERVATION",
     "OPERATIONAL": "SYSTEM_OPERATIONAL",
-    "NOT OPERATIONAL": "SYSTEM_NOT_OPERATIONAL"
+    "NOT_OPERATIONAL": "SYSTEM_NOT_OPERATIONAL",
+    "WITH_ISSUES": "SYSTEM_OPERATIONAL_WITH_OBSERVATION",
+    "WITH_OBSERVATION": "SYSTEM_OPERATIONAL_WITH_OBSERVATION"
   };
 
-  return conditionMap[conditionStr] || "SYSTEM_OPERATIONAL";
+  return conditionMap[conditionStr] || conditionStr;
 };
 
 /**

@@ -102,6 +102,9 @@ const PMReportView = () => {
             'COMPLETED': { label: 'Completed', className: 'status-success', icon: <FaCheckCircle /> },
             'PENDING': { label: 'Pending', className: 'status-pending', icon: <FaClock /> },
             'SYSTEM_OPERATIONAL': { label: 'System Operational', className: 'status-success', icon: <FaCheckCircle /> },
+            'SYSTEM_NOT_OPERATIONAL': { label: 'System Not Operational', className: 'status-danger', icon: <FaClock /> },
+            'SYSTEM_OPERATIONAL_WITH_OBSERVATION': { label: 'Operational with Observation', className: 'status-warning', icon: <FaClock /> },
+            'SYSTEM_OPERATIONAL_WITH_ISSUES': { label: 'Operational with Observation', className: 'status-warning', icon: <FaClock /> },
             'NEEDS_MAINTENANCE': { label: 'Needs Maintenance', className: 'status-warning', icon: <FaClock /> },
             'CRITICAL': { label: 'Critical', className: 'status-danger', icon: <FaClock /> },
             'UNDER_OBSERVATION': { label: 'Under Observation', className: 'status-info', icon: <FaClock /> }

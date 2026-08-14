@@ -154,8 +154,8 @@ export default function PMReportWizard() {
                 summary: {
                     observation: data.observation || '',
                     recommendation: data.recommendation || '',
-                    pmStatus: data.summary?.preventiveMaintenanceStatus || data.preventiveMaintenanceStatus || 'SATISFACTORY',
-                    siteCondition: data.summary?.siteConditionAfterPm || data.siteConditionAfterPm || 'SYSTEM_OPERATIONAL'
+                    pmStatus: data.summary?.preventiveMaintenanceStatus || data.preventiveMaintenanceStatus || '',
+                    siteCondition: data.summary?.siteConditionAfterPm || data.siteConditionAfterPm || ''
                 },
                 signoff: {
                     clientRepresentativeName: data.signOff?.clientRepresentativeName || '',
@@ -240,8 +240,8 @@ export default function PMReportWizard() {
                 observation: formData.summary?.observation || "",
                 recommendation: formData.summary?.recommendation || "",
                 summary: {
-                preventiveMaintenanceStatus: formData.summary?.pmStatus || "SATISFACTORY",
-                siteConditionAfterPm: formData.summary?.siteCondition || "SYSTEM_OPERATIONAL"
+                preventiveMaintenanceStatus: formData.summary?.pmStatus || "",
+                siteConditionAfterPm: formData.summary?.siteCondition || ""
                },
                 checklists: formData.checklists || [],
                 signOff: {

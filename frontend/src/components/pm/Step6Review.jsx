@@ -195,8 +195,8 @@ export default function Step6Review({
                 observation: summary.observation || "",
                 recommendation: summary.recommendation || "",
                 summary: {
-                    preventiveMaintenanceStatus: summary.pmStatus || "PENDING",
-                    siteConditionAfterPm: summary.siteCondition || "N/A"
+                    preventiveMaintenanceStatus: summary.pmStatus || "",
+                    siteConditionAfterPm: summary.siteCondition || ""
                 },
                 checklists: checklists,
                 signOff: {

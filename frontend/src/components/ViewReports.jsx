@@ -667,7 +667,8 @@ export default function ViewReports() {
                 const conditionMap = {
                     "SYSTEM_OPERATIONAL": "System Operational",
                     "SYSTEM_NOT_OPERATIONAL": "System Not Operational",
-                    "SYSTEM_OPERATIONAL_WITH_OBSERVATION": "Operational with Observation"
+                    "SYSTEM_OPERATIONAL_WITH_OBSERVATION": "Operational with Observation",
+                    "SYSTEM_OPERATIONAL_WITH_ISSUES": "Operational with Observation"
                 };
                 return conditionMap[condition] || condition;
             };
