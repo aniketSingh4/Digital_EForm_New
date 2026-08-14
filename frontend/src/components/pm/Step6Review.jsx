@@ -1,6 +1,6 @@
 // src/components/pm/Step6Review.js
 import React, { useState, useRef } from "react";
-import { submitPMReport, submitPMReportWithProgress } from "../../api/pmReportService";
+import { submitPMReport, submitPMReportWithProgress, mapPMStatus, mapSiteCondition } from "../../api/pmReportService";
 // ADDED: Import update function for edit mode
 import { updatePMReportWithProgress } from "../../api/pmReportService";
 import jsPDF from "jspdf";
@@ -195,8 +195,8 @@ export default function Step6Review({
                 observation: summary.observation || "",
                 recommendation: summary.recommendation || "",
                 summary: {
-                    preventiveMaintenanceStatus: summary.pmStatus || "",
-                    siteConditionAfterPm: summary.siteCondition || ""
+                    preventiveMaintenanceStatus: mapPMStatus(summary.pmStatus),
+                    siteConditionAfterPm: mapSiteCondition(summary.siteCondition)
                 },
                 checklists: checklists,
                 signOff: {

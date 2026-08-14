@@ -93,6 +93,7 @@ const authService = {
         if (email) {
             localStorage.removeItem(`notifications_${email}`);
         }
+        window.dispatchEvent(new Event("eform-auth-changed"));
     },
 
     /** Clear auth tokens without wiping report caches (used when opening login page) */
@@ -101,6 +102,7 @@ const authService = {
         localStorage.removeItem("userName");
         localStorage.removeItem("userRole");
         localStorage.removeItem("userEmail");
+        window.dispatchEvent(new Event("eform-auth-changed"));
     },
 
     //Check if token exists

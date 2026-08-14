@@ -169,10 +169,12 @@ const PMReportView = () => {
     // ✅ Get summary data from report
     const summary = report.summary || {};
     const signOff = report.signOff || {};
+    const pmStatusValue = summary.preventiveMaintenanceStatus || report.preventiveMaintenanceStatus;
+    const siteConditionValue = summary.siteConditionAfterPm || report.siteConditionAfterPm;
 
     // ✅ Get status badges
-    const pmStatus = getStatusBadge(summary.preventiveMaintenanceStatus);
-    const siteCondition = getStatusBadge(summary.siteConditionAfterPm);
+    const pmStatus = getStatusBadge(pmStatusValue);
+    const siteCondition = getStatusBadge(siteConditionValue);
 
     return (
         <div className="pm-report-view-container">

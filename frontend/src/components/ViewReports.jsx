@@ -95,7 +95,8 @@ export default function ViewReports() {
                 { key: "siteName", label: "Site Name" },
                 { key: "pmVisitDate", label: "Visit Date" },
                 { key: "sensorId", label: "Sensor ID" },
-                { key: "engineerName", label: "Engineer" }
+                { key: "engineerName", label: "Engineer" },
+                { key: "siteConditionAfterPm", label: "Site Condition" }
             ]
         },
         2: {
@@ -168,6 +169,17 @@ export default function ViewReports() {
             'IN_PROGRESS': { icon: <FaSpinner />, label: 'In Progress', class: 'status-progress' }
         };
         return statusMap[status] || { icon: <FaClock />, label: status || 'Unknown', class: 'status-unknown' };
+    };
+
+    const getSiteConditionDisplay = (condition) => {
+        if (!condition || condition === "N/A" || condition === "PENDING") return "N/A";
+        const conditionMap = {
+            "SYSTEM_OPERATIONAL": "System Operational",
+            "SYSTEM_NOT_OPERATIONAL": "System Not Operational",
+            "SYSTEM_OPERATIONAL_WITH_OBSERVATION": "Operational with Observation",
+            "SYSTEM_OPERATIONAL_WITH_ISSUES": "Operational with Observation"
+        };
+        return conditionMap[condition] || String(condition).replace(/_/g, ' ');
     };
 
     // Transform summary data - FIXED
@@ -475,7 +487,7 @@ export default function ViewReports() {
                 pmVisitDate: `${year}-${month}-${day}`,
                 engineerName: engineers[i % engineers.length],
                 preventiveMaintenanceStatus: ["SATISFACTORY", "FOLLOW_UP_VISIT_REQUIRED", "REQUIRES_ATTENTION"][i % 3],
-                siteConditionAfterPm: "SYSTEM_OPERATIONAL",
+                siteConditionAfterPm: ["SYSTEM_OPERATIONAL", "SYSTEM_NOT_OPERATIONAL", "SYSTEM_OPERATIONAL_WITH_OBSERVATION"][i % 3],
                 createdAt: new Date().toISOString(),
                 observation: "Sensor was operational. Minor dust accumulation found.",
                 recommendation: "Replace air filter during next PM visit.",
@@ -1285,11 +1297,20 @@ export default function ViewReports() {
         setEditError(null);
 
         try {
+            const payload = {
+                ...editedReport,
+                summary: {
+                    preventiveMaintenanceStatus: editedReport.preventiveMaintenanceStatus || "",
+                    siteConditionAfterPm: editedReport.siteConditionAfterPm || ""
+                }
+            };
+            delete payload._original;
+
             const url = `${API_BASE_URL}${config.apiEndpoint}/${editedReport.id}`;
             const response = await fetch(url, {
                 method: 'PUT',
                 headers: getAuthHeaders(),
-                body: JSON.stringify(editedReport)
+                body: JSON.stringify(payload)
             });
 
             if (!response.ok) {
@@ -1551,6 +1572,8 @@ export default function ViewReports() {
                                             <td key={col.key}>
                                                 {col.key === 'pmVisitDate' || col.key === 'createdDate' || col.key === 'calibrationDate' || col.key === 'installationDate' ? (
                                                     formatDate(report[col.key])
+                                                ) : col.key === 'siteConditionAfterPm' ? (
+                                                    getSiteConditionDisplay(report[col.key])
                                                 ) : (
                                                     report[col.key] || "-"
                                                 )}
@@ -1691,6 +1714,10 @@ export default function ViewReports() {
                                                     {getStatusBadge(viewingReport.preventiveMaintenanceStatus).icon}
                                                     {getStatusBadge(viewingReport.preventiveMaintenanceStatus).label}
                                                 </span>
+                                            </div>
+                                            <div className="view-item">
+                                                <label>Site Condition</label>
+                                                <span>{getSiteConditionDisplay(viewingReport.siteConditionAfterPm)}</span>
                                             </div>
                                         </div>
                                     </div>
@@ -1858,6 +1885,19 @@ export default function ViewReports() {
                                             <option value="FOLLOW_UP_VISIT_REQUIRED">Follow-up Required</option>
                                             <option value="REQUIRES_ATTENTION">Requires Attention</option>
                                             <option value="PENDING">Pending</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label style={{ fontWeight: '600', fontSize: '13px', display: 'block', marginBottom: '4px' }}>Site Condition</label>
+                                        <select
+                                            value={editedReport.siteConditionAfterPm || ''}
+                                            onChange={(e) => handleEditFieldChange('siteConditionAfterPm', e.target.value)}
+                                            style={{ width: '100%', padding: '8px', borderRadius: '4px', border: '1px solid #d0d0d0' }}
+                                        >
+                                            <option value="">N/A</option>
+                                            <option value="SYSTEM_OPERATIONAL">System Operational</option>
+                                            <option value="SYSTEM_NOT_OPERATIONAL">System Not Operational</option>
+                                            <option value="SYSTEM_OPERATIONAL_WITH_OBSERVATION">Operational with Observation</option>
                                         </select>
                                     </div>
                                 </div>

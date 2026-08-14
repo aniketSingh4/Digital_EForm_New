@@ -52,6 +52,7 @@ export default function Login() {
             if (data.email) {
                 localStorage.setItem("userEmail", data.email);
             }
+            window.dispatchEvent(new Event("eform-auth-changed"));
 
             navigate("/dashboard", { replace: true });
 

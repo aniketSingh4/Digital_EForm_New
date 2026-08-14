@@ -76,7 +76,7 @@ const mapInspectionStatus = (status) => {
 /**
  * Map PM Status to enum values expected by backend
  */
-const mapPMStatus = (status) => {
+export const mapPMStatus = (status) => {
   if (!status) return "";
 
   const statusStr = String(status).trim().toUpperCase();
@@ -96,7 +96,7 @@ const mapPMStatus = (status) => {
 /**
  * Map Site Condition to enum values expected by backend
  */
-const mapSiteCondition = (condition) => {
+export const mapSiteCondition = (condition) => {
   if (!condition) return "";
 
   const conditionStr = String(condition).trim().toUpperCase().replace(/ /g, "_");

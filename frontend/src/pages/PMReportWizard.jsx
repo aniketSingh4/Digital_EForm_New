@@ -16,6 +16,7 @@ import 'react-toastify/dist/ReactToastify.css';
 import { getAuthHeaders } from '../utils/roles';
 import { invalidate } from '../utils/cache';
 import { env } from '../config/env';
+import { mapPMStatus, mapSiteCondition } from '../api/pmReportService';
 
 export default function PMReportWizard() {
     const navigate = useNavigate();
@@ -240,9 +241,9 @@ export default function PMReportWizard() {
                 observation: formData.summary?.observation || "",
                 recommendation: formData.summary?.recommendation || "",
                 summary: {
-                preventiveMaintenanceStatus: formData.summary?.pmStatus || "",
-                siteConditionAfterPm: formData.summary?.siteCondition || ""
-               },
+                    preventiveMaintenanceStatus: mapPMStatus(formData.summary?.pmStatus),
+                    siteConditionAfterPm: mapSiteCondition(formData.summary?.siteCondition)
+                },
                 checklists: formData.checklists || [],
                 signOff: {
                     clientRepresentativeName: formData.signoff?.clientRepresentativeName || "",

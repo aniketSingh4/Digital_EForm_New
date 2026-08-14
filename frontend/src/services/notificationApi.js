@@ -1,5 +1,15 @@
 import api from "./api";
 
+const isNotificationRecord = (item) =>
+    item != null && typeof item === "object" && !Array.isArray(item) && item.id != null;
+
+export const asNotificationList = (data) => {
+    if (!Array.isArray(data)) {
+        return [];
+    }
+    return data.filter(isNotificationRecord);
+};
+
 export const mapServerNotification = (notification) => {
     const eventType = notification?.type || "";
     const normalized = String(eventType).toUpperCase();
@@ -34,12 +44,19 @@ export const mapServerNotification = (notification) => {
 const notificationApi = {
     list: async () => {
         const response = await api.get("/notifications");
-        return response.data;
+        const data = asNotificationList(response.data);
+        if (!Array.isArray(response.data)) {
+            throw new Error("Notification list did not return JSON");
+        }
+        return data;
     },
 
     create: async (payload) => {
         const response = await api.post("/notifications", payload);
-        return response.data;
+        if (!Array.isArray(response.data)) {
+            throw new Error("Notification create did not return JSON");
+        }
+        return asNotificationList(response.data);
     },
 
     markRead: async (id) => {

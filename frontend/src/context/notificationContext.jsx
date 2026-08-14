@@ -5,6 +5,8 @@ import notificationApi, { mapServerNotification } from '../services/notification
 
 const NotificationContext = createContext();
 
+const AUTH_CHANGED_EVENT = 'eform-auth-changed';
+
 const getCurrentEmail = () => localStorage.getItem('userEmail') || '';
 
 const storageKeyFor = (email) => (email ? `notifications_${email}` : 'notifications');
@@ -56,7 +58,11 @@ export const NotificationProvider = ({ children }) => {
         }
         try {
             const data = await notificationApi.list();
-            const mapped = Array.isArray(data) ? data.map(mapServerNotification) : [];
+            if (!Array.isArray(data)) {
+                console.error('Notification list did not return JSON; keeping current feed');
+                return;
+            }
+            const mapped = data.map(mapServerNotification);
             setNotifications(prev => {
                 const localOnly = prev.filter((item) => (
                     item.localOnly
@@ -97,9 +103,33 @@ export const NotificationProvider = ({ children }) => {
         hasLoadedRef.current = true;
         refreshFromServer();
 
+        const onAuthChanged = () => {
+            const email = getCurrentEmail();
+            const previousEmail = emailRef.current;
+            emailRef.current = email;
+            if (email !== previousEmail) {
+                const savedNotifications = localStorage.getItem(storageKeyFor(email));
+                if (savedNotifications) {
+                    try {
+                        const parsed = JSON.parse(savedNotifications);
+                        setNotifications(Array.isArray(parsed) ? parsed.filter(isActionNotification) : []);
+                    } catch (e) {
+                        setNotifications([]);
+                    }
+                } else {
+                    setNotifications([]);
+                }
+            }
+            refreshFromServer();
+        };
+        window.addEventListener(AUTH_CHANGED_EVENT, onAuthChanged);
+        window.addEventListener('storage', onAuthChanged);
+
         return () => {
             notificationService.setNotificationCallback(null);
             notificationService.setRefreshCallback(null);
+            window.removeEventListener(AUTH_CHANGED_EVENT, onAuthChanged);
+            window.removeEventListener('storage', onAuthChanged);
         };
     }, [addNotification, refreshFromServer]);
 

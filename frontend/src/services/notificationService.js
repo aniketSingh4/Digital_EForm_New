@@ -183,7 +183,7 @@ class NotificationService {
 
   async persistEvent(eventType, reportData = {}) {
     try {
-      await notificationApi.create({
+      const created = await notificationApi.create({
         type: eventType,
         reportType: reportData.reportType || reportData.reportName || 'Report',
         reportTitle: String(reportData.reportName || reportData.reportTitle || reportData.reportId || ''),
@@ -192,6 +192,9 @@ class NotificationService {
         location: reportData.location || reportData.site || reportData.siteName || reportData.siteAddress || '',
         equipment: reportData.equipment || reportData.equipmentName || '',
       });
+      if (!Array.isArray(created)) {
+        throw new Error('Notification persist returned a non-JSON response');
+      }
       if (this.refreshCallback) {
         await this.refreshCallback();
       }
