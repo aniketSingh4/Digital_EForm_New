@@ -2,6 +2,7 @@
 import axios from 'axios';
 import { getCached, setCached, invalidate, LIST_CACHE_TTL } from '../utils/cache';
 import { env } from '../config/env';
+import { handleUnauthorizedResponse } from '../utils/authSession';
 
 const LIST_CACHE_KEY = 'installation_reports_list';
 
@@ -24,14 +25,7 @@ api.interceptors.request.use((config) => {
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response && (error.response.status === 401 || error.response.status === 403)) {
-      localStorage.removeItem('token');
-      localStorage.removeItem('userName');
-      localStorage.removeItem('userRole');
-      if (!window.location.pathname.includes('/login')) {
-        window.location.href = '/login';
-      }
-    }
+    handleUnauthorizedResponse(error);
     return Promise.reject(error);
   }
 );

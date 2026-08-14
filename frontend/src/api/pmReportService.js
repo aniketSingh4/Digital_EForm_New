@@ -3,6 +3,7 @@ import axios from 'axios';
 import { invalidate } from '../utils/cache';
 import { env } from '../config/env';
 import { normalizePmStatus, normalizeSiteCondition, pickPmStatus, pickSiteCondition } from '../utils/pmSummary';
+import { handleUnauthorizedResponse } from '../utils/authSession';
 
 const apiClient = axios.create({
   baseURL: env.PM_API_URL,
@@ -27,16 +28,7 @@ apiClient.interceptors.request.use(
 apiClient.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response && (error.response.status === 401 || error.response.status === 403)) {
-      localStorage.removeItem('token');
-      localStorage.removeItem('userName');
-      localStorage.removeItem('userRole');
-      localStorage.removeItem('dashboard_data');
-      localStorage.removeItem('dashboard_timestamp');
-      if (!window.location.pathname.includes('/login')) {
-        window.location.href = '/login';
-      }
-    }
+    handleUnauthorizedResponse(error);
     return Promise.reject(error);
   }
 );

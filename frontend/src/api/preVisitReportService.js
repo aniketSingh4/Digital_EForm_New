@@ -2,6 +2,7 @@
 import axios from 'axios';
 import { getCached, setCached, invalidate, LIST_CACHE_TTL } from '../utils/cache';
 import { env } from '../config/env';
+import { handleUnauthorizedResponse } from '../utils/authSession';
 
 const LIST_CACHE_KEY = 'previsit_reports_list';
 
@@ -31,10 +32,8 @@ preVisitApiClient.interceptors.response.use(
   (response) => response,
   (error) => {
     console.error('[Pre-Visit] API Error:', error.response?.status, error.response?.data);
-    if (error.response?.status === 401 || error.response?.status === 403) {
-      localStorage.removeItem('token');
-      localStorage.removeItem('userRole');
-      window.location.href = '/login';
+    if (error.response?.status === 401) {
+      handleUnauthorizedResponse(error);
     }
     if (error.response?.status === 404) {
       console.warn('[Pre-Visit] Endpoint not found, returning empty array');

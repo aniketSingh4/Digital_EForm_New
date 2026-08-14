@@ -1,5 +1,6 @@
 import axios from "axios";
 import { env } from "../config/env";
+import { handleUnauthorizedResponse } from "../utils/authSession";
 
 const api = axios.create({
     baseURL: env.AUTH_API_URL,
@@ -47,27 +48,8 @@ api.interceptors.response.use(
         const failedUrl = error.config?.url || "";
         const isPublicAuth = isPublicAuthUrl(failedUrl);
 
-        if (
-            !isPublicAuth &&
-            error.response &&
-            (error.response.status === 401 || error.response.status === 403)
-        ) {
-            console.log("Token expired or invalid - logging out");
-            localStorage.removeItem("token");
-            localStorage.removeItem("userName");
-            localStorage.removeItem("userRole");
-            localStorage.removeItem("dashboard_data");
-            localStorage.removeItem("dashboard_timestamp");
-            localStorage.removeItem("notifications");
-            const email = localStorage.getItem("userEmail");
-            if (email) {
-                localStorage.removeItem(`notifications_${email}`);
-            }
-            localStorage.removeItem("userEmail");
-
-            if (!window.location.pathname.includes("/login")) {
-                window.location.href = "/login";
-            }
+        if (!isPublicAuth) {
+            handleUnauthorizedResponse(error);
         }
 
         return Promise.reject(error);

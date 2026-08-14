@@ -1,7 +1,4 @@
-/**
- * Role helpers for RBAC.
- * USER: create + view; ADMIN: create, view, update, delete
- */
+import { decodeJwtPayload } from "./authSession";
 
 export const getUserRole = () => {
   const stored = localStorage.getItem("userRole");
@@ -10,14 +7,8 @@ export const getUserRole = () => {
   const token = localStorage.getItem("token");
   if (!token) return null;
 
-  try {
-    const parts = token.split(".");
-    if (parts.length !== 3) return null;
-    const payload = JSON.parse(atob(parts[1]));
-    return payload.role ? String(payload.role).toUpperCase() : null;
-  } catch {
-    return null;
-  }
+  const payload = decodeJwtPayload(token);
+  return payload?.role ? String(payload.role).toUpperCase() : null;
 };
 
 export const isAdmin = () => getUserRole() === "ADMIN";

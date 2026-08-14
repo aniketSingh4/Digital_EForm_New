@@ -6,10 +6,11 @@ import { env } from "../config/env";
 export default function Login() {
     const navigate = useNavigate();
 
-    //clear auth session on page load (keep report caches until logout/401)
     useEffect(() => {
-        authService.clearAuthSession();
-    }, []);
+        if (authService.validateToken()) {
+            navigate("/dashboard", { replace: true });
+        }
+    }, [navigate]);
 
     const [formData, setFormData] = useState({
         username: "",
@@ -40,7 +41,6 @@ export default function Login() {
         setError("");
 
         try {
-            authService.clearAuthSession();
             const data = await authService.login({
                 email: formData.username.trim(),
                 password: formData.password
