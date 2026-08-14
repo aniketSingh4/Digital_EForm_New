@@ -43,6 +43,7 @@ import notificationService from '../services/notificationService';
 import { canModifyReports, getAuthHeaders } from '../utils/roles';
 import { getCached, setCached, invalidate, LIST_CACHE_TTL } from '../utils/cache';
 import { env } from '../config/env';
+import { pickPmStatus, pickSiteCondition, pmStatusLabel, siteConditionLabel } from '../utils/pmSummary';
 
 export default function ViewReports() {
     const navigate = useNavigate();
@@ -168,18 +169,11 @@ export default function ViewReports() {
             'PENDING': { icon: <FaClock />, label: 'Pending', class: 'status-pending' },
             'IN_PROGRESS': { icon: <FaSpinner />, label: 'In Progress', class: 'status-progress' }
         };
-        return statusMap[status] || { icon: <FaClock />, label: status || 'Unknown', class: 'status-unknown' };
+        return statusMap[status] || { icon: <FaClock />, label: pmStatusLabel(status) || status || 'Unknown', class: 'status-unknown' };
     };
 
     const getSiteConditionDisplay = (condition) => {
-        if (!condition || condition === "N/A" || condition === "PENDING") return "N/A";
-        const conditionMap = {
-            "SYSTEM_OPERATIONAL": "System Operational",
-            "SYSTEM_NOT_OPERATIONAL": "System Not Operational",
-            "SYSTEM_OPERATIONAL_WITH_OBSERVATION": "Operational with Observation",
-            "SYSTEM_OPERATIONAL_WITH_ISSUES": "Operational with Observation"
-        };
-        return conditionMap[condition] || String(condition).replace(/_/g, ' ');
+        return siteConditionLabel(condition) || "N/A";
     };
 
     // Transform summary data - FIXED
@@ -197,30 +191,14 @@ export default function ViewReports() {
             }
         }
 
-        let status = "PENDING";
-        let condition = "N/A";
-
-        const summaryStatus = backendData.summary?.preventiveMaintenanceStatus;
-        const summaryCondition = backendData.summary?.siteConditionAfterPm;
-        const rootStatus = backendData.preventiveMaintenanceStatus;
-        const rootCondition = backendData.siteConditionAfterPm;
-
-        if (summaryStatus) {
-            status = summaryStatus;
-        } else if (rootStatus) {
-            status = rootStatus;
-        }
-
-        const specificCondition = [summaryCondition, rootCondition].find((value) =>
-            value && String(value).toUpperCase().includes("WITH_")
-        );
-        if (specificCondition) {
-            condition = specificCondition;
-        } else if (summaryCondition) {
-            condition = summaryCondition;
-        } else if (rootCondition) {
-            condition = rootCondition;
-        }
+        const status = pickPmStatus(
+            backendData.summary?.preventiveMaintenanceStatus,
+            backendData.preventiveMaintenanceStatus
+        ) || "PENDING";
+        const condition = pickSiteCondition(
+            backendData.summary?.siteConditionAfterPm,
+            backendData.siteConditionAfterPm
+        ) || "N/A";
 
         // ✅ FIX: Get sensorId from the backend data
         // The API response shows "sensorId": "911" at the root level
@@ -267,30 +245,14 @@ export default function ViewReports() {
             }
         }
 
-        let status = "PENDING";
-        let condition = "N/A";
-
-        const summaryStatus = backendData.summary?.preventiveMaintenanceStatus;
-        const summaryCondition = backendData.summary?.siteConditionAfterPm;
-        const rootStatus = backendData.preventiveMaintenanceStatus;
-        const rootCondition = backendData.siteConditionAfterPm;
-
-        if (summaryStatus) {
-            status = summaryStatus;
-        } else if (rootStatus) {
-            status = rootStatus;
-        }
-
-        const specificCondition = [summaryCondition, rootCondition].find((value) =>
-            value && String(value).toUpperCase().includes("WITH_")
-        );
-        if (specificCondition) {
-            condition = specificCondition;
-        } else if (summaryCondition) {
-            condition = summaryCondition;
-        } else if (rootCondition) {
-            condition = rootCondition;
-        }
+        const status = pickPmStatus(
+            backendData.summary?.preventiveMaintenanceStatus,
+            backendData.preventiveMaintenanceStatus
+        ) || "PENDING";
+        const condition = pickSiteCondition(
+            backendData.summary?.siteConditionAfterPm,
+            backendData.siteConditionAfterPm
+        ) || "N/A";
 
         // ✅ FIX: Get sensorId from multiple possible locations
         let sensorId = "-";
@@ -684,16 +646,7 @@ export default function ViewReports() {
                 }
             };
 
-            const getSiteConditionDisplay = (condition) => {
-                if (!condition || condition === "N/A") return "N/A";
-                const conditionMap = {
-                    "SYSTEM_OPERATIONAL": "System Operational",
-                    "SYSTEM_NOT_OPERATIONAL": "System Not Operational",
-                    "SYSTEM_OPERATIONAL_WITH_OBSERVATION": "Operational with Observation",
-                    "SYSTEM_OPERATIONAL_WITH_ISSUES": "Operational with Observation"
-                };
-                return conditionMap[condition] || condition;
-            };
+            const getSiteConditionDisplay = (condition) => siteConditionLabel(condition) || "N/A";
 
             const signOff = fullDetails.signOff || {};
             const clientName = signOff.clientRepresentativeName || fullDetails.clientRepresentativeName || '-';

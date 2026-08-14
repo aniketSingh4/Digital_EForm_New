@@ -1,4 +1,5 @@
 import React from "react";
+import { PM_STATUS_OPTIONS, SITE_CONDITION_OPTIONS } from "../../utils/pmSummary";
 
 export default function Step4Summary({ formData, setFormData }) {
 
@@ -58,38 +59,18 @@ export default function Step4Summary({ formData, setFormData }) {
                     </label>
 
                     <div className="radio-group">
-                        <label className={summary.pmStatus === "SATISFACTORY" ? "selected" : ""}>
-                            <input
-                                type="radio"
-                                name="pmStatus"
-                                value="SATISFACTORY"
-                                checked={summary.pmStatus === "SATISFACTORY"}
-                                onChange={handleChange}
-                            />
-                            <span className="radio-label">Satisfactory</span>
-                        </label>
-
-                        <label className={summary.pmStatus === "REQUIRES_ATTENTION" ? "selected" : ""}>
-                            <input
-                                type="radio"
-                                name="pmStatus"
-                                value="REQUIRES_ATTENTION"
-                                checked={summary.pmStatus === "REQUIRES_ATTENTION"}
-                                onChange={handleChange}
-                            />
-                            <span className="radio-label">Requires Attention</span>
-                        </label>
-
-                        <label className={summary.pmStatus === "FOLLOW_UP_VISIT_REQUIRED" ? "selected" : ""}>
-                            <input
-                                type="radio"
-                                name="pmStatus"
-                                value="FOLLOW_UP_VISIT_REQUIRED"
-                                checked={summary.pmStatus === "FOLLOW_UP_VISIT_REQUIRED"}
-                                onChange={handleChange}
-                            />
-                            <span className="radio-label">Follow-up Visit Required</span>
-                        </label>
+                        {PM_STATUS_OPTIONS.map((option) => (
+                            <label key={option.value} className={summary.pmStatus === option.value ? "selected" : ""}>
+                                <input
+                                    type="radio"
+                                    name="pmStatus"
+                                    value={option.value}
+                                    checked={summary.pmStatus === option.value}
+                                    onChange={handleChange}
+                                />
+                                <span className="radio-label">{option.label}</span>
+                            </label>
+                        ))}
                     </div>
                 </div>
 
@@ -101,38 +82,18 @@ export default function Step4Summary({ formData, setFormData }) {
                     </label>
 
                     <div className="radio-group">
-                        <label className={summary.siteCondition === "SYSTEM_OPERATIONAL" ? "selected" : ""}>
-                            <input
-                                type="radio"
-                                name="siteCondition"
-                                value="SYSTEM_OPERATIONAL"
-                                checked={summary.siteCondition === "SYSTEM_OPERATIONAL"}
-                                onChange={handleChange}
-                            />
-                            <span className="radio-label">System Operational</span>
-                        </label>
-
-                        <label className={summary.siteCondition === "SYSTEM_OPERATIONAL_WITH_OBSERVATION" || summary.siteCondition === "SYSTEM_OPERATIONAL_WITH_ISSUES" ? "selected" : ""}>
-                            <input
-                                type="radio"
-                                name="siteCondition"
-                                value="SYSTEM_OPERATIONAL_WITH_OBSERVATION"
-                                checked={summary.siteCondition === "SYSTEM_OPERATIONAL_WITH_OBSERVATION" || summary.siteCondition === "SYSTEM_OPERATIONAL_WITH_ISSUES"}
-                                onChange={handleChange}
-                            />
-                            <span className="radio-label">Operational with Observation</span>
-                        </label>
-
-                        <label className={summary.siteCondition === "SYSTEM_NOT_OPERATIONAL" ? "selected" : ""}>
-                            <input
-                                type="radio"
-                                name="siteCondition"
-                                value="SYSTEM_NOT_OPERATIONAL"
-                                checked={summary.siteCondition === "SYSTEM_NOT_OPERATIONAL"}
-                                onChange={handleChange}
-                            />
-                            <span className="radio-label">System Not Operational</span>
-                        </label>
+                        {SITE_CONDITION_OPTIONS.map((option) => (
+                            <label key={option.value} className={summary.siteCondition === option.value ? "selected" : ""}>
+                                <input
+                                    type="radio"
+                                    name="siteCondition"
+                                    value={option.value}
+                                    checked={summary.siteCondition === option.value}
+                                    onChange={handleChange}
+                                />
+                                <span className="radio-label">{option.label}</span>
+                            </label>
+                        ))}
                     </div>
                 </div>
             </div>

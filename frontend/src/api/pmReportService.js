@@ -2,6 +2,7 @@
 import axios from 'axios';
 import { invalidate } from '../utils/cache';
 import { env } from '../config/env';
+import { normalizePmStatus, normalizeSiteCondition } from '../utils/pmSummary';
 
 const apiClient = axios.create({
   baseURL: env.PM_API_URL,
@@ -76,44 +77,13 @@ const mapInspectionStatus = (status) => {
 /**
  * Map PM Status to enum values expected by backend
  */
-export const mapPMStatus = (status) => {
-  if (!status) return "";
-
-  const statusStr = String(status).trim().toUpperCase();
-
-  const statusMap = {
-    "SATISFACTORY": "SATISFACTORY",
-    "FOLLOW_UP_VISIT_REQUIRED": "FOLLOW_UP_VISIT_REQUIRED",
-    "REQUIRES_ATTENTION": "REQUIRES_ATTENTION",
-    "FOLLOW UP VISIT REQUIRED": "FOLLOW_UP_VISIT_REQUIRED",
-    "FOLLOWUP VISIT REQUIRED": "FOLLOW_UP_VISIT_REQUIRED",
-    "REQUIRES ATTENTION": "REQUIRES_ATTENTION"
-  };
-
-  return statusMap[statusStr] || statusStr;
-};
+export const mapPMStatus = (status) => normalizePmStatus(status);
 
 /**
- * Map Site Condition to enum values expected by backend
+ * Map Site Condition to enum values expected by backend.
+ * Exact-key only. Never use includes("OPERATIONAL").
  */
-export const mapSiteCondition = (condition) => {
-  if (!condition) return "";
-
-  const conditionStr = String(condition).trim().toUpperCase().replace(/ /g, "_").replace(/-/g, "_");
-
-  // More specific values first. "OPERATIONAL" is a substring of every site-condition option.
-  if (conditionStr.includes("WITH_OBSERVATION") || conditionStr.includes("WITH_ISSUES")) {
-    return "SYSTEM_OPERATIONAL_WITH_OBSERVATION";
-  }
-  if (conditionStr.includes("NOT_OPERATIONAL") || conditionStr.includes("NON_OPERATIONAL")) {
-    return "SYSTEM_NOT_OPERATIONAL";
-  }
-  if (conditionStr === "SYSTEM_OPERATIONAL" || conditionStr === "OPERATIONAL") {
-    return "SYSTEM_OPERATIONAL";
-  }
-
-  return conditionStr;
-};
+export const mapSiteCondition = (condition) => normalizeSiteCondition(condition);
 
 /**
  * Map Checklist Category to enum values expected by backend

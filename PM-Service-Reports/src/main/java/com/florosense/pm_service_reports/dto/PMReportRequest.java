@@ -4,6 +4,7 @@ package com.florosense.pm_service_reports.dto;
 import java.time.LocalDate;
 import java.util.List;
 
+import com.fasterxml.jackson.annotation.JsonAlias;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
@@ -40,8 +41,10 @@ public class PMReportRequest {
 
     private String recommendation;
 
+    @JsonAlias({ "pmStatus" })
     private String preventiveMaintenanceStatus;
 
+    @JsonAlias({ "siteCondition" })
     private String siteConditionAfterPm;
 
     @Valid

@@ -64,11 +64,11 @@ public class PreventiveMaintenanceReport
     private String recommendation;
 
     @Enumerated(EnumType.STRING)
-    @Column(length = 64)
+    @Column(name = "preventive_maintenance_status", length = 64, columnDefinition = "varchar(64)")
     private PMStatus preventiveMaintenanceStatus;
 
-    @Enumerated(EnumType.STRING)
-    @Column(length = 64)
+    @Convert(converter = SiteConditionConverter.class)
+    @Column(name = "site_condition_after_pm", length = 64, columnDefinition = "varchar(64)")
     private SiteCondition siteConditionAfterPm;
 
     @CreationTimestamp

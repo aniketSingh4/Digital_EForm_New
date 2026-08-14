@@ -6,6 +6,7 @@ import { updatePMReportWithProgress } from "../../api/pmReportService";
 import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
 import notificationService from '../../services/notificationService';
+import { pmStatusLabel, siteConditionLabel } from "../../utils/pmSummary";
 
 export default function Step6Review({
     formData,
@@ -1180,7 +1181,7 @@ export default function Step6Review({
                             <tbody>
                                 <tr>
                                     <td style={{ padding: '10px 12px', border: '1px solid #e0e0e0', fontWeight: 'bold', width: '30%', background: '#f5f5f5' }}>Site Condition</td>
-                                    <td style={{ padding: '10px 12px', border: '1px solid #e0e0e0' }}>{summary.siteCondition || "N/A"}</td>
+                                    <td style={{ padding: '10px 12px', border: '1px solid #e0e0e0' }}>{siteConditionLabel(summary.siteCondition) || "N/A"}</td>
                                 </tr>
                                 <tr>
                                     <td style={{ padding: '10px 12px', border: '1px solid #e0e0e0', fontWeight: 'bold', width: '30%', background: '#f5f5f5' }}>PM Status</td>
@@ -1193,7 +1194,7 @@ export default function Step6Review({
                                             fontWeight: '600',
                                             fontSize: '13px'
                                         }}>
-                                            {summary.pmStatus || "N/A"}
+                                            {pmStatusLabel(summary.pmStatus) || "N/A"}
                                         </span>
                                     </td>
                                 </tr>

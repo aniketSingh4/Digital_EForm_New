@@ -1,6 +1,7 @@
 import { getAuthHeaders } from '../utils/roles';
 import { invalidate } from '../utils/cache';
 import { env } from '../config/env';
+import { normalizePmStatus, normalizeSiteCondition } from '../utils/pmSummary';
 
 const API_BASE_URL = env.PM_REPORTS_URL
 
@@ -52,8 +53,8 @@ export const formatReportForEdit = (data) => {
         summary: {
             observation: data.observation || '',
             recommendation: data.recommendation || '',
-            pmStatus: data.preventiveMaintenanceStatus || data.summary?.preventiveMaintenanceStatus || '',
-            siteCondition: data.siteConditionAfterPm || data.summary?.siteConditionAfterPm || ''
+            pmStatus: normalizePmStatus(data.preventiveMaintenanceStatus || data.summary?.preventiveMaintenanceStatus),
+            siteCondition: normalizeSiteCondition(data.siteConditionAfterPm || data.summary?.siteConditionAfterPm)
         },
         signoff: {
             clientRepresentativeName: data.signOff?.clientRepresentativeName || '',
@@ -134,8 +135,12 @@ export const prepareUpdatePayload = (formData, id) => {
         engineerName: reportData.engineerName || '',
         observation: formData.summary?.observation || '',
         recommendation: formData.summary?.recommendation || '',
-        preventiveMaintenanceStatus: formData.summary?.pmStatus || '',
-        siteConditionAfterPm: formData.summary?.siteCondition || '',
+        preventiveMaintenanceStatus: normalizePmStatus(formData.summary?.pmStatus),
+        siteConditionAfterPm: normalizeSiteCondition(formData.summary?.siteCondition),
+        summary: {
+            preventiveMaintenanceStatus: normalizePmStatus(formData.summary?.pmStatus),
+            siteConditionAfterPm: normalizeSiteCondition(formData.summary?.siteCondition)
+        },
         checklists: formData.checklists || [],
         signOff: {
             clientRepresentativeName: formData.signoff?.clientRepresentativeName || '',

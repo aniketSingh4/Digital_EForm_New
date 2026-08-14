@@ -143,14 +143,21 @@ public class PreventiveMaintenanceServiceImpl implements PreventiveMaintenanceSe
                 request.getSummary() != null ? request.getSummary().getSiteConditionAfterPm() : null,
                 request.getSiteConditionAfterPm());
 
+        System.out.println("📥 Incoming PM Status: " + pmStatusValue);
+        System.out.println("📥 Incoming Site Condition: " + siteConditionValue);
+
         PMStatus status = convertToPMStatus(pmStatusValue);
         if (status != null) {
             report.setPreventiveMaintenanceStatus(status);
+        } else {
+            System.out.println("⚠️ Unrecognized PM Status, leaving existing value: " + pmStatusValue);
         }
 
         SiteCondition condition = convertToSiteCondition(siteConditionValue);
         if (condition != null) {
             report.setSiteConditionAfterPm(condition);
+        } else {
+            System.out.println("⚠️ Unrecognized Site Condition, leaving existing value: " + siteConditionValue);
         }
     }
 
@@ -307,15 +314,11 @@ public class PreventiveMaintenanceServiceImpl implements PreventiveMaintenanceSe
     private PMReportResponse toResponse(PreventiveMaintenanceReport report) {
         PMReportResponse response = mapper.toDTO(report);
         response.setChecklists(toChecklistDtos(report.getChecklists()));
-        if (response.getSummary() == null) {
-            response.setSummary(mapper.createSummaryDTO(report));
-        }
-        if (response.getPreventiveMaintenanceStatus() == null && report.getPreventiveMaintenanceStatus() != null) {
-            response.setPreventiveMaintenanceStatus(report.getPreventiveMaintenanceStatus().name());
-        }
-        if (response.getSiteConditionAfterPm() == null && report.getSiteConditionAfterPm() != null) {
-            response.setSiteConditionAfterPm(report.getSiteConditionAfterPm().name());
-        }
+        response.setPreventiveMaintenanceStatus(
+                report.getPreventiveMaintenanceStatus() != null ? report.getPreventiveMaintenanceStatus().name() : null);
+        response.setSiteConditionAfterPm(
+                report.getSiteConditionAfterPm() != null ? report.getSiteConditionAfterPm().name() : null);
+        response.setSummary(mapper.createSummaryDTO(report));
         return response;
     }
 

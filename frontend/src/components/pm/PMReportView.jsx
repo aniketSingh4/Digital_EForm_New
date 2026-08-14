@@ -26,6 +26,7 @@ import {
 import notificationService from '../../services/notificationService';
 import { getAuthHeaders, canModifyReports } from '../../utils/roles';
 import { env } from '../../config/env';
+import { pickPmStatus, pickSiteCondition } from '../../utils/pmSummary';
 import './PMReportView.css';
 
 const API_BASE_URL = env.PM_REPORTS_URL;
@@ -91,7 +92,8 @@ const PMReportView = () => {
 
     // ✅ Helper function to get status badge
     const getStatusBadge = (status) => {
-        if (!status) {
+        const code = pickPmStatus(status) || pickSiteCondition(status);
+        if (!code) {
             return { label: 'N/A', className: 'status-pending', icon: <FaClock /> };
         }
 
@@ -99,17 +101,11 @@ const PMReportView = () => {
             'SATISFACTORY': { label: 'Satisfactory', className: 'status-success', icon: <FaCheckCircle /> },
             'FOLLOW_UP_VISIT_REQUIRED': { label: 'Follow-up Required', className: 'status-warning', icon: <FaClock /> },
             'REQUIRES_ATTENTION': { label: 'Requires Attention', className: 'status-danger', icon: <FaClock /> },
-            'COMPLETED': { label: 'Completed', className: 'status-success', icon: <FaCheckCircle /> },
-            'PENDING': { label: 'Pending', className: 'status-pending', icon: <FaClock /> },
             'SYSTEM_OPERATIONAL': { label: 'System Operational', className: 'status-success', icon: <FaCheckCircle /> },
             'SYSTEM_NOT_OPERATIONAL': { label: 'System Not Operational', className: 'status-danger', icon: <FaClock /> },
-            'SYSTEM_OPERATIONAL_WITH_OBSERVATION': { label: 'Operational with Observation', className: 'status-warning', icon: <FaClock /> },
-            'SYSTEM_OPERATIONAL_WITH_ISSUES': { label: 'Operational with Observation', className: 'status-warning', icon: <FaClock /> },
-            'NEEDS_MAINTENANCE': { label: 'Needs Maintenance', className: 'status-warning', icon: <FaClock /> },
-            'CRITICAL': { label: 'Critical', className: 'status-danger', icon: <FaClock /> },
-            'UNDER_OBSERVATION': { label: 'Under Observation', className: 'status-info', icon: <FaClock /> }
+            'SYSTEM_OPERATIONAL_WITH_OBSERVATION': { label: 'Operational with Observation', className: 'status-warning', icon: <FaClock /> }
         };
-        return statusMap[status] || { label: formatStatusText(status), className: 'status-pending', icon: <FaClock /> };
+        return statusMap[code] || { label: formatStatusText(code), className: 'status-pending', icon: <FaClock /> };
     };
 
     const handlePDF = async () => {
@@ -169,13 +165,14 @@ const PMReportView = () => {
     // ✅ Get summary data from report
     const summary = report.summary || {};
     const signOff = report.signOff || {};
-    const pmStatusValue = summary.preventiveMaintenanceStatus || report.preventiveMaintenanceStatus;
-    const siteConditionValue = [
+    const pmStatusValue = pickPmStatus(
+        summary.preventiveMaintenanceStatus,
+        report.preventiveMaintenanceStatus
+    );
+    const siteConditionValue = pickSiteCondition(
         summary.siteConditionAfterPm,
         report.siteConditionAfterPm
-    ].find((value) => value && String(value).includes('WITH_'))
-        || summary.siteConditionAfterPm
-        || report.siteConditionAfterPm;
+    );
 
     // ✅ Get status badges
     const pmStatus = getStatusBadge(pmStatusValue);

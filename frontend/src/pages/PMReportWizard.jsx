@@ -17,6 +17,7 @@ import { getAuthHeaders } from '../utils/roles';
 import { invalidate } from '../utils/cache';
 import { env } from '../config/env';
 import { mapPMStatus, mapSiteCondition } from '../api/pmReportService';
+import { normalizePmStatus, normalizeSiteCondition } from '../utils/pmSummary';
 
 export default function PMReportWizard() {
     const navigate = useNavigate();
@@ -155,8 +156,8 @@ export default function PMReportWizard() {
                 summary: {
                     observation: data.observation || '',
                     recommendation: data.recommendation || '',
-                    pmStatus: data.summary?.preventiveMaintenanceStatus || data.preventiveMaintenanceStatus || '',
-                    siteCondition: data.summary?.siteConditionAfterPm || data.siteConditionAfterPm || ''
+                    pmStatus: normalizePmStatus(data.summary?.preventiveMaintenanceStatus || data.preventiveMaintenanceStatus),
+                    siteCondition: normalizeSiteCondition(data.summary?.siteConditionAfterPm || data.siteConditionAfterPm)
                 },
                 signoff: {
                     clientRepresentativeName: data.signOff?.clientRepresentativeName || '',

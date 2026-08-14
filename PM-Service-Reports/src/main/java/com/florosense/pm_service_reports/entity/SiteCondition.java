@@ -1,12 +1,30 @@
 package com.florosense.pm_service_reports.entity;
 
+import java.util.Map;
+
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
 
+/**
+ * Site condition after PM. Mapping is exact-key only.
+ * Do not use contains("OPERATIONAL") — that string is inside every option.
+ */
 public enum SiteCondition {
     SYSTEM_OPERATIONAL("SYSTEM_OPERATIONAL"),
     SYSTEM_NOT_OPERATIONAL("SYSTEM_NOT_OPERATIONAL"),
     SYSTEM_OPERATIONAL_WITH_OBSERVATION("SYSTEM_OPERATIONAL_WITH_OBSERVATION");
+
+    private static final Map<String, SiteCondition> BY_KEY = Map.ofEntries(
+            Map.entry("SYSTEM_OPERATIONAL", SYSTEM_OPERATIONAL),
+            Map.entry("OPERATIONAL", SYSTEM_OPERATIONAL),
+            Map.entry("SYSTEM_NOT_OPERATIONAL", SYSTEM_NOT_OPERATIONAL),
+            Map.entry("NOT_OPERATIONAL", SYSTEM_NOT_OPERATIONAL),
+            Map.entry("NON_OPERATIONAL", SYSTEM_NOT_OPERATIONAL),
+            Map.entry("SYSTEM_NON_OPERATIONAL", SYSTEM_NOT_OPERATIONAL),
+            Map.entry("SYSTEM_OPERATIONAL_WITH_OBSERVATION", SYSTEM_OPERATIONAL_WITH_OBSERVATION),
+            Map.entry("SYSTEM_OPERATIONAL_WITH_ISSUES", SYSTEM_OPERATIONAL_WITH_OBSERVATION),
+            Map.entry("OPERATIONAL_WITH_OBSERVATION", SYSTEM_OPERATIONAL_WITH_OBSERVATION)
+    );
 
     private final String value;
 
@@ -24,31 +42,7 @@ public enum SiteCondition {
         if (value == null || value.isBlank()) {
             return null;
         }
-
-        String upperValue = value.trim().toUpperCase().replace(' ', '_').replace('-', '_');
-
-        // Longer / more specific values first. "OPERATIONAL" is a substring of every option.
-        if (upperValue.contains("WITH_OBSERVATION") || upperValue.contains("WITH_ISSUES")) {
-            return SYSTEM_OPERATIONAL_WITH_OBSERVATION;
-        }
-        if (upperValue.contains("NOT_OPERATIONAL") || upperValue.contains("NON_OPERATIONAL")) {
-            return SYSTEM_NOT_OPERATIONAL;
-        }
-
-        try {
-            return SiteCondition.valueOf(upperValue);
-        } catch (IllegalArgumentException e) {
-            for (SiteCondition condition : SiteCondition.values()) {
-                if (condition.value.equals(upperValue)) {
-                    return condition;
-                }
-            }
-        }
-
-        if ("SYSTEM_OPERATIONAL".equals(upperValue) || "OPERATIONAL".equals(upperValue)) {
-            return SYSTEM_OPERATIONAL;
-        }
-
-        return null;
+        String key = value.trim().toUpperCase().replace(' ', '_').replace('-', '_');
+        return BY_KEY.get(key);
     }
 }
