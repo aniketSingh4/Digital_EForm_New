@@ -3,6 +3,7 @@ package com.florosense.authentication_system.service;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import java.util.Set;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -20,6 +21,13 @@ public class NotificationServiceImpl implements NotificationService {
     private static final String AUDIENCE_USER = "USER";
     private static final String AUDIENCE_ADMIN = "ADMIN";
     private static final String TYPE_REPORT_CREATED = "REPORT_CREATED";
+    private static final Set<String> ADMIN_FANOUT_TYPES = Set.of(
+            "REPORT_CREATED",
+            "REPORT_UPDATED",
+            "REPORT_DELETED",
+            "REPORT_DOWNLOADED",
+            "BULK_DELETED"
+    );
 
     private final NotificationRepository notificationRepository;
     private final UserRepository userRepository;
@@ -48,7 +56,7 @@ public class NotificationServiceImpl implements NotificationService {
                 request,
                 buildSummary(type, actorName, request, true))));
 
-        if (TYPE_REPORT_CREATED.equals(type)) {
+        if (ADMIN_FANOUT_TYPES.contains(type)) {
             List<Users> admins = userRepository.findByRoleIgnoreCase(AUDIENCE_ADMIN);
             for (Users admin : admins) {
                 saved.add(notificationRepository.save(buildNotification(
@@ -150,14 +158,22 @@ public class NotificationServiceImpl implements NotificationService {
         String titlePart = title != null ? " \"" + title + "\"" : "";
         String about = aboutClause(request);
 
+        String who = forActor ? "You" : (actorName != null && !actorName.isBlank() ? actorName : "A user");
+
+        if ("BULK_DELETED".equals(type)) {
+            String count = firstNonBlank(request.getReportTitle(), request.getReportId(), "1");
+            boolean plural = !"1".equals(count);
+            return who + " deleted " + count + " " + reportType + (plural ? "s" : "") + ".";
+        }
+
         String action = switch (type) {
             case "REPORT_UPDATED" -> "updated";
             case "REPORT_DELETED" -> "deleted";
+            case "REPORT_DOWNLOADED" -> "downloaded";
             default -> "created";
         };
 
-        String who = forActor ? "You" : (actorName != null && !actorName.isBlank() ? actorName : "A user");
-        return who + " " + action + " a " + reportType + titlePart + about + ".";
+        return who + " " + action + " " + reportType + titlePart + about + ".";
     }
 
     private String aboutClause(NotificationRequest request) {
