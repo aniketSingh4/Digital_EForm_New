@@ -2,6 +2,7 @@ package com.florosense.pm_service_reports.dto;
 
 
 
+import com.fasterxml.jackson.annotation.JsonAlias;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 import jakarta.validation.constraints.NotNull;
@@ -10,9 +11,11 @@ import jakarta.validation.constraints.NotNull;
 public class PMSummaryDTO {
 
     @NotNull
+    @JsonAlias({ "pmStatus", "preventiveMaintenanceStatus" })
     private String preventiveMaintenanceStatus;
 
     @NotNull
+    @JsonAlias({ "siteCondition", "siteConditionAfterPm" })
     private String siteConditionAfterPm;
 
     public PMSummaryDTO() {

@@ -25,7 +25,15 @@ public enum SiteCondition {
             return null;
         }
 
-        String upperValue = value.trim().toUpperCase().replace(' ', '_');
+        String upperValue = value.trim().toUpperCase().replace(' ', '_').replace('-', '_');
+
+        // Longer / more specific values first. "OPERATIONAL" is a substring of every option.
+        if (upperValue.contains("WITH_OBSERVATION") || upperValue.contains("WITH_ISSUES")) {
+            return SYSTEM_OPERATIONAL_WITH_OBSERVATION;
+        }
+        if (upperValue.contains("NOT_OPERATIONAL") || upperValue.contains("NON_OPERATIONAL")) {
+            return SYSTEM_NOT_OPERATIONAL;
+        }
 
         try {
             return SiteCondition.valueOf(upperValue);
@@ -37,15 +45,6 @@ public enum SiteCondition {
             }
         }
 
-        if ("SYSTEM_NOT_OPERATIONAL".equals(upperValue) || "NOT_OPERATIONAL".equals(upperValue)) {
-            return SYSTEM_NOT_OPERATIONAL;
-        }
-        if ("SYSTEM_OPERATIONAL_WITH_OBSERVATION".equals(upperValue)
-                || "SYSTEM_OPERATIONAL_WITH_ISSUES".equals(upperValue)
-                || "WITH_ISSUES".equals(upperValue)
-                || "WITH_OBSERVATION".equals(upperValue)) {
-            return SYSTEM_OPERATIONAL_WITH_OBSERVATION;
-        }
         if ("SYSTEM_OPERATIONAL".equals(upperValue) || "OPERATIONAL".equals(upperValue)) {
             return SYSTEM_OPERATIONAL;
         }

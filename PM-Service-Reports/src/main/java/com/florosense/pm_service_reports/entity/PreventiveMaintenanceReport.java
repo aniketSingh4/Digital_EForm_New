@@ -64,9 +64,11 @@ public class PreventiveMaintenanceReport
     private String recommendation;
 
     @Enumerated(EnumType.STRING)
+    @Column(length = 64)
     private PMStatus preventiveMaintenanceStatus;
 
     @Enumerated(EnumType.STRING)
+    @Column(length = 64)
     private SiteCondition siteConditionAfterPm;
 
     @CreationTimestamp

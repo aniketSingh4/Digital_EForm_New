@@ -123,6 +123,37 @@ public class PreventiveMaintenanceServiceImpl implements PreventiveMaintenanceSe
         return SiteCondition.fromValue(condition);
     }
 
+    private String firstNonBlank(String... values) {
+        if (values == null) {
+            return null;
+        }
+        for (String value : values) {
+            if (value != null && !value.isBlank()) {
+                return value;
+            }
+        }
+        return null;
+    }
+
+    private void applySummaryFields(PreventiveMaintenanceReport report, PMReportRequest request) {
+        String pmStatusValue = firstNonBlank(
+                request.getSummary() != null ? request.getSummary().getPreventiveMaintenanceStatus() : null,
+                request.getPreventiveMaintenanceStatus());
+        String siteConditionValue = firstNonBlank(
+                request.getSummary() != null ? request.getSummary().getSiteConditionAfterPm() : null,
+                request.getSiteConditionAfterPm());
+
+        PMStatus status = convertToPMStatus(pmStatusValue);
+        if (status != null) {
+            report.setPreventiveMaintenanceStatus(status);
+        }
+
+        SiteCondition condition = convertToSiteCondition(siteConditionValue);
+        if (condition != null) {
+            report.setSiteConditionAfterPm(condition);
+        }
+    }
+
 
     @Override
     @CacheEvict(value = {"pmReportList", "pmReportCount", "pmReportById"}, allEntries = true)
@@ -172,29 +203,7 @@ public class PreventiveMaintenanceServiceImpl implements PreventiveMaintenanceSe
         report.setObservation(request.getObservation());
         report.setRecommendation(request.getRecommendation());
 
-        // ========================================
-        // ✅ SET PM STATUS AND SITE CONDITION FROM SUMMARY
-        // ========================================
-        if (request.getSummary() != null) {
-            if (request.getSummary().getPreventiveMaintenanceStatus() != null
-                    && !request.getSummary().getPreventiveMaintenanceStatus().isBlank()) {
-                PMStatus status = convertToPMStatus(request.getSummary().getPreventiveMaintenanceStatus());
-                if (status != null) {
-                    report.setPreventiveMaintenanceStatus(status);
-                    System.out.println("  ✅ Set PM Status: " + report.getPreventiveMaintenanceStatus());
-                }
-            }
-            if (request.getSummary().getSiteConditionAfterPm() != null
-                    && !request.getSummary().getSiteConditionAfterPm().isBlank()) {
-                SiteCondition condition = convertToSiteCondition(request.getSummary().getSiteConditionAfterPm());
-                if (condition != null) {
-                    report.setSiteConditionAfterPm(condition);
-                    System.out.println("  ✅ Set Site Condition: " + report.getSiteConditionAfterPm());
-                }
-            }
-        } else {
-            System.out.println("⚠️ No summary object in request");
-        }
+        applySummaryFields(report, request);
 
         // ========================================
         // CONVERT CHECKLISTS
@@ -398,23 +407,7 @@ public class PreventiveMaintenanceServiceImpl implements PreventiveMaintenanceSe
             report.setPmVisitDate(request.getPmVisitDate());
         }
         
-        // Update Status Enums if present
-        if (request.getSummary() != null) {
-            if (request.getSummary().getPreventiveMaintenanceStatus() != null
-                    && !request.getSummary().getPreventiveMaintenanceStatus().isBlank()) {
-                PMStatus status = convertToPMStatus(request.getSummary().getPreventiveMaintenanceStatus());
-                if (status != null) {
-                    report.setPreventiveMaintenanceStatus(status);
-                }
-            }
-            if (request.getSummary().getSiteConditionAfterPm() != null
-                    && !request.getSummary().getSiteConditionAfterPm().isBlank()) {
-                SiteCondition condition = convertToSiteCondition(request.getSummary().getSiteConditionAfterPm());
-                if (condition != null) {
-                    report.setSiteConditionAfterPm(condition);
-                }
-            }
-        }
+        applySummaryFields(report, request);
 
         // Update checklists
         if (request.getChecklists() != null) {
