@@ -109,42 +109,12 @@ public class PreventiveMaintenanceServiceImpl implements PreventiveMaintenanceSe
 
     // Helper method to convert String to PMStatus enum
     private PMStatus convertToPMStatus(String status) {
-        if (status == null) return PMStatus.FOLLOW_UP_VISIT_REQUIRED;
-        try {
-            String upper = status.toUpperCase().trim();
-            // Handle common variations
-            if (upper.contains("SATISFACTORY")) return PMStatus.SATISFACTORY;
-            if (upper.contains("FOLLOW_UP") || upper.contains("FOLLOWUP")) return PMStatus.FOLLOW_UP_VISIT_REQUIRED;
-            if (upper.contains("REQUIRES") || upper.contains("ATTENTION")) return PMStatus.REQUIRES_ATTENTION;
-            //if (upper.contains("COMPLETED")) return PMStatus.COMPLETED;
-            //if (upper.contains("IN_PROGRESS")) return PMStatus.IN_PROGRESS;
-            return PMStatus.valueOf(upper);
-        } catch (IllegalArgumentException e) {
-            System.out.println("⚠️ Invalid PM Status: " + status + ", defaulting to PENDING");
-            return PMStatus.FOLLOW_UP_VISIT_REQUIRED;
-        }
+        return PMStatus.fromValue(status);
     }
 
     // Helper method to convert String to SiteCondition enum
     private SiteCondition convertToSiteCondition(String condition) {
-        if (condition == null) return SiteCondition.SYSTEM_OPERATIONAL;
-        try {
-            String upper = condition.toUpperCase().trim().replace(" ", "_");
-            // Handle common variations
-            if (upper.contains("SYSTEM_OPERATIONAL") || upper.contains("OPERATIONAL") && !upper.contains("NOT")) {
-                return SiteCondition.SYSTEM_OPERATIONAL;
-            }
-            if (upper.contains("SYSTEM_NOT_OPERATIONAL") || upper.contains("NOT_OPERATIONAL")) {
-                return SiteCondition.SYSTEM_NOT_OPERATIONAL;
-            }
-            if (upper.contains("WITH_ISSUES") || upper.contains("OBSERVATION")) {
-                return SiteCondition.SYSTEM_OPERATIONAL_WITH_OBSERVATION;
-            }
-            return SiteCondition.valueOf(upper);
-        } catch (IllegalArgumentException e) {
-            System.out.println("⚠️ Invalid Site Condition: " + condition + ", defaulting to SYSTEM_OPERATIONAL");
-            return SiteCondition.SYSTEM_OPERATIONAL;
-        }
+        return SiteCondition.fromValue(condition);
     }
 
 
@@ -200,61 +170,20 @@ public class PreventiveMaintenanceServiceImpl implements PreventiveMaintenanceSe
         // ✅ SET PM STATUS AND SITE CONDITION FROM SUMMARY
         // ========================================
         if (request.getSummary() != null) {
-            // Convert String to PMStatus enum
-            if (request.getSummary().getPreventiveMaintenanceStatus() != null) {
-                try {
-                    String statusStr = request.getSummary().getPreventiveMaintenanceStatus().toUpperCase().trim();
-                    // Handle common variations
-                    if (statusStr.contains("SATISFACTORY")) {
-                        report.setPreventiveMaintenanceStatus(PMStatus.SATISFACTORY);
-                    } else if (statusStr.contains("FOLLOW_UP") || statusStr.contains("FOLLOWUP")) {
-                        report.setPreventiveMaintenanceStatus(PMStatus.FOLLOW_UP_VISIT_REQUIRED);
-                    } else if (statusStr.contains("REQUIRES") || statusStr.contains("ATTENTION")) {
-                        report.setPreventiveMaintenanceStatus(PMStatus.REQUIRES_ATTENTION);
-                    } else if (statusStr.contains("COMPLETED")) {
-                        report.setPreventiveMaintenanceStatus(PMStatus.SATISFACTORY);
-                    } else if (statusStr.contains("IN_PROGRESS")) {
-                        report.setPreventiveMaintenanceStatus(PMStatus.REQUIRES_ATTENTION);
-                    } else {
-                        report.setPreventiveMaintenanceStatus(PMStatus.valueOf(statusStr));
-                    }
-                    System.out.println("  ✅ Set PM Status: " + report.getPreventiveMaintenanceStatus());
-                } catch (IllegalArgumentException e) {
-                    System.out.println("  ⚠️ Invalid PM Status: " + request.getSummary().getPreventiveMaintenanceStatus() + ", defaulting to PENDING");
-                    report.setPreventiveMaintenanceStatus(PMStatus.FOLLOW_UP_VISIT_REQUIRED);
-                }
-            } else {
-                report.setPreventiveMaintenanceStatus(PMStatus.FOLLOW_UP_VISIT_REQUIRED);
-                System.out.println("  ⚠️ No PM Status provided, defaulting to PENDING");
+            if (request.getSummary().getPreventiveMaintenanceStatus() != null
+                    && !request.getSummary().getPreventiveMaintenanceStatus().isBlank()) {
+                report.setPreventiveMaintenanceStatus(
+                        convertToPMStatus(request.getSummary().getPreventiveMaintenanceStatus()));
+                System.out.println("  ✅ Set PM Status: " + report.getPreventiveMaintenanceStatus());
             }
-
-            // Convert String to SiteCondition enum
-            if (request.getSummary().getSiteConditionAfterPm() != null) {
-                try {
-                    String conditionStr = request.getSummary().getSiteConditionAfterPm().toUpperCase().trim().replace(" ", "_");
-                    // Handle common variations
-                    if (conditionStr.contains("SYSTEM_OPERATIONAL") || conditionStr.contains("OPERATIONAL")) {
-                        report.setSiteConditionAfterPm(SiteCondition.SYSTEM_OPERATIONAL);
-                    } else if (conditionStr.contains("SYSTEM_NOT_OPERATIONAL") || conditionStr.contains("NOT_OPERATIONAL")) {
-                        report.setSiteConditionAfterPm(SiteCondition.SYSTEM_NOT_OPERATIONAL);
-                    } else if (conditionStr.contains("WITH_ISSUES") || conditionStr.contains("OBSERVATION")) {
-                        report.setSiteConditionAfterPm(SiteCondition.SYSTEM_OPERATIONAL_WITH_OBSERVATION);
-                    } else {
-                        report.setSiteConditionAfterPm(SiteCondition.valueOf(conditionStr));
-                    }
-                    System.out.println("  ✅ Set Site Condition: " + report.getSiteConditionAfterPm());
-                } catch (IllegalArgumentException e) {
-                    System.out.println("  ⚠️ Invalid Site Condition: " + request.getSummary().getSiteConditionAfterPm() + ", defaulting to SYSTEM_OPERATIONAL");
-                    report.setSiteConditionAfterPm(SiteCondition.SYSTEM_OPERATIONAL);
-                }
-            } else {
-                report.setSiteConditionAfterPm(SiteCondition.SYSTEM_OPERATIONAL);
-                System.out.println("  ⚠️ No Site Condition provided, defaulting to SYSTEM_OPERATIONAL");
+            if (request.getSummary().getSiteConditionAfterPm() != null
+                    && !request.getSummary().getSiteConditionAfterPm().isBlank()) {
+                report.setSiteConditionAfterPm(
+                        convertToSiteCondition(request.getSummary().getSiteConditionAfterPm()));
+                System.out.println("  ✅ Set Site Condition: " + report.getSiteConditionAfterPm());
             }
         } else {
-            System.out.println("⚠️ No summary object in request, setting default values");
-            report.setPreventiveMaintenanceStatus(PMStatus.FOLLOW_UP_VISIT_REQUIRED);
-            report.setSiteConditionAfterPm(SiteCondition.SYSTEM_OPERATIONAL);
+            System.out.println("⚠️ No summary object in request");
         }
 
         // ========================================
