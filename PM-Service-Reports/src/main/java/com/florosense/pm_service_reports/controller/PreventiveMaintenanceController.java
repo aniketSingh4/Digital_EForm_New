@@ -99,6 +99,11 @@ public class PreventiveMaintenanceController
         }
     }
 
+    @GetMapping("/by-number/{serviceReportNo}")
+    public ResponseEntity<PMReportResponse> getReportByServiceReportNo(@PathVariable String serviceReportNo) {
+        return ResponseEntity.ok(service.getReportByServiceReportNo(serviceReportNo));
+    }
+
     @GetMapping("/{id}")
     public ResponseEntity<PMReportResponse> getReport(@PathVariable Long id) {
         try {

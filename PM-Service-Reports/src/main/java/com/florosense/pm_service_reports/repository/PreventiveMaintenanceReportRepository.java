@@ -7,11 +7,14 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface PreventiveMaintenanceReportRepository extends JpaRepository<PreventiveMaintenanceReport, Long> {
 
     boolean existsByServiceReportNo(String serviceReportNo);
+
+    Optional<PreventiveMaintenanceReport> findByServiceReportNo(String serviceReportNo);
 
     // Count reports for a specific year using YEAR function (HQL)
     @Query("SELECT COUNT(r) FROM PreventiveMaintenanceReport r WHERE YEAR(r.createdAt) = :year")

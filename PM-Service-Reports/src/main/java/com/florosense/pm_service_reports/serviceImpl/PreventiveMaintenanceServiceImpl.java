@@ -324,7 +324,12 @@ public class PreventiveMaintenanceServiceImpl implements PreventiveMaintenanceSe
         System.out.println("📊 Site Condition saved: " + savedReport.getSiteConditionAfterPm());
         System.out.println("========================================");
 
-        return mapper.toDTO(savedReport);
+        try {
+            return mapper.toDTO(savedReport);
+        } catch (Exception mappingError) {
+            System.err.println("Report saved but response mapping failed: " + mappingError.getMessage());
+            return toMinimalResponse(savedReport);
+        }
     }
 
     @Override
@@ -336,6 +341,31 @@ public class PreventiveMaintenanceServiceImpl implements PreventiveMaintenanceSe
                         new ResourceNotFoundException(
                                 "PM Report not found."));
         return mapper.toDTO(report);
+    }
+
+    @Override
+    public PMReportResponse getReportByServiceReportNo(String serviceReportNo) {
+        PreventiveMaintenanceReport report = repository.findByServiceReportNo(serviceReportNo)
+                .orElseThrow(() -> new ResourceNotFoundException("PM Report not found."));
+        try {
+            return mapper.toDTO(report);
+        } catch (Exception mappingError) {
+            return toMinimalResponse(report);
+        }
+    }
+
+    private PMReportResponse toMinimalResponse(PreventiveMaintenanceReport report) {
+        PMReportResponse response = new PMReportResponse();
+        response.setId(report.getId());
+        response.setServiceReportNo(report.getServiceReportNo());
+        response.setServiceVisitNo(report.getServiceVisitNo());
+        response.setClientName(report.getClientName());
+        response.setSiteName(report.getSiteName());
+        response.setSensorId(report.getSensorId());
+        response.setPmVisitDate(report.getPmVisitDate());
+        response.setEngineerName(report.getEngineerName());
+        response.setCreatedAt(report.getCreatedAt());
+        return response;
     }
 
  // In your Controller or Service, update the update method to skip validation for immutable fields
