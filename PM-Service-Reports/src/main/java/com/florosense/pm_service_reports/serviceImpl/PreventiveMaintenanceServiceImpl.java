@@ -49,10 +49,10 @@ public class PreventiveMaintenanceServiceImpl implements PreventiveMaintenanceSe
                 PMReportSummaryResponse summary = mapper.toSummaryDTO(report);
                 summary.setPreventiveMaintenanceStatus(
                         report.getPreventiveMaintenanceStatus() != null
-                                ? report.getPreventiveMaintenanceStatus().name() : null);
+                                ? report.getPreventiveMaintenanceStatus().getValue() : null);
                 summary.setSiteConditionAfterPm(
                         report.getSiteConditionAfterPm() != null
-                                ? report.getSiteConditionAfterPm().name() : null);
+                                ? report.getSiteConditionAfterPm().getValue() : null);
                 summaries.add(summary);
             } catch (Exception mappingError) {
                 System.err.println("Skipping summary mapping for report "
@@ -189,10 +189,10 @@ public class PreventiveMaintenanceServiceImpl implements PreventiveMaintenanceSe
         summary.setPmVisitDate(report.getPmVisitDate());
         summary.setSensorId(report.getSensorId());
         if (report.getPreventiveMaintenanceStatus() != null) {
-            summary.setPreventiveMaintenanceStatus(report.getPreventiveMaintenanceStatus().name());
+            summary.setPreventiveMaintenanceStatus(report.getPreventiveMaintenanceStatus().getValue());
         }
         if (report.getSiteConditionAfterPm() != null) {
-            summary.setSiteConditionAfterPm(report.getSiteConditionAfterPm().name());
+            summary.setSiteConditionAfterPm(report.getSiteConditionAfterPm().getValue());
         }
         return summary;
     }
@@ -351,9 +351,9 @@ public class PreventiveMaintenanceServiceImpl implements PreventiveMaintenanceSe
         PMReportResponse response = mapper.toDTO(report);
         response.setChecklists(toChecklistDtos(report.getChecklists()));
         response.setPreventiveMaintenanceStatus(
-                report.getPreventiveMaintenanceStatus() != null ? report.getPreventiveMaintenanceStatus().name() : null);
+                report.getPreventiveMaintenanceStatus() != null ? report.getPreventiveMaintenanceStatus().getValue() : null);
         response.setSiteConditionAfterPm(
-                report.getSiteConditionAfterPm() != null ? report.getSiteConditionAfterPm().name() : null);
+                report.getSiteConditionAfterPm() != null ? report.getSiteConditionAfterPm().getValue() : null);
         response.setSummary(mapper.createSummaryDTO(report));
         return response;
     }
@@ -388,10 +388,10 @@ public class PreventiveMaintenanceServiceImpl implements PreventiveMaintenanceSe
         response.setRecommendation(report.getRecommendation());
         response.setCreatedAt(report.getCreatedAt());
         if (report.getPreventiveMaintenanceStatus() != null) {
-            response.setPreventiveMaintenanceStatus(report.getPreventiveMaintenanceStatus().name());
+            response.setPreventiveMaintenanceStatus(report.getPreventiveMaintenanceStatus().getValue());
         }
         if (report.getSiteConditionAfterPm() != null) {
-            response.setSiteConditionAfterPm(report.getSiteConditionAfterPm().name());
+            response.setSiteConditionAfterPm(report.getSiteConditionAfterPm().getValue());
         }
         response.setSummary(mapper.createSummaryDTO(report));
         response.setChecklists(toChecklistDtos(report.getChecklists()));

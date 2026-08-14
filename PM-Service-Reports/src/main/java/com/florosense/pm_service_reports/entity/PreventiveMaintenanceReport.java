@@ -6,10 +6,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.hibernate.annotations.CreationTimestamp;
-import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.annotations.UpdateTimestamp;
 import org.hibernate.validator.constraints.Length;
-import org.hibernate.type.SqlTypes;
 
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
@@ -66,12 +64,10 @@ public class PreventiveMaintenanceReport
     private String recommendation;
 
     @Convert(converter = PMStatusConverter.class)
-    @JdbcTypeCode(SqlTypes.VARCHAR)
     @Column(name = "preventive_maintenance_status", length = 64, columnDefinition = "varchar(64)")
     private PMStatus preventiveMaintenanceStatus;
 
     @Convert(converter = SiteConditionConverter.class)
-    @JdbcTypeCode(SqlTypes.VARCHAR)
     @Column(name = "site_condition_after_pm", length = 64, columnDefinition = "varchar(64)")
     private SiteCondition siteConditionAfterPm;
 

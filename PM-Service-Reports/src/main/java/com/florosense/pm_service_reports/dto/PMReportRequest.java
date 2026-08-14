@@ -7,6 +7,7 @@ import java.util.List;
 import com.fasterxml.jackson.annotation.JsonAlias;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
@@ -41,10 +42,12 @@ public class PMReportRequest {
 
     private String recommendation;
 
+    @JsonProperty("preventiveMaintenanceStatus")
     @JsonAlias({ "pmStatus" })
     private String preventiveMaintenanceStatus;
 
-    @JsonAlias({ "siteCondition" })
+    @JsonProperty("siteConditionAfterPm")
+    @JsonAlias({ "siteCondition", "siteConditionAfterPM" })
     private String siteConditionAfterPm;
 
     @Valid

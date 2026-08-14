@@ -532,11 +532,15 @@ const PreVisitReportForm = ({ onSuccess, onCancel, initialData, isEdit = false }
   return (
     <div className="pre-visit-form-container">
       <div className="form-header">
-        <button className="btn-back" onClick={handleBack}>
-          ← Back
-        </button>
-        <h2>{isEditMode ? 'Edit Pre-Visit Report' : 'New Pre-Visit Report'}</h2>
-        <p>{isEditMode ? 'Update the details of the pre-visit report.' : 'Fill in the details below to create a new pre-visit report.'}</p>
+        <div className="header-left">
+          <button type="button" className="btn-back" onClick={handleBack}>
+            ← Back
+          </button>
+          <div className="header-title">
+            <h2>{isEditMode ? 'Edit Pre-Visit Report' : 'New Pre-Visit Report'}</h2>
+            <p>{isEditMode ? 'Update the details of the pre-visit report.' : 'Fill in the details below to create a new pre-visit report.'}</p>
+          </div>
+        </div>
         {isEditMode && (
           <div className="edit-mode-banner">
             ✏️ Editing Mode - Report ID: FESPL_PVR_{id}
@@ -909,14 +913,34 @@ const PreVisitReportForm = ({ onSuccess, onCancel, initialData, isEdit = false }
           text-decoration: underline;
         }
         .form-header {
+          display: flex;
+          flex-direction: column;
+          align-items: flex-start;
+          justify-content: flex-start;
+          text-align: left;
           margin-bottom: 24px;
+        }
+        .form-header .header-left {
+          display: flex;
+          flex-direction: column;
+          align-items: flex-start;
+          text-align: left;
+          gap: 4px;
+        }
+        .form-header .header-title {
+          display: flex;
+          flex-direction: column;
+          align-items: flex-start;
+          text-align: left;
         }
         .form-header h2 {
           margin: 8px 0 4px 0;
+          text-align: left;
         }
         .form-header p {
           margin: 0;
           color: #6b7280;
+          text-align: left;
         }
         .loading-container {
           display: flex;

@@ -53,8 +53,8 @@ export const formatReportForEdit = (data) => {
         summary: {
             observation: data.observation || '',
             recommendation: data.recommendation || '',
-            pmStatus: normalizePmStatus(data.preventiveMaintenanceStatus || data.summary?.preventiveMaintenanceStatus),
-            siteCondition: normalizeSiteCondition(data.siteConditionAfterPm || data.summary?.siteConditionAfterPm)
+            pmStatus: normalizePmStatus(data.preventiveMaintenanceStatus || data.summary?.preventiveMaintenanceStatus || data.pmStatus),
+            siteCondition: normalizeSiteCondition(data.siteConditionAfterPm || data.siteConditionAfterPM || data.summary?.siteConditionAfterPm || data.summary?.siteCondition)
         },
         signoff: {
             clientRepresentativeName: data.signOff?.clientRepresentativeName || '',

@@ -1,7 +1,7 @@
 /**
  * Canonical PM Status / Site Condition codes.
- * Radios already store these values. Mapping is exact-key only.
- * Never use substring checks: "OPERATIONAL" is inside every site-condition code.
+ * Radios already store these values. Mapping is exact-key only first.
+ * Never use a bare "OPERATIONAL" substring: it is inside every site-condition code.
  */
 
 const SITE_CONDITION_BY_KEY = {
@@ -47,7 +47,9 @@ const scalarValue = (value) => {
     return scalarValue(
       value.value
       || value.name
+      || value.code
       || value.siteConditionAfterPm
+      || value.siteConditionAfterPM
       || value.preventiveMaintenanceStatus
       || value.siteCondition
       || value.pmStatus
@@ -60,6 +62,27 @@ const toKey = (value) => String(scalarValue(value) || "")
   .trim()
   .toUpperCase()
   .replace(/[\s-]+/g, "_");
+
+const recoverSiteCondition = (key) => {
+  if (!key) return "";
+  if (SITE_CONDITION_BY_KEY[key]) return SITE_CONDITION_BY_KEY[key];
+  if (key.includes("WITH_OBS") || key.includes("WITH_ISSUE")) {
+    return "SYSTEM_OPERATIONAL_WITH_OBSERVATION";
+  }
+  if (key.includes("NOT_OPER") || key.includes("NON_OPER")) {
+    return "SYSTEM_NOT_OPERATIONAL";
+  }
+  return "";
+};
+
+const recoverPmStatus = (key) => {
+  if (!key) return "";
+  if (PM_STATUS_BY_KEY[key]) return PM_STATUS_BY_KEY[key];
+  if (key.startsWith("FOLLOW")) return "FOLLOW_UP_VISIT_REQUIRED";
+  if (key.startsWith("REQUIR")) return "REQUIRES_ATTENTION";
+  if (key.startsWith("SATIS")) return "SATISFACTORY";
+  return "";
+};
 
 export const SITE_CONDITION_OPTIONS = [
   { value: "SYSTEM_OPERATIONAL", label: SITE_CONDITION_LABELS.SYSTEM_OPERATIONAL },
@@ -75,7 +98,7 @@ export const PM_STATUS_OPTIONS = [
 
 export const normalizeSiteCondition = (value) => {
   if (value == null || value === "") return "";
-  return SITE_CONDITION_BY_KEY[toKey(value)] || "";
+  return recoverSiteCondition(toKey(value));
 };
 
 export const siteConditionLabel = (value) => {
@@ -85,7 +108,7 @@ export const siteConditionLabel = (value) => {
 
 export const normalizePmStatus = (value) => {
   if (value == null || value === "") return "";
-  return PM_STATUS_BY_KEY[toKey(value)] || "";
+  return recoverPmStatus(toKey(value));
 };
 
 export const pmStatusLabel = (value) => {
@@ -107,4 +130,26 @@ export const pickPmStatus = (...values) => {
     if (code) return code;
   }
   return "";
+};
+
+export const extractPmSummary = (report = {}) => {
+  const summary = report.summary || {};
+  return {
+    pmStatus: pickPmStatus(
+      summary.preventiveMaintenanceStatus,
+      summary.pmStatus,
+      report.preventiveMaintenanceStatus,
+      report.pmStatus,
+      report.preventive_maintenance_status
+    ),
+    siteCondition: pickSiteCondition(
+      summary.siteConditionAfterPm,
+      summary.siteConditionAfterPM,
+      summary.siteCondition,
+      report.siteConditionAfterPm,
+      report.siteConditionAfterPM,
+      report.siteCondition,
+      report.site_condition_after_pm
+    )
+  };
 };

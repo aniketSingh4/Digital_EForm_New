@@ -37,6 +37,19 @@ public enum PMStatus {
             return null;
         }
         String key = value.trim().toUpperCase().replace(' ', '_').replace('-', '_');
-        return BY_KEY.get(key);
+        PMStatus exact = BY_KEY.get(key);
+        if (exact != null) {
+            return exact;
+        }
+        if (key.startsWith("FOLLOW")) {
+            return FOLLOW_UP_VISIT_REQUIRED;
+        }
+        if (key.startsWith("REQUIR")) {
+            return REQUIRES_ATTENTION;
+        }
+        if (key.startsWith("SATIS")) {
+            return SATISFACTORY;
+        }
+        return null;
     }
 }

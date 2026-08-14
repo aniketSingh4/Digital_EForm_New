@@ -8,7 +8,7 @@ public class PMStatusConverter implements AttributeConverter<PMStatus, String> {
 
     @Override
     public String convertToDatabaseColumn(PMStatus attribute) {
-        return attribute == null ? null : attribute.name();
+        return attribute == null ? null : attribute.getValue();
     }
 
     @Override

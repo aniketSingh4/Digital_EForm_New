@@ -46,6 +46,19 @@ public enum SiteCondition {
             return null;
         }
         String key = value.trim().toUpperCase().replace(' ', '_').replace('-', '_');
-        return BY_KEY.get(key);
+        SiteCondition exact = BY_KEY.get(key);
+        if (exact != null) {
+            return exact;
+        }
+        if (key.contains("WITH_OBS") || key.contains("WITH_ISSUE")) {
+            return SYSTEM_OPERATIONAL_WITH_OBSERVATION;
+        }
+        if (key.contains("NOT_OPER") || key.contains("NON_OPER")) {
+            return SYSTEM_NOT_OPERATIONAL;
+        }
+        if ("SYSTEM_OPERATIONAL".equals(key) || "OPERATIONAL".equals(key)) {
+            return SYSTEM_OPERATIONAL;
+        }
+        return null;
     }
 }

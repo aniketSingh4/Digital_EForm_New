@@ -43,7 +43,7 @@ import notificationService from '../services/notificationService';
 import { canModifyReports, getAuthHeaders } from '../utils/roles';
 import { getCached, setCached, invalidate, LIST_CACHE_TTL } from '../utils/cache';
 import { env } from '../config/env';
-import { pickPmStatus, pickSiteCondition, pmStatusLabel, siteConditionLabel } from '../utils/pmSummary';
+import { pickPmStatus, pickSiteCondition, pmStatusLabel, siteConditionLabel, extractPmSummary } from '../utils/pmSummary';
 
 export default function ViewReports() {
     const navigate = useNavigate();
@@ -161,6 +161,7 @@ export default function ViewReports() {
 
     // Helper function for status badge
     const getStatusBadge = (status) => {
+        const code = pickPmStatus(status);
         const statusMap = {
             'SATISFACTORY': { icon: <FaCheckCircle />, label: 'Satisfactory', class: 'status-satisfactory' },
             'FOLLOW_UP_VISIT_REQUIRED': { icon: <FaClock />, label: 'Follow-up Required', class: 'status-followup' },
@@ -169,7 +170,10 @@ export default function ViewReports() {
             'PENDING': { icon: <FaClock />, label: 'Pending', class: 'status-pending' },
             'IN_PROGRESS': { icon: <FaSpinner />, label: 'In Progress', class: 'status-progress' }
         };
-        return statusMap[status] || { icon: <FaClock />, label: pmStatusLabel(status) || status || 'Unknown', class: 'status-unknown' };
+        if (code && statusMap[code]) {
+            return statusMap[code];
+        }
+        return { icon: <FaClock />, label: pmStatusLabel(status) || status || 'Unknown', class: 'status-unknown' };
     };
 
     const getSiteConditionDisplay = (condition) => {
@@ -191,19 +195,9 @@ export default function ViewReports() {
             }
         }
 
-        const status = pickPmStatus(
-            backendData.summary?.preventiveMaintenanceStatus,
-            backendData.preventiveMaintenanceStatus,
-            backendData.pmStatus,
-            backendData.preventive_maintenance_status
-        );
-        const condition = pickSiteCondition(
-            backendData.summary?.siteConditionAfterPm,
-            backendData.summary?.siteCondition,
-            backendData.siteConditionAfterPm,
-            backendData.siteCondition,
-            backendData.site_condition_after_pm
-        );
+        const extracted = extractPmSummary(backendData);
+        const status = extracted.pmStatus;
+        const condition = extracted.siteCondition;
 
         // ✅ FIX: Get sensorId from the backend data
         // The API response shows "sensorId": "911" at the root level
@@ -250,19 +244,9 @@ export default function ViewReports() {
             }
         }
 
-        const status = pickPmStatus(
-            backendData.summary?.preventiveMaintenanceStatus,
-            backendData.preventiveMaintenanceStatus,
-            backendData.pmStatus,
-            backendData.preventive_maintenance_status
-        );
-        const condition = pickSiteCondition(
-            backendData.summary?.siteConditionAfterPm,
-            backendData.summary?.siteCondition,
-            backendData.siteConditionAfterPm,
-            backendData.siteCondition,
-            backendData.site_condition_after_pm
-        );
+        const extracted = extractPmSummary(backendData);
+        const status = extracted.pmStatus;
+        const condition = extracted.siteCondition;
 
         // ✅ FIX: Get sensorId from multiple possible locations
         let sensorId = "-";
@@ -335,7 +319,7 @@ export default function ViewReports() {
         setError(null);
         setUsingMockData(false);
 
-        const cacheKey = 'pm_reports_list';
+        const cacheKey = 'pm_reports_list_v2';
 
         try {
             if (!forceRefresh) {

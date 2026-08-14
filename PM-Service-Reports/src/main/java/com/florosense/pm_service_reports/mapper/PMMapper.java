@@ -64,9 +64,9 @@ public interface PMMapper
         }
         com.florosense.pm_service_reports.dto.PMSummaryDTO summary = new com.florosense.pm_service_reports.dto.PMSummaryDTO();
         summary.setPreventiveMaintenanceStatus(entity.getPreventiveMaintenanceStatus() != null ? 
-            entity.getPreventiveMaintenanceStatus().name() : null);
+            entity.getPreventiveMaintenanceStatus().getValue() : null);
         summary.setSiteConditionAfterPm(entity.getSiteConditionAfterPm() != null ? 
-            entity.getSiteConditionAfterPm().name() : null);
+            entity.getSiteConditionAfterPm().getValue() : null);
         return summary;
     }
 
@@ -80,10 +80,10 @@ public interface PMMapper
 
     // Enum to String conversion helpers
     default String mapPMStatusToString(PMStatus status) {
-        return status != null ? status.name() : null;
+        return status != null ? status.getValue() : null;
     }
 
     default String mapSiteConditionToString(SiteCondition condition) {
-        return condition != null ? condition.name() : null;
+        return condition != null ? condition.getValue() : null;
     }
 }

@@ -5,6 +5,9 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
+import com.fasterxml.jackson.annotation.JsonAlias;
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 public class PMReportResponse {
 
     private Long id;
@@ -27,8 +30,12 @@ public class PMReportResponse {
 
     private String recommendation;
 
+    @JsonProperty("preventiveMaintenanceStatus")
+    @JsonAlias({ "pmStatus" })
     private String preventiveMaintenanceStatus;
 
+    @JsonProperty("siteConditionAfterPm")
+    @JsonAlias({ "siteCondition", "siteConditionAfterPM" })
     private String siteConditionAfterPm;
 
     private PMSummaryDTO summary;

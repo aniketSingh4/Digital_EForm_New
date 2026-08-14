@@ -53,21 +53,51 @@ public class PmReportsSchemaGuard implements ApplicationRunner {
                 || meta.characterMaximumLength == null
                 || meta.characterMaximumLength < TARGET_LENGTH;
 
-        if (!needsWiden) {
+        if (needsWiden) {
+            String sql = "ALTER TABLE " + TABLE + " ALTER COLUMN " + column
+                    + " TYPE varchar(" + TARGET_LENGTH + ") USING " + column + "::text";
+            try (Statement statement = connection.createStatement()) {
+                statement.execute(sql);
+            }
+            log.info("Widened {}.{} from {}({}) / {} to varchar({})",
+                    TABLE, column, meta.dataType, meta.characterMaximumLength, meta.udtName, TARGET_LENGTH);
+        } else {
             log.info("Column {}.{} already {}({})", TABLE, column, meta.dataType, meta.characterMaximumLength);
+        }
+
+        migrateOrdinals(connection, column, ordinalNames);
+        migrateTruncatedValues(connection, column);
+    }
+
+    private void migrateTruncatedValues(Connection connection, String column) throws Exception {
+        String[][] repairs;
+        if ("preventive_maintenance_status".equals(column)) {
+            repairs = new String[][] {
+                    { "FOLLOW_UP_VISIT_REQUIRED", "FOLLOW%" },
+                    { "REQUIRES_ATTENTION", "REQUIR%" }
+            };
+        } else if ("site_condition_after_pm".equals(column)) {
+            repairs = new String[][] {
+                    { "SYSTEM_OPERATIONAL_WITH_OBSERVATION", "SYSTEM_OPERATIONAL_WITH%" },
+                    { "SYSTEM_NOT_OPERATIONAL", "SYSTEM_NOT%" },
+                    { "SYSTEM_NOT_OPERATIONAL", "%NON_OPER%" }
+            };
+        } else {
             return;
         }
 
-        String sql = "ALTER TABLE " + TABLE + " ALTER COLUMN " + column
-                + " TYPE varchar(" + TARGET_LENGTH + ") USING " + column + "::text";
-        try (Statement statement = connection.createStatement()) {
-            statement.execute(sql);
-        }
-        log.info("Widened {}.{} from {}({}) / {} to varchar({})",
-                TABLE, column, meta.dataType, meta.characterMaximumLength, meta.udtName, TARGET_LENGTH);
-
-        if (integerType) {
-            migrateOrdinals(connection, column, ordinalNames);
+        for (String[] repair : repairs) {
+            String sql = "UPDATE " + TABLE + " SET " + column + " = ? WHERE " + column + " LIKE ? AND " + column + " <> ?";
+            try (PreparedStatement ps = connection.prepareStatement(sql)) {
+                ps.setString(1, repair[0]);
+                ps.setString(2, repair[1]);
+                ps.setString(3, repair[0]);
+                int updated = ps.executeUpdate();
+                if (updated > 0) {
+                    log.info("Repaired truncated {}.{} values matching {} -> {} ({} rows)",
+                            TABLE, column, repair[1], repair[0], updated);
+                }
+            }
         }
     }
 

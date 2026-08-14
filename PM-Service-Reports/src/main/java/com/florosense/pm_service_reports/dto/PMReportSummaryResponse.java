@@ -2,6 +2,9 @@ package com.florosense.pm_service_reports.dto;
 
 import java.time.LocalDate;
 
+import com.fasterxml.jackson.annotation.JsonAlias;
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 public class PMReportSummaryResponse 
 {
 
@@ -20,8 +23,12 @@ public class PMReportSummaryResponse
     private String sensorId;
 
 
+	@JsonProperty("preventiveMaintenanceStatus")
+	@JsonAlias({ "pmStatus" })
 	private String preventiveMaintenanceStatus;
 
+	@JsonProperty("siteConditionAfterPm")
+	@JsonAlias({ "siteCondition", "siteConditionAfterPM" })
 	private String siteConditionAfterPm;
 	
 	public String getSensorId() {

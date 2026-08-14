@@ -8,7 +8,7 @@ public class SiteConditionConverter implements AttributeConverter<SiteCondition,
 
     @Override
     public String convertToDatabaseColumn(SiteCondition attribute) {
-        return attribute == null ? null : attribute.name();
+        return attribute == null ? null : attribute.getValue();
     }
 
     @Override

@@ -26,7 +26,7 @@ import {
 import notificationService from '../../services/notificationService';
 import { getAuthHeaders, canModifyReports } from '../../utils/roles';
 import { env } from '../../config/env';
-import { pickPmStatus, pickSiteCondition } from '../../utils/pmSummary';
+import { pickPmStatus, pickSiteCondition, extractPmSummary } from '../../utils/pmSummary';
 import './PMReportView.css';
 
 const API_BASE_URL = env.PM_REPORTS_URL;
@@ -165,14 +165,17 @@ const PMReportView = () => {
     // ✅ Get summary data from report
     const summary = report.summary || {};
     const signOff = report.signOff || {};
-    const pmStatusValue = pickPmStatus(
+    const extracted = extractPmSummary(report);
+    const pmStatusValue = extracted.pmStatus || pickPmStatus(
         summary.preventiveMaintenanceStatus,
         report.preventiveMaintenanceStatus
     );
-    const siteConditionValue = pickSiteCondition(
+    const siteConditionValue = extracted.siteCondition || pickSiteCondition(
         summary.siteConditionAfterPm,
+        summary.siteConditionAfterPM,
         summary.siteCondition,
         report.siteConditionAfterPm,
+        report.siteConditionAfterPM,
         report.siteCondition
     );
 
