@@ -200,22 +200,26 @@ export default function ViewReports() {
         let status = "PENDING";
         let condition = "N/A";
 
-        // Check if summary exists and has the status fields
-        if (backendData.summary) {
-            if (backendData.summary.preventiveMaintenanceStatus) {
-                status = backendData.summary.preventiveMaintenanceStatus;
-            }
-            if (backendData.summary.siteConditionAfterPm) {
-                condition = backendData.summary.siteConditionAfterPm;
-            }
+        const summaryStatus = backendData.summary?.preventiveMaintenanceStatus;
+        const summaryCondition = backendData.summary?.siteConditionAfterPm;
+        const rootStatus = backendData.preventiveMaintenanceStatus;
+        const rootCondition = backendData.siteConditionAfterPm;
+
+        if (summaryStatus) {
+            status = summaryStatus;
+        } else if (rootStatus) {
+            status = rootStatus;
         }
 
-        // Also check root level as fallback (if they exist there)
-        if (backendData.preventiveMaintenanceStatus) {
-            status = backendData.preventiveMaintenanceStatus;
-        }
-        if (backendData.siteConditionAfterPm) {
-            condition = backendData.siteConditionAfterPm;
+        const specificCondition = [summaryCondition, rootCondition].find((value) =>
+            value && String(value).toUpperCase().includes("WITH_")
+        );
+        if (specificCondition) {
+            condition = specificCondition;
+        } else if (summaryCondition) {
+            condition = summaryCondition;
+        } else if (rootCondition) {
+            condition = rootCondition;
         }
 
         // ✅ FIX: Get sensorId from the backend data
@@ -266,20 +270,26 @@ export default function ViewReports() {
         let status = "PENDING";
         let condition = "N/A";
 
-        if (backendData.summary) {
-            if (backendData.summary.preventiveMaintenanceStatus) {
-                status = backendData.summary.preventiveMaintenanceStatus;
-            }
-            if (backendData.summary.siteConditionAfterPm) {
-                condition = backendData.summary.siteConditionAfterPm;
-            }
+        const summaryStatus = backendData.summary?.preventiveMaintenanceStatus;
+        const summaryCondition = backendData.summary?.siteConditionAfterPm;
+        const rootStatus = backendData.preventiveMaintenanceStatus;
+        const rootCondition = backendData.siteConditionAfterPm;
+
+        if (summaryStatus) {
+            status = summaryStatus;
+        } else if (rootStatus) {
+            status = rootStatus;
         }
 
-        if (backendData.preventiveMaintenanceStatus) {
-            status = backendData.preventiveMaintenanceStatus;
-        }
-        if (backendData.siteConditionAfterPm) {
-            condition = backendData.siteConditionAfterPm;
+        const specificCondition = [summaryCondition, rootCondition].find((value) =>
+            value && String(value).toUpperCase().includes("WITH_")
+        );
+        if (specificCondition) {
+            condition = specificCondition;
+        } else if (summaryCondition) {
+            condition = summaryCondition;
+        } else if (rootCondition) {
+            condition = rootCondition;
         }
 
         // ✅ FIX: Get sensorId from multiple possible locations

@@ -170,7 +170,12 @@ const PMReportView = () => {
     const summary = report.summary || {};
     const signOff = report.signOff || {};
     const pmStatusValue = summary.preventiveMaintenanceStatus || report.preventiveMaintenanceStatus;
-    const siteConditionValue = summary.siteConditionAfterPm || report.siteConditionAfterPm;
+    const siteConditionValue = [
+        summary.siteConditionAfterPm,
+        report.siteConditionAfterPm
+    ].find((value) => value && String(value).includes('WITH_'))
+        || summary.siteConditionAfterPm
+        || report.siteConditionAfterPm;
 
     // ✅ Get status badges
     const pmStatus = getStatusBadge(pmStatusValue);

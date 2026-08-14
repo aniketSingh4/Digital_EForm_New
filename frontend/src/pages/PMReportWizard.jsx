@@ -240,6 +240,8 @@ export default function PMReportWizard() {
                 engineerName: reportData.engineerName || "",
                 observation: formData.summary?.observation || "",
                 recommendation: formData.summary?.recommendation || "",
+                preventiveMaintenanceStatus: mapPMStatus(formData.summary?.pmStatus),
+                siteConditionAfterPm: mapSiteCondition(formData.summary?.siteCondition),
                 summary: {
                     preventiveMaintenanceStatus: mapPMStatus(formData.summary?.pmStatus),
                     siteConditionAfterPm: mapSiteCondition(formData.summary?.siteCondition)

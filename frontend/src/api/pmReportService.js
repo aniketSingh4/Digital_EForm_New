@@ -99,20 +99,20 @@ export const mapPMStatus = (status) => {
 export const mapSiteCondition = (condition) => {
   if (!condition) return "";
 
-  const conditionStr = String(condition).trim().toUpperCase().replace(/ /g, "_");
+  const conditionStr = String(condition).trim().toUpperCase().replace(/ /g, "_").replace(/-/g, "_");
 
-  const conditionMap = {
-    "SYSTEM_OPERATIONAL": "SYSTEM_OPERATIONAL",
-    "SYSTEM_NOT_OPERATIONAL": "SYSTEM_NOT_OPERATIONAL",
-    "SYSTEM_OPERATIONAL_WITH_OBSERVATION": "SYSTEM_OPERATIONAL_WITH_OBSERVATION",
-    "SYSTEM_OPERATIONAL_WITH_ISSUES": "SYSTEM_OPERATIONAL_WITH_OBSERVATION",
-    "OPERATIONAL": "SYSTEM_OPERATIONAL",
-    "NOT_OPERATIONAL": "SYSTEM_NOT_OPERATIONAL",
-    "WITH_ISSUES": "SYSTEM_OPERATIONAL_WITH_OBSERVATION",
-    "WITH_OBSERVATION": "SYSTEM_OPERATIONAL_WITH_OBSERVATION"
-  };
+  // More specific values first. "OPERATIONAL" is a substring of every site-condition option.
+  if (conditionStr.includes("WITH_OBSERVATION") || conditionStr.includes("WITH_ISSUES")) {
+    return "SYSTEM_OPERATIONAL_WITH_OBSERVATION";
+  }
+  if (conditionStr.includes("NOT_OPERATIONAL") || conditionStr.includes("NON_OPERATIONAL")) {
+    return "SYSTEM_NOT_OPERATIONAL";
+  }
+  if (conditionStr === "SYSTEM_OPERATIONAL" || conditionStr === "OPERATIONAL") {
+    return "SYSTEM_OPERATIONAL";
+  }
 
-  return conditionMap[conditionStr] || conditionStr;
+  return conditionStr;
 };
 
 /**
@@ -251,6 +251,8 @@ export const transformDataForAPI = (formData, isEditMode = false) => {
     engineerName: report?.engineerName || "",
     observation: summary?.observation || "",
     recommendation: summary?.recommendation || "",
+    preventiveMaintenanceStatus: mapPMStatus(summary?.pmStatus),
+    siteConditionAfterPm: mapSiteCondition(summary?.siteCondition),
     summary: {
       preventiveMaintenanceStatus: mapPMStatus(summary?.pmStatus),
       siteConditionAfterPm: mapSiteCondition(summary?.siteCondition)

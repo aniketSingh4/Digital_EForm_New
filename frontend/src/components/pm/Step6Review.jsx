@@ -194,6 +194,8 @@ export default function Step6Review({
                 engineerName: report.engineerName || "",
                 observation: summary.observation || "",
                 recommendation: summary.recommendation || "",
+                preventiveMaintenanceStatus: mapPMStatus(summary.pmStatus),
+                siteConditionAfterPm: mapSiteCondition(summary.siteCondition),
                 summary: {
                     preventiveMaintenanceStatus: mapPMStatus(summary.pmStatus),
                     siteConditionAfterPm: mapSiteCondition(summary.siteCondition)
