@@ -59,10 +59,7 @@ public class NotificationServiceImpl implements NotificationService {
                 buildSummary(type, actorName, request, true))));
 
         if (ADMIN_FANOUT_TYPES.contains(type)) {
-            List<Users> admins = userRepository.findByRoleIgnoreCaseIn(List.of("ADMIN", "ROLE_ADMIN"));
-            if (admins.isEmpty()) {
-                admins = userRepository.findByRoleIgnoreCase(AUDIENCE_ADMIN);
-            }
+            List<Users> admins = findAdminUsers();
             for (Users admin : admins) {
                 saved.add(notificationRepository.save(buildNotification(
                         type,
@@ -222,5 +219,35 @@ public class NotificationServiceImpl implements NotificationService {
 
     private String normalizeEmail(String email) {
         return email == null ? "" : email.trim().toLowerCase(Locale.ROOT);
+    }
+
+    private List<Users> findAdminUsers() {
+        List<Users> admins = new ArrayList<>();
+        try {
+            admins = userRepository.findByRoleIgnoreCaseIn(List.of("ADMIN", "ROLE_ADMIN"));
+        } catch (Exception ignored) {
+            admins = new ArrayList<>();
+        }
+        if (admins == null || admins.isEmpty()) {
+            try {
+                admins = userRepository.findByRoleIgnoreCase(AUDIENCE_ADMIN);
+            } catch (Exception ignored) {
+                admins = new ArrayList<>();
+            }
+        }
+        if (admins == null || admins.isEmpty()) {
+            admins = userRepository.findAll().stream()
+                    .filter(this::isAdminRole)
+                    .toList();
+        }
+        return admins == null ? List.of() : admins;
+    }
+
+    private boolean isAdminRole(Users user) {
+        if (user == null || user.getRole() == null) {
+            return false;
+        }
+        String role = user.getRole().trim().toUpperCase(Locale.ROOT).replace(' ', '_');
+        return "ADMIN".equals(role) || "ROLE_ADMIN".equals(role) || role.contains("ADMIN");
     }
 }
