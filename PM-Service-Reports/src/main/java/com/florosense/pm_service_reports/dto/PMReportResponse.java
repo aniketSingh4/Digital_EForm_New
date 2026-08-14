@@ -27,6 +27,10 @@ public class PMReportResponse {
 
     private String recommendation;
 
+    private String preventiveMaintenanceStatus;
+
+    private String siteConditionAfterPm;
+
     private PMSummaryDTO summary;
 
     private List<ChecklistItemDTO> checklists;
@@ -116,6 +120,22 @@ public class PMReportResponse {
 
 	public void setRecommendation(String recommendation) {
 		this.recommendation = recommendation;
+	}
+
+	public String getPreventiveMaintenanceStatus() {
+		return preventiveMaintenanceStatus;
+	}
+
+	public void setPreventiveMaintenanceStatus(String preventiveMaintenanceStatus) {
+		this.preventiveMaintenanceStatus = preventiveMaintenanceStatus;
+	}
+
+	public String getSiteConditionAfterPm() {
+		return siteConditionAfterPm;
+	}
+
+	public void setSiteConditionAfterPm(String siteConditionAfterPm) {
+		this.siteConditionAfterPm = siteConditionAfterPm;
 	}
 
 	public PMSummaryDTO getSummary() {

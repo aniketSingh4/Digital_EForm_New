@@ -3,6 +3,7 @@ package com.florosense.pm_service_reports.dto;
 import java.time.LocalDate;
 
 import com.florosense.pm_service_reports.entity.PMStatus;
+import com.florosense.pm_service_reports.entity.SiteCondition;
 
 
 public class PMReportSummaryResponse 
@@ -24,6 +25,8 @@ public class PMReportSummaryResponse
 
 
 	private PMStatus preventiveMaintenanceStatus;
+
+	private SiteCondition siteConditionAfterPm;
 	
 	public String getSensorId() {
 		return sensorId;
@@ -90,6 +93,14 @@ public class PMReportSummaryResponse
 
     public void setPreventiveMaintenanceStatus(PMStatus preventiveMaintenanceStatus) {
         this.preventiveMaintenanceStatus = preventiveMaintenanceStatus;
+    }
+
+    public SiteCondition getSiteConditionAfterPm() {
+        return siteConditionAfterPm;
+    }
+
+    public void setSiteConditionAfterPm(SiteCondition siteConditionAfterPm) {
+        this.siteConditionAfterPm = siteConditionAfterPm;
     }
 
 }

@@ -31,8 +31,10 @@ public interface PMMapper
     PreventiveMaintenanceReport toEntity(PMReportRequest dto);
 
     @Mapping(target = "summary", expression = "java(createSummaryDTO(entity))")
-    // REMOVED: @Mapping(target = "checklists", source = "checklists") - We handle checklists manually in ServiceImpl
+    @Mapping(target = "checklists", ignore = true)
     @Mapping(target = "signOff", source = "signOff")
+    @Mapping(target = "preventiveMaintenanceStatus", source = "preventiveMaintenanceStatus")
+    @Mapping(target = "siteConditionAfterPm", source = "siteConditionAfterPm")
     PMReportResponse toDTO(PreventiveMaintenanceReport entity);
 
     // REMOVED: @Mapping(target = "id", ignore = true)
@@ -51,6 +53,7 @@ public interface PMMapper
 
     @Mapping(target = "sensorId", source = "sensorId")
     @Mapping(target = "preventiveMaintenanceStatus", source = "preventiveMaintenanceStatus")
+    @Mapping(target = "siteConditionAfterPm", source = "siteConditionAfterPm")
     PMReportSummaryResponse toSummaryDTO(PreventiveMaintenanceReport entity);
 
     // Helper methods for custom mapping
@@ -67,23 +70,12 @@ public interface PMMapper
         return summary;
     }
 
-    // String to Enum conversion helpers
     default PMStatus mapPMStatus(String status) {
-        if (status == null) return null;
-        try {
-            return PMStatus.valueOf(status.toUpperCase().trim());
-        } catch (IllegalArgumentException e) {
-            return PMStatus.SATISFACTORY;
-        }
+        return PMStatus.fromValue(status);
     }
 
     default SiteCondition mapSiteCondition(String condition) {
-        if (condition == null) return null;
-        try {
-            return SiteCondition.valueOf(condition.toUpperCase().trim().replace(" ", "_"));
-        } catch (IllegalArgumentException e) {
-            return SiteCondition.SYSTEM_OPERATIONAL;
-        }
+        return SiteCondition.fromValue(condition);
     }
 
     // Enum to String conversion helpers

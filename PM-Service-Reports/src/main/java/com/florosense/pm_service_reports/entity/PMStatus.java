@@ -21,35 +21,33 @@ public enum PMStatus {
 
  @JsonCreator
  public static PMStatus fromValue(String value) {
-     if (value == null) {
-         return SATISFACTORY;
+     if (value == null || value.isBlank()) {
+         return null;
      }
-     
-     String upperValue = value.trim().toUpperCase();
-     
-     // Try direct match
+
+     String upperValue = value.trim().toUpperCase().replace(' ', '_');
+
      try {
          return PMStatus.valueOf(upperValue);
      } catch (IllegalArgumentException e) {
-         // Try by value
          for (PMStatus status : PMStatus.values()) {
              if (status.value.equals(upperValue)) {
                  return status;
              }
          }
      }
-     
-     // Handle variations
-     if ("SATISFACTORY".equals(upperValue) || "SATISFACTORY".equals(upperValue)) {
+
+     if ("SATISFACTORY".equals(upperValue)) {
          return SATISFACTORY;
      }
-     if ("FOLLOW_UP_VISIT_REQUIRED".equals(upperValue) || "FOLLOW_UP".equals(upperValue)) {
+     if ("FOLLOW_UP_VISIT_REQUIRED".equals(upperValue) || "FOLLOW_UP".equals(upperValue)
+             || "FOLLOWUP_VISIT_REQUIRED".equals(upperValue)) {
          return FOLLOW_UP_VISIT_REQUIRED;
      }
      if ("REQUIRES_ATTENTION".equals(upperValue) || "ATTENTION".equals(upperValue)) {
          return REQUIRES_ATTENTION;
      }
-     
-     return SATISFACTORY;
+
+     return null;
  }
 }
