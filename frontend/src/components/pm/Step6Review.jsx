@@ -12,15 +12,10 @@ export default function Step6Review({
     formData,
     onEdit,
     onSubmit,
-    onBackToDashboard
-    // ADDED: New props for edit mode support
-    // These are added as new parameters without modifying existing ones
+    onBackToDashboard,
+    isEditMode = false,
+    reportId = null
 }) {
-    // ADDED: Check if we're in edit mode based on URL or passed prop
-    // This will be set by the parent component
-    const [isEditMode, setIsEditMode] = useState(false);
-    const [reportId, setReportId] = useState(null);
-    
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [submitError, setSubmitError] = useState(null);
     const [submitSuccess, setSubmitSuccess] = useState(false);
@@ -182,6 +177,10 @@ export default function Step6Review({
             // Transform checklists
             const checklists = transformChecklists();
 
+            if (!mapPMStatus(summary.pmStatus) || !mapSiteCondition(summary.siteCondition)) {
+                throw new Error("Please select Preventive Maintenance Status and Site Condition");
+            }
+
             //console.log("📋 Final checklists for submission:", checklists);
 
             // Prepare the complete data for submission
@@ -291,13 +290,6 @@ export default function Step6Review({
         } finally {
             setIsSubmitting(false);
         }
-    };
-
-    // ADDED: Function to set edit mode from parent component
-    // This allows the parent to pass edit mode status
-    const setEditMode = (mode, id) => {
-        setIsEditMode(mode);
-        setReportId(id);
     };
 
     // Handle modal close and navigate to dashboard

@@ -55,7 +55,7 @@ export default function Step4Summary({ formData, setFormData }) {
 
                 <div className="radio-section">
                     <label className="radio-title">
-                        Preventive Maintenance Status
+                        Preventive Maintenance Status <span className="required">*</span>
                     </label>
 
                     <div className="radio-group">
@@ -78,7 +78,7 @@ export default function Step4Summary({ formData, setFormData }) {
 
                 <div className="radio-section">
                     <label className="radio-title">
-                        Site Condition After PM
+                        Site Condition After PM <span className="required">*</span>
                     </label>
 
                     <div className="radio-group">

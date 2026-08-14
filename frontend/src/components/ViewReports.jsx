@@ -194,11 +194,11 @@ export default function ViewReports() {
         const status = pickPmStatus(
             backendData.summary?.preventiveMaintenanceStatus,
             backendData.preventiveMaintenanceStatus
-        ) || "PENDING";
+        );
         const condition = pickSiteCondition(
             backendData.summary?.siteConditionAfterPm,
             backendData.siteConditionAfterPm
-        ) || "N/A";
+        );
 
         // ✅ FIX: Get sensorId from the backend data
         // The API response shows "sensorId": "911" at the root level
@@ -248,11 +248,11 @@ export default function ViewReports() {
         const status = pickPmStatus(
             backendData.summary?.preventiveMaintenanceStatus,
             backendData.preventiveMaintenanceStatus
-        ) || "PENDING";
+        );
         const condition = pickSiteCondition(
             backendData.summary?.siteConditionAfterPm,
             backendData.siteConditionAfterPm
-        ) || "N/A";
+        );
 
         // ✅ FIX: Get sensorId from multiple possible locations
         let sensorId = "-";
@@ -377,21 +377,15 @@ export default function ViewReports() {
 
             const transformedReports = rawReports.map(transformSummaryData);
 
-            if (transformedReports.length === 0) {
-                setUsingMockData(true);
-                setReports(getMockData());
-                setError("ℹ️ No reports found in database. Showing demo data.");
-            } else {
-                setReports(transformedReports);
-                setTotalReports(transformedReports.length);
-                setCached(cacheKey, transformedReports, LIST_CACHE_TTL);
-                setError(null);
-            }
+            setReports(transformedReports);
+            setTotalReports(transformedReports.length);
+            setCached(cacheKey, transformedReports, LIST_CACHE_TTL);
+            setError(null);
         } catch (err) {
             console.error("❌ Error fetching reports:", err);
-            setUsingMockData(true);
-            setReports(getMockData());
-            setError(`⚠️ Could not connect to server. Showing demo data.`);
+            setReports([]);
+            setTotalReports(0);
+            setError(`⚠️ Could not connect to server. ${err.message || "Please try again."}`);
         } finally {
             setLoading(false);
         }
@@ -1262,9 +1256,11 @@ export default function ViewReports() {
         try {
             const payload = {
                 ...editedReport,
+                preventiveMaintenanceStatus: pickPmStatus(editedReport.preventiveMaintenanceStatus),
+                siteConditionAfterPm: pickSiteCondition(editedReport.siteConditionAfterPm),
                 summary: {
-                    preventiveMaintenanceStatus: editedReport.preventiveMaintenanceStatus || "",
-                    siteConditionAfterPm: editedReport.siteConditionAfterPm || ""
+                    preventiveMaintenanceStatus: pickPmStatus(editedReport.preventiveMaintenanceStatus),
+                    siteConditionAfterPm: pickSiteCondition(editedReport.siteConditionAfterPm)
                 }
             };
             delete payload._original;
@@ -1840,14 +1836,14 @@ export default function ViewReports() {
                                     <div>
                                         <label style={{ fontWeight: '600', fontSize: '13px', display: 'block', marginBottom: '4px' }}>PM Status</label>
                                         <select
-                                            value={editedReport.preventiveMaintenanceStatus || 'PENDING'}
+                                            value={editedReport.preventiveMaintenanceStatus || ''}
                                             onChange={(e) => handleEditFieldChange('preventiveMaintenanceStatus', e.target.value)}
                                             style={{ width: '100%', padding: '8px', borderRadius: '4px', border: '1px solid #d0d0d0' }}
                                         >
+                                            <option value="">N/A</option>
                                             <option value="SATISFACTORY">Satisfactory</option>
                                             <option value="FOLLOW_UP_VISIT_REQUIRED">Follow-up Required</option>
                                             <option value="REQUIRES_ATTENTION">Requires Attention</option>
-                                            <option value="PENDING">Pending</option>
                                         </select>
                                     </div>
                                     <div>

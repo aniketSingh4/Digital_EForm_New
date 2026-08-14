@@ -2,7 +2,7 @@
 import axios from 'axios';
 import { invalidate } from '../utils/cache';
 import { env } from '../config/env';
-import { normalizePmStatus, normalizeSiteCondition } from '../utils/pmSummary';
+import { normalizePmStatus, normalizeSiteCondition, pickPmStatus, pickSiteCondition } from '../utils/pmSummary';
 
 const apiClient = axios.create({
   baseURL: env.PM_API_URL,
@@ -210,6 +210,9 @@ export const transformDataForAPI = (formData, isEditMode = false) => {
     { key: "Enclosure Cleaned", label: "Enclosure Cleaned" }
   ]);
 
+  const pmStatus = pickPmStatus(summary?.pmStatus, summary?.preventiveMaintenanceStatus);
+  const siteCondition = pickSiteCondition(summary?.siteCondition, summary?.siteConditionAfterPm);
+
   // Build the final API payload
   let apiPayload = {
     serviceReportNo: report?.serviceReportNo || "",
@@ -221,11 +224,11 @@ export const transformDataForAPI = (formData, isEditMode = false) => {
     engineerName: report?.engineerName || "",
     observation: summary?.observation || "",
     recommendation: summary?.recommendation || "",
-    preventiveMaintenanceStatus: mapPMStatus(summary?.pmStatus),
-    siteConditionAfterPm: mapSiteCondition(summary?.siteCondition),
+    preventiveMaintenanceStatus: pmStatus,
+    siteConditionAfterPm: siteCondition,
     summary: {
-      preventiveMaintenanceStatus: mapPMStatus(summary?.pmStatus),
-      siteConditionAfterPm: mapSiteCondition(summary?.siteCondition)
+      preventiveMaintenanceStatus: pmStatus,
+      siteConditionAfterPm: siteCondition
     },
     checklists: checklists,
     signOff: {

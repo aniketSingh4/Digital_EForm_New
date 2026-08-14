@@ -187,6 +187,14 @@ export default function PMReportWizard() {
     };
 
     const nextStep = () => {
+        if (step === 4) {
+            const pmStatus = normalizePmStatus(formData.summary?.pmStatus);
+            const siteCondition = normalizeSiteCondition(formData.summary?.siteCondition);
+            if (!pmStatus || !siteCondition) {
+                notificationService.error('Please select Preventive Maintenance Status and Site Condition');
+                return;
+            }
+        }
         if (step < 6) {
             setStep(step + 1);
         }
@@ -221,6 +229,9 @@ export default function PMReportWizard() {
             }
             if (!pmVisitDate) {
                 throw new Error("PM Visit Date is required");
+            }
+            if (!mapPMStatus(formData.summary?.pmStatus) || !mapSiteCondition(formData.summary?.siteCondition)) {
+                throw new Error("Please select Preventive Maintenance Status and Site Condition");
             }
 
             // For new reports, validate these fields

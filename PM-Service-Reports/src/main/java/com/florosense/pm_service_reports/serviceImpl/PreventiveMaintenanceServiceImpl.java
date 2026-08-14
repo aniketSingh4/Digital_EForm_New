@@ -2,7 +2,6 @@ package com.florosense.pm_service_reports.serviceImpl;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
 
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
@@ -44,9 +43,17 @@ public class PreventiveMaintenanceServiceImpl implements PreventiveMaintenanceSe
     @Cacheable(value = "pmReportList", key = "'all'")
     public List<PMReportSummaryResponse> getAllReports() {
         List<PreventiveMaintenanceReport> reports = repository.findAll();
-        return reports.stream()
-            .map(mapper::toSummaryDTO)
-            .collect(Collectors.toList());
+        List<PMReportSummaryResponse> summaries = new ArrayList<>();
+        for (PreventiveMaintenanceReport report : reports) {
+            try {
+                summaries.add(mapper.toSummaryDTO(report));
+            } catch (Exception mappingError) {
+                System.err.println("Skipping summary mapping for report "
+                        + report.getId() + ": " + mappingError.getMessage());
+                summaries.add(toMinimalSummary(report));
+            }
+        }
+        return summaries;
     }
 
     @Override
@@ -135,7 +142,7 @@ public class PreventiveMaintenanceServiceImpl implements PreventiveMaintenanceSe
         return null;
     }
 
-    private void applySummaryFields(PreventiveMaintenanceReport report, PMReportRequest request) {
+    private void applySummaryFields(PreventiveMaintenanceReport report, PMReportRequest request, boolean required) {
         String pmStatusValue = firstNonBlank(
                 request.getSummary() != null ? request.getSummary().getPreventiveMaintenanceStatus() : null,
                 request.getPreventiveMaintenanceStatus());
@@ -149,16 +156,38 @@ public class PreventiveMaintenanceServiceImpl implements PreventiveMaintenanceSe
         PMStatus status = convertToPMStatus(pmStatusValue);
         if (status != null) {
             report.setPreventiveMaintenanceStatus(status);
+        } else if (required || (pmStatusValue != null && !pmStatusValue.isBlank())) {
+            throw new IllegalArgumentException("Invalid or missing PM Status: " + pmStatusValue);
         } else {
-            System.out.println("⚠️ Unrecognized PM Status, leaving existing value: " + pmStatusValue);
+            System.out.println("⚠️ PM Status omitted, leaving existing value");
         }
 
         SiteCondition condition = convertToSiteCondition(siteConditionValue);
         if (condition != null) {
             report.setSiteConditionAfterPm(condition);
+        } else if (required || (siteConditionValue != null && !siteConditionValue.isBlank())) {
+            throw new IllegalArgumentException("Invalid or missing Site Condition: " + siteConditionValue);
         } else {
-            System.out.println("⚠️ Unrecognized Site Condition, leaving existing value: " + siteConditionValue);
+            System.out.println("⚠️ Site Condition omitted, leaving existing value");
         }
+    }
+
+    private PMReportSummaryResponse toMinimalSummary(PreventiveMaintenanceReport report) {
+        PMReportSummaryResponse summary = new PMReportSummaryResponse();
+        summary.setId(report.getId());
+        summary.setServiceReportNo(report.getServiceReportNo());
+        summary.setClientName(report.getClientName());
+        summary.setSiteName(report.getSiteName());
+        summary.setEngineerName(report.getEngineerName());
+        summary.setPmVisitDate(report.getPmVisitDate());
+        summary.setSensorId(report.getSensorId());
+        if (report.getPreventiveMaintenanceStatus() != null) {
+            summary.setPreventiveMaintenanceStatus(report.getPreventiveMaintenanceStatus().name());
+        }
+        if (report.getSiteConditionAfterPm() != null) {
+            summary.setSiteConditionAfterPm(report.getSiteConditionAfterPm().name());
+        }
+        return summary;
     }
 
 
@@ -210,7 +239,7 @@ public class PreventiveMaintenanceServiceImpl implements PreventiveMaintenanceSe
         report.setObservation(request.getObservation());
         report.setRecommendation(request.getRecommendation());
 
-        applySummaryFields(report, request);
+        applySummaryFields(report, request, true);
 
         // ========================================
         // CONVERT CHECKLISTS
@@ -410,7 +439,7 @@ public class PreventiveMaintenanceServiceImpl implements PreventiveMaintenanceSe
             report.setPmVisitDate(request.getPmVisitDate());
         }
         
-        applySummaryFields(report, request);
+        applySummaryFields(report, request, false);
 
         // Update checklists
         if (request.getChecklists() != null) {

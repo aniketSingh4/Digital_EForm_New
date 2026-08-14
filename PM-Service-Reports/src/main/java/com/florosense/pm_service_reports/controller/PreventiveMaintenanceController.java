@@ -1,6 +1,5 @@
 package com.florosense.pm_service_reports.controller;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -86,17 +85,7 @@ public class PreventiveMaintenanceController
 
     @GetMapping
     public ResponseEntity<List<PMReportSummaryResponse>> getAllReports() {
-        try {
-            List<PMReportSummaryResponse> reports = service.getAllReports();
-            if (reports == null || reports.isEmpty()) {
-                return ResponseEntity.ok(new ArrayList<>());
-            }
-            return ResponseEntity.ok(reports);
-        } catch (Exception e) {
-            System.err.println("Error fetching reports: " + e.getMessage());
-            e.printStackTrace();
-            return ResponseEntity.ok(new ArrayList<>());
-        }
+        return ResponseEntity.ok(service.getAllReports());
     }
 
     @GetMapping("/by-number/{serviceReportNo}")
