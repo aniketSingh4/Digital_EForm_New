@@ -4,23 +4,13 @@ import { toast } from 'react-toastify';
 import axios from 'axios';
 import {
     FaArrowLeft,
-    FaEdit,
-    FaFilePdf,
-    FaPrint,
     FaCheckCircle,
     FaTimesCircle,
     FaClock,
-    FaBuilding,
-    FaUser,
-    FaEnvelope,
-    FaPhone,
-    FaMapMarkerAlt,
     FaCalendarAlt,
     FaMicrochip,
-    FaTools,
     FaClipboardCheck,
     FaUserCheck,
-    FaHistory,
     FaSpinner,
     FaInfoCircle,
     FaFileSignature,
@@ -29,8 +19,7 @@ import {
     FaEye,
     FaTrash
 } from 'react-icons/fa';
-import notificationService from '../../services/notificationService';
-import { getAuthHeaders, canModifyReports } from '../../utils/roles';
+import { getAuthHeaders } from '../../utils/roles';
 import { env } from '../../config/env';
 import './InstallationReportDetails.css';
 
@@ -40,10 +29,8 @@ const IMAGE_BASE_URL = env.INSTALLATION_SERVICE_URL;
 const InstallationReportDetails = () => {
     const { id } = useParams();
     const navigate = useNavigate();
-    const isAdminUser = canModifyReports();
     const [report, setReport] = useState(null);
     const [loading, setLoading] = useState(true);
-    const [actionLoading, setActionLoading] = useState(null);
     const [showLightbox, setShowLightbox] = useState(false);
     const [selectedImage, setSelectedImage] = useState(null);
     const [deleteLoading, setDeleteLoading] = useState(null);
@@ -90,33 +77,6 @@ const InstallationReportDetails = () => {
             hour: '2-digit',
             minute: '2-digit'
         });
-    };
-
-    const handlePDF = async () => {
-        try {
-            setActionLoading('pdf');
-            await new Promise(resolve => setTimeout(resolve, 1500));
-            notificationService.reportDownloaded('Installation & Commissioning Report', {
-                id: report?.id,
-                reportType: 'Installation & Commissioning Report',
-                reportName: report?.reportNo,
-                customerName: report?.customerName || report?.companyName,
-                location: report?.siteAddress,
-            });
-        } catch (error) {
-            console.error('PDF generation failed:', error);
-            toast.error('Failed to generate PDF');
-        } finally {
-            setActionLoading(null);
-        }
-    };
-
-    const handlePrint = () => {
-        window.print();
-    };
-
-    const handleEdit = () => {
-        navigate(`/installation-reports/edit/${id}`);
     };
 
     const handleBack = () => {
@@ -325,19 +285,6 @@ const InstallationReportDetails = () => {
                     <div className="header-title">
                         <h1>Installation Report</h1>
                     </div>
-                </div>
-                <div className="header-right">
-                    {isAdminUser && (
-                    <button className="btn-edit" onClick={handleEdit}>
-                        <FaEdit /> Edit
-                    </button>
-                    )}
-                    <button className="btn-pdf" onClick={handlePDF} disabled={actionLoading === 'pdf'}>
-                        {actionLoading === 'pdf' ? <FaSpinner className="spinning" /> : <FaFilePdf />} PDF
-                    </button>
-                    <button className="btn-print" onClick={handlePrint}>
-                        <FaPrint /> Print
-                    </button>
                 </div>
             </div>
 

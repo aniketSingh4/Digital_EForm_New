@@ -46,7 +46,14 @@ public class PreventiveMaintenanceServiceImpl implements PreventiveMaintenanceSe
         List<PMReportSummaryResponse> summaries = new ArrayList<>();
         for (PreventiveMaintenanceReport report : reports) {
             try {
-                summaries.add(mapper.toSummaryDTO(report));
+                PMReportSummaryResponse summary = mapper.toSummaryDTO(report);
+                summary.setPreventiveMaintenanceStatus(
+                        report.getPreventiveMaintenanceStatus() != null
+                                ? report.getPreventiveMaintenanceStatus().name() : null);
+                summary.setSiteConditionAfterPm(
+                        report.getSiteConditionAfterPm() != null
+                                ? report.getSiteConditionAfterPm().name() : null);
+                summaries.add(summary);
             } catch (Exception mappingError) {
                 System.err.println("Skipping summary mapping for report "
                         + report.getId() + ": " + mappingError.getMessage());

@@ -97,7 +97,9 @@ const CalibrationViewAll = () => {
             const mappedData = data.map(report => ({
                 ...report,
                 id: report.id || report._id || report.reportId,
-                reportNo: report.reportNo || 'N/A',
+                reportNo: String(report.reportNo || '')
+                    .replace('FLO_CAL_-', 'FLO_CAL_')
+                    || 'N/A',
                 clientName: report.clientName || 'N/A',
                 siteName: report.siteName || 'N/A',
                 sensorId: report.sensorId || 'N/A',

@@ -3,7 +3,6 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   FaArrowLeft,
-  FaEdit,
   FaTrash,
   FaSpinner,
   FaImage,
@@ -119,17 +118,6 @@ const getImageUrl = (imageUrl) => {
   //Get placeholder image
   const getPlaceholderImage = () => {
     return 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="300" height="300" viewBox="0 0 300 300"%3E%3Crect width="300" height="300" fill="%23f3f4f6"/%3E%3Ctext x="150" y="150" text-anchor="middle" dy=".3em" fill="%239ca3af" font-size="18"%3ENo Image%3C/text%3E%3C/svg%3E';
-  };
-
-  const handleDelete = async () => {
-    if (!window.confirm('Are you sure you want to delete this report?')) return;
-    try {
-      await preVisitReportService.deleteReport(id);
-      alert('Report deleted successfully!');
-      navigate('/previsit/view-all');
-    } catch (error) {
-      alert('Failed to delete report');
-    }
   };
 
   const handleDeleteImage = async (imageId) => {
@@ -270,20 +258,14 @@ const getImageUrl = (imageUrl) => {
       )}
 
       <div className="detail-header">
-        <button className="back-btn" onClick={() => navigate('/previsit/view-all')}>
-          <FaArrowLeft /> Back to Reports
-        </button>
-        <div className="header-center">
-          <h1>Pre-Visit Report Details</h1>
-          {getStatusBadge()}
-        </div>
-        <div className="detail-actions">
-          <button className="edit-btn" onClick={() => navigate(`/previsit/edit/${report.id}`)}>
-            <FaEdit /> Edit
+        <div className="header-left">
+          <button className="back-btn" onClick={() => navigate('/previsit/view-all')}>
+            <FaArrowLeft /> Back to Reports
           </button>
-          <button className="delete-btn" onClick={handleDelete}>
-            <FaTrash /> Delete
-          </button>
+          <div className="header-title">
+            <h1>Pre-Visit Report Details</h1>
+            {getStatusBadge()}
+          </div>
         </div>
       </div>
 

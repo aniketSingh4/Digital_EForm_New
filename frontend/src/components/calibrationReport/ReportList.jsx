@@ -390,7 +390,7 @@ const ReportList = () => {
                       />
                     </td>
                     <td>{indexOfFirstItem + index + 1}</td>
-                    <td className="report-id">{report.reportNo}</td>
+                    <td className="report-id">{String(report.reportNo || '').replace('FLO_CAL_-', 'FLO_CAL_')}</td>
                     <td className="company-name">
                       <span className="company-text">{report.clientName || '-'}</span>
                     </td>

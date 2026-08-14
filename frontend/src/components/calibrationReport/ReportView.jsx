@@ -1,16 +1,13 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { toast } from "react-toastify";
-import { FaArrowLeft, FaFilePdf, FaPrint, FaEdit, FaDownload } from "react-icons/fa";
+import { FaArrowLeft } from "react-icons/fa";
 import { calibrationReportService } from "../../services/CalibrationReportService";
 import "./ReportView.css";
 import notificationService from "../../services/notificationService";
-import { canModifyReports } from "../../utils/roles";
 
 const ReportView = () => {
     const navigate = useNavigate();
     const { id } = useParams();
-    const isAdminUser = canModifyReports();
     const [report, setReport] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
@@ -111,7 +108,8 @@ const ReportView = () => {
     const engineer = report.engineerDetails || {};
 
     //Get the certificate number (or report number as fallback)
-    const certificateNo = masterRef.calibrationCertificateNo || report.reportNo || 'N/A';
+    const certificateNo = String(masterRef.calibrationCertificateNo || report.reportNo || 'N/A')
+        .replace('FLO_CAL_-', 'FLO_CAL_');
 
     return (
         <div className="report-view-container">
@@ -122,19 +120,6 @@ const ReportView = () => {
                         <FaArrowLeft /> Back
                     </button>
                     <h1>Calibration Report</h1>
-                </div>
-                <div className="header-right">
-                    {isAdminUser && (
-                    <button className="btn-edit" onClick={() => navigate(`/calibration-reports/edit/${id}`)}>
-                        <FaEdit /> Edit
-                    </button>
-                    )}
-                    <button className="btn-pdf" onClick={() => { /* PDF generation logic */ }}>
-                        <FaFilePdf /> PDF
-                    </button>
-                    <button className="btn-print" onClick={() => window.print()}>
-                        <FaPrint /> Print
-                    </button>
                 </div>
             </div>
 
@@ -360,16 +345,6 @@ const ReportView = () => {
                 <button className="btn-back" onClick={() => navigate('/calibration-reports')}>
                     <FaArrowLeft /> Back to Reports
                 </button>
-                <div className="footer-actions">
-                    {isAdminUser && (
-                    <button className="btn-edit" onClick={() => navigate(`/calibration-reports/edit/${id}`)}>
-                        <FaEdit /> Edit Report
-                    </button>
-                    )}
-                    <button className="btn-pdf" onClick={() => { /* PDF generation logic */ }}>
-                        <FaFilePdf /> Download PDF
-                    </button>
-                </div>
             </div>
         </div>
     );

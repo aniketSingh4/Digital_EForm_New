@@ -193,11 +193,16 @@ export default function ViewReports() {
 
         const status = pickPmStatus(
             backendData.summary?.preventiveMaintenanceStatus,
-            backendData.preventiveMaintenanceStatus
+            backendData.preventiveMaintenanceStatus,
+            backendData.pmStatus,
+            backendData.preventive_maintenance_status
         );
         const condition = pickSiteCondition(
             backendData.summary?.siteConditionAfterPm,
-            backendData.siteConditionAfterPm
+            backendData.summary?.siteCondition,
+            backendData.siteConditionAfterPm,
+            backendData.siteCondition,
+            backendData.site_condition_after_pm
         );
 
         // ✅ FIX: Get sensorId from the backend data
@@ -247,11 +252,16 @@ export default function ViewReports() {
 
         const status = pickPmStatus(
             backendData.summary?.preventiveMaintenanceStatus,
-            backendData.preventiveMaintenanceStatus
+            backendData.preventiveMaintenanceStatus,
+            backendData.pmStatus,
+            backendData.preventive_maintenance_status
         );
         const condition = pickSiteCondition(
             backendData.summary?.siteConditionAfterPm,
-            backendData.siteConditionAfterPm
+            backendData.summary?.siteCondition,
+            backendData.siteConditionAfterPm,
+            backendData.siteCondition,
+            backendData.site_condition_after_pm
         );
 
         // ✅ FIX: Get sensorId from multiple possible locations

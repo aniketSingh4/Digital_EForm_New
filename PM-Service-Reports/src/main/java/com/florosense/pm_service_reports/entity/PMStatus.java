@@ -12,9 +12,12 @@ public enum PMStatus {
 
     private static final Map<String, PMStatus> BY_KEY = Map.of(
             "SATISFACTORY", SATISFACTORY,
+            "0", SATISFACTORY,
             "FOLLOW_UP_VISIT_REQUIRED", FOLLOW_UP_VISIT_REQUIRED,
             "FOLLOWUP_VISIT_REQUIRED", FOLLOW_UP_VISIT_REQUIRED,
-            "REQUIRES_ATTENTION", REQUIRES_ATTENTION
+            "1", FOLLOW_UP_VISIT_REQUIRED,
+            "REQUIRES_ATTENTION", REQUIRES_ATTENTION,
+            "2", REQUIRES_ATTENTION
     );
 
     private final String value;

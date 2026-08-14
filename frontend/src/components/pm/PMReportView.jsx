@@ -171,7 +171,9 @@ const PMReportView = () => {
     );
     const siteConditionValue = pickSiteCondition(
         summary.siteConditionAfterPm,
-        report.siteConditionAfterPm
+        summary.siteCondition,
+        report.siteConditionAfterPm,
+        report.siteCondition
     );
 
     // ✅ Get status badges

@@ -25,7 +25,7 @@ public class ReportNumberGenerator
         String datePart = LocalDate.now().format(DATE_FORMATTER);
         long count = reportRepository.count() + 1;
         String sequence = String.format("%04d", count);
-        return String.format("%s-%s-%s", REPORT_PREFIX, datePart, sequence);
+        return REPORT_PREFIX + datePart + sequence;
     }
     
     
@@ -33,6 +33,6 @@ public class ReportNumberGenerator
         String datePart = LocalDate.now().format(DATE_FORMATTER);
         long count = reportRepository.count() + 1;
         String sequence = String.format("%04d", count);
-        return String.format("%s-%s-%s", SERIAL_PREFIX, datePart, sequence);
+        return SERIAL_PREFIX + datePart + sequence;
     }
 }

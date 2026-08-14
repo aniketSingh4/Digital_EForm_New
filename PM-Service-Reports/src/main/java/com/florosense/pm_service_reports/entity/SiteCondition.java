@@ -17,13 +17,16 @@ public enum SiteCondition {
     private static final Map<String, SiteCondition> BY_KEY = Map.ofEntries(
             Map.entry("SYSTEM_OPERATIONAL", SYSTEM_OPERATIONAL),
             Map.entry("OPERATIONAL", SYSTEM_OPERATIONAL),
+            Map.entry("0", SYSTEM_OPERATIONAL),
             Map.entry("SYSTEM_NOT_OPERATIONAL", SYSTEM_NOT_OPERATIONAL),
             Map.entry("NOT_OPERATIONAL", SYSTEM_NOT_OPERATIONAL),
             Map.entry("NON_OPERATIONAL", SYSTEM_NOT_OPERATIONAL),
             Map.entry("SYSTEM_NON_OPERATIONAL", SYSTEM_NOT_OPERATIONAL),
+            Map.entry("1", SYSTEM_NOT_OPERATIONAL),
             Map.entry("SYSTEM_OPERATIONAL_WITH_OBSERVATION", SYSTEM_OPERATIONAL_WITH_OBSERVATION),
             Map.entry("SYSTEM_OPERATIONAL_WITH_ISSUES", SYSTEM_OPERATIONAL_WITH_OBSERVATION),
-            Map.entry("OPERATIONAL_WITH_OBSERVATION", SYSTEM_OPERATIONAL_WITH_OBSERVATION)
+            Map.entry("OPERATIONAL_WITH_OBSERVATION", SYSTEM_OPERATIONAL_WITH_OBSERVATION),
+            Map.entry("2", SYSTEM_OPERATIONAL_WITH_OBSERVATION)
     );
 
     private final String value;
