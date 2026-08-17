@@ -50,6 +50,12 @@ public class PMReportRequest {
     @JsonAlias({ "siteCondition", "siteConditionAfterPM" })
     private String siteConditionAfterPm;
 
+    @JsonProperty("siteConditionCode")
+    private String siteConditionCode;
+
+    @JsonProperty("siteConditionKey")
+    private String siteConditionKey;
+
     @Valid
     private PMSummaryDTO summary;
 
@@ -149,6 +155,22 @@ public class PMReportRequest {
 
 	public void setSiteConditionAfterPm(String siteConditionAfterPm) {
 		this.siteConditionAfterPm = siteConditionAfterPm;
+	}
+
+	public String getSiteConditionCode() {
+		return siteConditionCode;
+	}
+
+	public void setSiteConditionCode(String siteConditionCode) {
+		this.siteConditionCode = siteConditionCode;
+	}
+
+	public String getSiteConditionKey() {
+		return siteConditionKey;
+	}
+
+	public void setSiteConditionKey(String siteConditionKey) {
+		this.siteConditionKey = siteConditionKey;
 	}
 
 	public PMSummaryDTO getSummary() {

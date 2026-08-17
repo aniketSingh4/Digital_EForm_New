@@ -30,6 +30,9 @@ public class PMReportSummaryResponse
 	@JsonProperty("siteConditionAfterPm")
 	@JsonAlias({ "siteCondition", "siteConditionAfterPM" })
 	private String siteConditionAfterPm;
+
+	@JsonProperty("siteConditionKey")
+	private String siteConditionKey;
 	
 	public String getSensorId() {
 		return sensorId;
@@ -104,6 +107,14 @@ public class PMReportSummaryResponse
 
     public void setSiteConditionAfterPm(String siteConditionAfterPm) {
         this.siteConditionAfterPm = siteConditionAfterPm;
+    }
+
+    public String getSiteConditionKey() {
+        return siteConditionKey;
+    }
+
+    public void setSiteConditionKey(String siteConditionKey) {
+        this.siteConditionKey = siteConditionKey;
     }
 
 }

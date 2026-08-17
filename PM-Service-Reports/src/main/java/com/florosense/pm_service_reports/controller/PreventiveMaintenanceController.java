@@ -79,6 +79,13 @@ public class PreventiveMaintenanceController
         }
         System.out.println("========================================");
 
+        System.out.println("📥 POST preventiveMaintenanceStatus(root)=" + request.getPreventiveMaintenanceStatus()
+                + " summary=" + (request.getSummary() != null ? request.getSummary().getPreventiveMaintenanceStatus() : null));
+        System.out.println("📥 POST siteConditionAfterPm(root)=" + request.getSiteConditionAfterPm()
+                + " code=" + request.getSiteConditionCode()
+                + " summary=" + (request.getSummary() != null ? request.getSummary().getSiteConditionAfterPm() : null)
+                + " summaryCode=" + (request.getSummary() != null ? request.getSummary().getSiteConditionCode() : null));
+
         PMReportResponse response = service.saveReport(request);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }

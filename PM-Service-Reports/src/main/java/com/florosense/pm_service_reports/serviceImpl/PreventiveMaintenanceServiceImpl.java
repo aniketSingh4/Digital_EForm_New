@@ -1,12 +1,22 @@
 package com.florosense.pm_service_reports.serviceImpl;
 
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
+
+import javax.sql.DataSource;
 
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
+
+import jakarta.persistence.EntityManager;
 
 import com.florosense.pm_service_reports.dto.ChecklistItemDTO;
 import com.florosense.pm_service_reports.dto.PMReportRequest;
@@ -14,11 +24,9 @@ import com.florosense.pm_service_reports.dto.PMReportResponse;
 import com.florosense.pm_service_reports.dto.PMReportSummaryResponse;
 import com.florosense.pm_service_reports.entity.ChecklistCategory;
 import com.florosense.pm_service_reports.entity.InspectionStatus;
-import com.florosense.pm_service_reports.entity.PMStatus;
 import com.florosense.pm_service_reports.entity.PreventiveMaintenanceChecklist;
 import com.florosense.pm_service_reports.entity.PreventiveMaintenanceReport;
 import com.florosense.pm_service_reports.entity.PreventiveMaintenanceSignOff;
-import com.florosense.pm_service_reports.entity.SiteCondition;
 import com.florosense.pm_service_reports.exception.DuplicateResourceException;
 import com.florosense.pm_service_reports.exception.ResourceNotFoundException;
 import com.florosense.pm_service_reports.mapper.PMMapper;
@@ -29,14 +37,29 @@ import com.florosense.pm_service_reports.service.PreventiveMaintenanceService;
 @Transactional
 public class PreventiveMaintenanceServiceImpl implements PreventiveMaintenanceService {
 
+    private static final Set<String> PM_STATUS_CODES = Set.of(
+            "SATISFACTORY",
+            "FOLLOW_UP_VISIT_REQUIRED",
+            "REQUIRES_ATTENTION");
+    private static final Set<String> SITE_CONDITION_CODES = Set.of(
+            "SYSTEM_OPERATIONAL",
+            "SYSTEM_NOT_OPERATIONAL",
+            "SYSTEM_OPERATIONAL_WITH_OBSERVATION");
+
     private final PreventiveMaintenanceReportRepository repository;
     private final PMMapper mapper;
+    private final DataSource dataSource;
+    private final EntityManager entityManager;
 
     public PreventiveMaintenanceServiceImpl(
             PreventiveMaintenanceReportRepository repository,
-            PMMapper mapper) {
+            PMMapper mapper,
+            DataSource dataSource,
+            EntityManager entityManager) {
         this.repository = repository;
         this.mapper = mapper;
+        this.dataSource = dataSource;
+        this.entityManager = entityManager;
     }
     
     @Override
@@ -47,12 +70,8 @@ public class PreventiveMaintenanceServiceImpl implements PreventiveMaintenanceSe
         for (PreventiveMaintenanceReport report : reports) {
             try {
                 PMReportSummaryResponse summary = mapper.toSummaryDTO(report);
-                summary.setPreventiveMaintenanceStatus(
-                        report.getPreventiveMaintenanceStatus() != null
-                                ? report.getPreventiveMaintenanceStatus().getValue() : null);
-                summary.setSiteConditionAfterPm(
-                        report.getSiteConditionAfterPm() != null
-                                ? report.getSiteConditionAfterPm().getValue() : null);
+                summary.setPreventiveMaintenanceStatus(report.getPreventiveMaintenanceStatus());
+                applyResolvedSiteCondition(report, summary);
                 summaries.add(summary);
             } catch (Exception mappingError) {
                 System.err.println("Skipping summary mapping for report "
@@ -121,20 +140,76 @@ public class PreventiveMaintenanceServiceImpl implements PreventiveMaintenanceSe
         }
     }
 
-    // Helper method to convert String to PMStatus enum
-    private PMStatus convertToPMStatus(String status) {
-        if (status == null || status.isBlank()) {
+    private String canonicalizePmStatus(String raw) {
+        if (raw == null || raw.isBlank()) {
             return null;
         }
-        return PMStatus.fromValue(status);
+        String key = raw.trim().toUpperCase().replace(' ', '_').replace('-', '_');
+        if ("FOLLOWUP_VISIT_REQUIRED".equals(key)) {
+            key = "FOLLOW_UP_VISIT_REQUIRED";
+        }
+        return PM_STATUS_CODES.contains(key) ? key : null;
     }
 
-    // Helper method to convert String to SiteCondition enum
-    private SiteCondition convertToSiteCondition(String condition) {
-        if (condition == null || condition.isBlank()) {
+    private String toSiteConditionKey(String raw) {
+        if (raw == null || raw.isBlank()) {
             return null;
         }
-        return SiteCondition.fromValue(condition);
+        String key = raw.trim().toUpperCase().replace(' ', '_').replace('-', '_');
+        if (key.contains("NOT_OPERATIONAL") || key.contains("NON_OPERATIONAL")
+                || "DOWN".equals(key) || "SC_DOWN".equals(key)) {
+            return "SC_DOWN";
+        }
+        if (key.contains("WITH_OBSERVATION") || key.contains("WITH_ISSUES")
+                || "OBS".equals(key) || "SC_OBS".equals(key)) {
+            return "SC_OBS";
+        }
+        if ("SYSTEM_OPERATIONAL".equals(key) || "OK".equals(key) || "SC_OK".equals(key)) {
+            return "SC_OK";
+        }
+        return null;
+    }
+
+    private String toSiteConditionFull(String siteConditionKey) {
+        if (siteConditionKey == null) {
+            return null;
+        }
+        return switch (siteConditionKey) {
+            case "SC_OK" -> "SYSTEM_OPERATIONAL";
+            case "SC_OBS" -> "SYSTEM_OPERATIONAL_WITH_OBSERVATION";
+            case "SC_DOWN" -> "SYSTEM_NOT_OPERATIONAL";
+            default -> null;
+        };
+    }
+
+    private String resolvedSiteConditionKey(PreventiveMaintenanceReport report) {
+        String fromStoredKey = toSiteConditionKey(report.getSiteConditionKey());
+        if (fromStoredKey != null) {
+            return fromStoredKey;
+        }
+        return toSiteConditionKey(report.getSiteConditionAfterPm());
+    }
+
+    private void applyResolvedSiteCondition(PreventiveMaintenanceReport report, PMReportSummaryResponse summary) {
+        String key = resolvedSiteConditionKey(report);
+        String full = toSiteConditionFull(key);
+        summary.setSiteConditionKey(key);
+        summary.setSiteConditionAfterPm(full != null ? full : report.getSiteConditionAfterPm());
+    }
+
+    private void applyResolvedSiteCondition(PreventiveMaintenanceReport report, PMReportResponse response) {
+        String key = resolvedSiteConditionKey(report);
+        String full = toSiteConditionFull(key);
+        response.setSiteConditionKey(key);
+        response.setSiteConditionAfterPm(full != null ? full : report.getSiteConditionAfterPm());
+        if (response.getSummary() != null) {
+            response.getSummary().setSiteConditionKey(key);
+            response.getSummary().setSiteConditionAfterPm(full != null ? full : report.getSiteConditionAfterPm());
+        }
+    }
+
+    private String canonicalizeSiteCondition(String raw) {
+        return toSiteConditionFull(toSiteConditionKey(raw));
     }
 
     private String firstNonBlank(String... values) {
@@ -153,29 +228,117 @@ public class PreventiveMaintenanceServiceImpl implements PreventiveMaintenanceSe
         String pmStatusValue = firstNonBlank(
                 request.getSummary() != null ? request.getSummary().getPreventiveMaintenanceStatus() : null,
                 request.getPreventiveMaintenanceStatus());
-        String siteConditionValue = firstNonBlank(
+        String siteConditionKey = firstNonBlank(
+                request.getSummary() != null ? request.getSummary().getSiteConditionKey() : null,
+                request.getSiteConditionKey(),
+                request.getSummary() != null ? request.getSummary().getSiteConditionCode() : null,
+                request.getSiteConditionCode());
+        String siteConditionFull = firstNonBlank(
                 request.getSummary() != null ? request.getSummary().getSiteConditionAfterPm() : null,
                 request.getSiteConditionAfterPm());
 
         System.out.println("📥 Incoming PM Status: " + pmStatusValue);
-        System.out.println("📥 Incoming Site Condition: " + siteConditionValue);
+        System.out.println("📥 Incoming Site Condition key: " + siteConditionKey);
+        System.out.println("📥 Incoming Site Condition full: " + siteConditionFull);
 
-        PMStatus status = convertToPMStatus(pmStatusValue);
-        if (status != null) {
-            report.setPreventiveMaintenanceStatus(status);
+        String canonicalPmStatus = canonicalizePmStatus(pmStatusValue);
+        if (canonicalPmStatus != null) {
+            report.setPreventiveMaintenanceStatus(canonicalPmStatus);
         } else if (required || (pmStatusValue != null && !pmStatusValue.isBlank())) {
             throw new IllegalArgumentException("Invalid or missing PM Status: " + pmStatusValue);
         } else {
             System.out.println("⚠️ PM Status omitted, leaving existing value");
         }
 
-        SiteCondition condition = convertToSiteCondition(siteConditionValue);
-        if (condition != null) {
-            report.setSiteConditionAfterPm(condition);
-        } else if (required || (siteConditionValue != null && !siteConditionValue.isBlank())) {
-            throw new IllegalArgumentException("Invalid or missing Site Condition: " + siteConditionValue);
+        String fromFull = toSiteConditionKey(siteConditionFull);
+        String fromKey = toSiteConditionKey(siteConditionKey);
+        String resolvedKey = fromFull != null ? fromFull : fromKey;
+        if (fromFull != null && fromKey != null && !fromFull.equals(fromKey)) {
+            System.out.println("⚠️ Site condition mismatch full=" + fromFull + " key=" + fromKey
+                    + "; using full value");
+        }
+        String canonicalSiteCondition = toSiteConditionFull(resolvedKey);
+        if (canonicalSiteCondition != null) {
+            report.setSiteConditionKey(resolvedKey);
+            report.setSiteConditionAfterPm(canonicalSiteCondition);
+            System.out.println("📊 Canonical Site Condition: " + canonicalSiteCondition + " key=" + resolvedKey);
+        } else if (required || (siteConditionFull != null && !siteConditionFull.isBlank())
+                || (siteConditionKey != null && !siteConditionKey.isBlank())) {
+            throw new IllegalArgumentException("Invalid or missing Site Condition: "
+                    + firstNonBlank(siteConditionFull, siteConditionKey));
         } else {
             System.out.println("⚠️ Site Condition omitted, leaving existing value");
+        }
+    }
+
+    private void persistSiteConditionAfterCommit(Long id, String canonicalSiteCondition) {
+        if (id == null || canonicalSiteCondition == null || canonicalSiteCondition.isBlank()) {
+            return;
+        }
+        Runnable writer = () -> writeSiteCondition(id, canonicalSiteCondition);
+        if (TransactionSynchronizationManager.isSynchronizationActive()) {
+            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                @Override
+                public void afterCommit() {
+                    writer.run();
+                }
+            });
+        } else {
+            writer.run();
+        }
+    }
+
+    private void writeSiteConditionInSession(Long id, String canonicalSiteCondition) {
+        if (id == null || canonicalSiteCondition == null || canonicalSiteCondition.isBlank()) {
+            return;
+        }
+        int updated = entityManager.createNativeQuery(
+                "UPDATE pm_reports SET site_condition_after_pm = CAST(:value AS text) WHERE id = :id")
+                .setParameter("value", canonicalSiteCondition)
+                .setParameter("id", id)
+                .executeUpdate();
+        System.out.println("📝 in-session site_condition_after_pm update rows=" + updated
+                + " id=" + id + " value=" + canonicalSiteCondition);
+        Object stored = entityManager.createNativeQuery(
+                "SELECT site_condition_after_pm FROM pm_reports WHERE id = :id")
+                .setParameter("id", id)
+                .getSingleResult();
+        String storedText = stored == null ? null : stored.toString();
+        System.out.println("📊 Site Condition in-session SELECT: " + storedText
+                + " length=" + (storedText == null ? 0 : storedText.length()));
+        if (storedText == null || !canonicalSiteCondition.equals(storedText)) {
+            throw new IllegalStateException("Site condition did not persist as " + canonicalSiteCondition
+                    + " (stored=" + storedText + ")");
+        }
+    }
+
+    private void writeSiteCondition(Long id, String canonicalSiteCondition) {
+        try (Connection connection = dataSource.getConnection()) {
+            boolean autoCommit = connection.getAutoCommit();
+            try (PreparedStatement ps = connection.prepareStatement(
+                    "UPDATE pm_reports SET site_condition_after_pm = CAST(? AS text) WHERE id = ?")) {
+                ps.setString(1, canonicalSiteCondition);
+                ps.setLong(2, id);
+                int updated = ps.executeUpdate();
+                System.out.println("📝 afterCommit site_condition_after_pm update rows=" + updated
+                        + " id=" + id + " value=" + canonicalSiteCondition);
+            }
+            if (!autoCommit) {
+                connection.commit();
+            }
+            try (PreparedStatement ps = connection.prepareStatement(
+                    "SELECT site_condition_after_pm FROM pm_reports WHERE id = ?")) {
+                ps.setLong(1, id);
+                try (ResultSet rs = ps.executeQuery()) {
+                    if (rs.next()) {
+                        String stored = rs.getString(1);
+                        System.out.println("📊 Site Condition afterCommit SELECT: " + stored
+                                + " length=" + (stored == null ? 0 : stored.length()));
+                    }
+                }
+            }
+        } catch (Exception ex) {
+            throw new IllegalStateException("Failed to persist site_condition_after_pm for report " + id, ex);
         }
     }
 
@@ -188,12 +351,8 @@ public class PreventiveMaintenanceServiceImpl implements PreventiveMaintenanceSe
         summary.setEngineerName(report.getEngineerName());
         summary.setPmVisitDate(report.getPmVisitDate());
         summary.setSensorId(report.getSensorId());
-        if (report.getPreventiveMaintenanceStatus() != null) {
-            summary.setPreventiveMaintenanceStatus(report.getPreventiveMaintenanceStatus().getValue());
-        }
-        if (report.getSiteConditionAfterPm() != null) {
-            summary.setSiteConditionAfterPm(report.getSiteConditionAfterPm().getValue());
-        }
+        summary.setPreventiveMaintenanceStatus(report.getPreventiveMaintenanceStatus());
+        applyResolvedSiteCondition(report, summary);
         return summary;
     }
 
@@ -307,7 +466,11 @@ public class PreventiveMaintenanceServiceImpl implements PreventiveMaintenanceSe
         System.out.println("📊 Final PM Status: " + report.getPreventiveMaintenanceStatus());
         System.out.println("📊 Final Site Condition: " + report.getSiteConditionAfterPm());
         
+        String canonicalSiteCondition = report.getSiteConditionAfterPm();
         PreventiveMaintenanceReport savedReport = repository.save(report);
+        entityManager.flush();
+        writeSiteConditionInSession(savedReport.getId(), canonicalSiteCondition);
+        persistSiteConditionAfterCommit(savedReport.getId(), canonicalSiteCondition);
         
         System.out.println("✅ Report saved with ID: " + savedReport.getId());
         System.out.println("📊 Checklists saved: " + (savedReport.getChecklists() != null ? savedReport.getChecklists().size() : 0));
@@ -350,11 +513,9 @@ public class PreventiveMaintenanceServiceImpl implements PreventiveMaintenanceSe
     private PMReportResponse toResponse(PreventiveMaintenanceReport report) {
         PMReportResponse response = mapper.toDTO(report);
         response.setChecklists(toChecklistDtos(report.getChecklists()));
-        response.setPreventiveMaintenanceStatus(
-                report.getPreventiveMaintenanceStatus() != null ? report.getPreventiveMaintenanceStatus().getValue() : null);
-        response.setSiteConditionAfterPm(
-                report.getSiteConditionAfterPm() != null ? report.getSiteConditionAfterPm().getValue() : null);
+        response.setPreventiveMaintenanceStatus(report.getPreventiveMaintenanceStatus());
         response.setSummary(mapper.createSummaryDTO(report));
+        applyResolvedSiteCondition(report, response);
         return response;
     }
 
@@ -387,14 +548,10 @@ public class PreventiveMaintenanceServiceImpl implements PreventiveMaintenanceSe
         response.setObservation(report.getObservation());
         response.setRecommendation(report.getRecommendation());
         response.setCreatedAt(report.getCreatedAt());
-        if (report.getPreventiveMaintenanceStatus() != null) {
-            response.setPreventiveMaintenanceStatus(report.getPreventiveMaintenanceStatus().getValue());
-        }
-        if (report.getSiteConditionAfterPm() != null) {
-            response.setSiteConditionAfterPm(report.getSiteConditionAfterPm().getValue());
-        }
+        response.setPreventiveMaintenanceStatus(report.getPreventiveMaintenanceStatus());
         response.setSummary(mapper.createSummaryDTO(report));
         response.setChecklists(toChecklistDtos(report.getChecklists()));
+        applyResolvedSiteCondition(report, response);
         return response;
     }
 
@@ -487,7 +644,11 @@ public class PreventiveMaintenanceServiceImpl implements PreventiveMaintenanceSe
             report.setSignOff(signOff);
         }
 
+        String canonicalSiteCondition = report.getSiteConditionAfterPm();
         PreventiveMaintenanceReport updatedReport = repository.save(report);
+        entityManager.flush();
+        writeSiteConditionInSession(updatedReport.getId(), canonicalSiteCondition);
+        persistSiteConditionAfterCommit(updatedReport.getId(), canonicalSiteCondition);
         
         // Verify immutable fields were not changed
         System.out.println("✅ Update successful:");

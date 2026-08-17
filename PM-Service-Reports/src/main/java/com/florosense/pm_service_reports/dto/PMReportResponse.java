@@ -38,6 +38,9 @@ public class PMReportResponse {
     @JsonAlias({ "siteCondition", "siteConditionAfterPM" })
     private String siteConditionAfterPm;
 
+    @JsonProperty("siteConditionKey")
+    private String siteConditionKey;
+
     private PMSummaryDTO summary;
 
     private List<ChecklistItemDTO> checklists;
@@ -143,6 +146,14 @@ public class PMReportResponse {
 
 	public void setSiteConditionAfterPm(String siteConditionAfterPm) {
 		this.siteConditionAfterPm = siteConditionAfterPm;
+	}
+
+	public String getSiteConditionKey() {
+		return siteConditionKey;
+	}
+
+	public void setSiteConditionKey(String siteConditionKey) {
+		this.siteConditionKey = siteConditionKey;
 	}
 
 	public PMSummaryDTO getSummary() {
