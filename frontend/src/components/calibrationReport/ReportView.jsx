@@ -117,7 +117,7 @@ const ReportView = () => {
             <div className="report-view-header">
                 <div className="header-left">
                     <button className="btn-back" onClick={() => navigate('/calibration-reports')}>
-                        <FaArrowLeft /> Back
+                        <FaArrowLeft /> Back to Dashboard
                     </button>
                     <h1>Calibration Report</h1>
                 </div>

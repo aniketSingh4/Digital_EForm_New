@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { FaArrowLeft, FaSpinner } from 'react-icons/fa';
 import ProgressBar from "../components/pm/ProgressBar";
@@ -27,6 +27,7 @@ export default function PMReportWizard() {
     const [step, setStep] = useState(1);
     const [loading, setLoading] = useState(isEditMode);
     const [saving, setSaving] = useState(false);
+    const reviewRef = useRef(null);
     const [formData, setFormData] = useState({
         report: {},
         inspection: {},
@@ -458,9 +459,11 @@ export default function PMReportWizard() {
 
                     {step === 6 && (
                         <Step6Review
+                            ref={reviewRef}
                             formData={formData}
                             onEdit={(step) => setStep(step)}
                             onSubmit={handleSubmit}
+                            onSubmittingChange={setSaving}
                             isEditMode={isEditMode}
                             reportId={id}
                             onBackToDashboard={handleBackToDashboard}
@@ -487,11 +490,13 @@ export default function PMReportWizard() {
                     ) : (
                         <button 
                             className="submit-btn" 
-                            onClick={handleSubmit}
+                            onClick={() => reviewRef.current?.submit()}
                             disabled={saving}
                         >
                             {saving ? <FaSpinner className="spinning" /> : null}
-                            {isEditMode ? 'Update Report' : 'Done'}
+                            {saving
+                                ? (isEditMode ? 'Updating...' : 'Submitting...')
+                                : (isEditMode ? 'Update Report' : 'Submit Report')}
                         </button>
                     )}
                 </div>

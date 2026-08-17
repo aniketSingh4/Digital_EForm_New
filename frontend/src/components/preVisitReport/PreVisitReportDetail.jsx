@@ -260,7 +260,7 @@ const getImageUrl = (imageUrl) => {
       <div className="detail-header">
         <div className="header-left">
           <button className="back-btn" onClick={() => navigate('/previsit/view-all')}>
-            <FaArrowLeft /> Back to Reports
+            <FaArrowLeft /> Back to Dashboard
           </button>
           <div className="header-title">
             <h1>Pre-Visit Report Details</h1>

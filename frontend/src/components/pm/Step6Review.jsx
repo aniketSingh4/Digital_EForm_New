@@ -1,30 +1,25 @@
 // src/components/pm/Step6Review.js
-import React, { useState, useRef } from "react";
-import { submitPMReport, submitPMReportWithProgress, mapPMStatus, mapSiteCondition } from "../../api/pmReportService";
-// ADDED: Import update function for edit mode
+import React, { useState, useEffect, forwardRef, useImperativeHandle } from "react";
+import { submitPMReportWithProgress, mapPMStatus, mapSiteCondition } from "../../api/pmReportService";
 import { updatePMReportWithProgress } from "../../api/pmReportService";
-import jsPDF from "jspdf";
-import html2canvas from "html2canvas";
 import notificationService from '../../services/notificationService';
 import { pmStatusLabel, siteConditionLabel } from "../../utils/pmSummary";
 
-export default function Step6Review({
+const Step6Review = forwardRef(function Step6Review({
     formData,
     onEdit,
     onSubmit,
     onBackToDashboard,
+    onSubmittingChange,
     isEditMode = false,
     reportId = null
-}) {
+}, ref) {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [submitError, setSubmitError] = useState(null);
     const [submitSuccess, setSubmitSuccess] = useState(false);
     const [uploadProgress, setUploadProgress] = useState(0);
-    const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
     const [showSuccessModal, setShowSuccessModal] = useState(false);
     const [submittedReportNo, setSubmittedReportNo] = useState(null);
-
-    const reportRef = useRef(null);
 
     const report = formData.report || {};
     const inspection = formData.inspection || {};
@@ -292,163 +287,21 @@ export default function Step6Review({
         }
     };
 
+    useImperativeHandle(ref, () => ({
+        submit: handleSubmitReport
+    }));
+
+    useEffect(() => {
+        if (onSubmittingChange) {
+            onSubmittingChange(isSubmitting);
+        }
+    }, [isSubmitting, onSubmittingChange]);
+
     // Handle modal close and navigate to dashboard
     const handleModalClose = () => {
         setShowSuccessModal(false);
         if (onBackToDashboard) {
             onBackToDashboard();
-        }
-    };
-
-    // Handle Print
-    const handlePrint = () => {
-        window.print();
-    };
-
-    // ========================================
-    // ENHANCED PDF GENERATION
-    // ========================================
-    const handleGeneratePDF = async () => {
-        setIsGeneratingPDF(true);
-
-        try {
-            const element = reportRef.current;
-            if (!element) {
-                throw new Error("Report content not found");
-            }
-
-            // Create a clone of the element for PDF generation
-            const cloneElement = element.cloneNode(true);
-
-            // Apply enhanced PDF-specific styles
-            cloneElement.style.width = '100%';
-            cloneElement.style.maxWidth = '1200px';
-            cloneElement.style.margin = '0 auto';
-            cloneElement.style.padding = '40px';
-            cloneElement.style.background = 'white';
-            cloneElement.style.fontFamily = 'Arial, sans-serif';
-            cloneElement.style.color = '#1a1a2e';
-            cloneElement.style.fontSize = '14px';
-            cloneElement.style.lineHeight = '1.6';
-
-            // Add to DOM temporarily
-            const tempDiv = document.createElement('div');
-            tempDiv.style.position = 'fixed';
-            tempDiv.style.left = '-9999px';
-            tempDiv.style.top = '0';
-            tempDiv.style.width = '1200px';
-            tempDiv.style.background = 'white';
-            tempDiv.style.zIndex = '-9999';
-            tempDiv.appendChild(cloneElement);
-            document.body.appendChild(tempDiv);
-
-            // Wait for rendering
-            await new Promise(resolve => setTimeout(resolve, 500));
-
-            // Generate canvas
-            const canvas = await html2canvas(cloneElement, {
-                scale: 2,
-                useCORS: true,
-                logging: false,
-                width: 1200,
-                height: cloneElement.scrollHeight,
-                windowHeight: cloneElement.scrollHeight,
-                backgroundColor: '#ffffff',
-                onclone: (clonedDoc) => {
-                    const clonedElement = clonedDoc.querySelector('[data-pdf-content]');
-                    if (clonedElement) {
-                        clonedElement.style.display = 'block';
-                        clonedElement.style.background = 'white';
-                    }
-                }
-            });
-
-            // Remove temp element
-            document.body.removeChild(tempDiv);
-
-            // Calculate PDF dimensions
-            const imgWidth = 210; // A4 width in mm
-            const pageHeight = 297; // A4 height in mm
-            const imgHeight = (canvas.height * imgWidth) / canvas.width;
-
-            // Create PDF
-            const pdf = new jsPDF('p', 'mm', 'a4');
-            const imgData = canvas.toDataURL('image/png');
-
-            let heightLeft = imgHeight;
-            let position = 0;
-            let pageCount = 1;
-
-            // Add first page
-            pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
-            heightLeft -= pageHeight;
-
-            // Add subsequent pages if content is longer than one page
-            while (heightLeft > 0) {
-                position = heightLeft - imgHeight;
-                pdf.addPage();
-                pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
-                heightLeft -= pageHeight;
-                pageCount++;
-            }
-
-            // Add page numbers to each page
-            for (let i = 1; i <= pageCount; i++) {
-                pdf.setPage(i);
-                pdf.setFontSize(10);
-                pdf.setTextColor(150, 150, 150);
-                pdf.text(
-                    `Page ${i} of ${pageCount}`,
-                    pdf.internal.pageSize.getWidth() / 2,
-                    pdf.internal.pageSize.getHeight() - 10,
-                    { align: 'center' }
-                );
-
-                // Add footer line
-                pdf.setDrawColor(200, 200, 200);
-                pdf.setLineWidth(0.5);
-                pdf.line(
-                    20,
-                    pdf.internal.pageSize.getHeight() - 15,
-                    pdf.internal.pageSize.getWidth() - 20,
-                    pdf.internal.pageSize.getHeight() - 15
-                );
-            }
-
-            // Save PDF with proper filename
-            const fileName = `PM_Report_${report.serviceReportNo || 'Report'}_${new Date().toISOString().split('T')[0]}.pdf`;
-            pdf.save(fileName);
-
-            // Call onSubmit with PDF generated
-            if (onSubmit) {
-                onSubmit({
-                    type: "pdf",
-                    success: true,
-                    fileName: fileName
-                });
-            }
-            notificationService.reportDownloaded('PM Report', {
-                id: report.id,
-                reportType: 'PM Report',
-                reportName: report.serviceReportNo,
-                customerName: report.clientName,
-                location: report.siteName,
-            });
-
-        } catch (error) {
-            notificationService.error(error.message || "Failed to generate PDF");
-            //console.error("PDF Generation Error:", error);
-            //alert(`❌ Failed to generate PDF: ${error.message}`);
-
-            if (onSubmit) {
-                onSubmit({
-                    type: "pdf",
-                    success: false,
-                    error: error.message
-                });
-            }
-        } finally {
-            setIsGeneratingPDF(false);
         }
     };
 
@@ -497,14 +350,7 @@ export default function Step6Review({
                 </div>
             )}
 
-            {isGeneratingPDF && (
-                <div className="alert alert-info">
-                    ⏳ Generating PDF... Please wait.
-                </div>
-            )}
-
-            {/* Report Content - This will be captured for PDF */}
-            <div ref={reportRef} data-pdf-content>
+            <div>
                 {/* Header */}
                 <div className="review-header" style={{
                     textAlign: 'center',
@@ -1258,78 +1104,6 @@ export default function Step6Review({
                 </div>
             </div>
 
-            {/* FOOTER ACTIONS */}
-            <div className="footer-actions" style={{
-                display: 'flex',
-                gap: '10px',
-                justifyContent: 'center',
-                marginTop: '30px',
-                padding: '20px',
-                borderTop: '1px solid #ddd',
-                flexWrap: 'wrap'
-            }}>
-                <button
-                    className="btn print"
-                    onClick={handlePrint}
-                    style={{
-                        padding: '10px 20px',
-                        background: '#4CAF50',
-                        color: 'white',
-                        border: 'none',
-                        borderRadius: '4px',
-                        cursor: 'pointer',
-                        fontSize: '14px',
-                        fontWeight: '500',
-                        transition: 'all 0.3s ease'
-                    }}
-                    onMouseEnter={(e) => e.target.style.transform = 'scale(1.05)'}
-                    onMouseLeave={(e) => e.target.style.transform = 'scale(1)'}
-                >
-                    🖨️ Print Report
-                </button>
-
-                <button
-                    className="btn pdf"
-                    onClick={handleGeneratePDF}
-                    disabled={isGeneratingPDF}
-                    style={{
-                        padding: '10px 20px',
-                        background: isGeneratingPDF ? '#999' : '#f44336',
-                        color: 'white',
-                        border: 'none',
-                        borderRadius: '4px',
-                        cursor: isGeneratingPDF ? 'not-allowed' : 'pointer',
-                        fontSize: '14px',
-                        fontWeight: '500',
-                        transition: 'all 0.3s ease',
-                        opacity: isGeneratingPDF ? 0.6 : 1
-                    }}
-                >
-                    {isGeneratingPDF ? "⏳ Generating..." : "📄 Download PDF"}
-                </button>
-
-                <button
-                    className="btn submit"
-                    onClick={handleSubmitReport}
-                    disabled={isSubmitting || submitSuccess}
-                    style={{
-                        padding: '10px 20px',
-                        background: submitSuccess ? '#4CAF50' : (isSubmitting ? '#999' : '#2196f3'),
-                        color: 'white',
-                        border: 'none',
-                        borderRadius: '4px',
-                        cursor: (isSubmitting || submitSuccess) ? 'default' : 'pointer',
-                        fontSize: '14px',
-                        fontWeight: '500',
-                        transition: 'all 0.3s ease',
-                        opacity: (isSubmitting || submitSuccess) ? 0.6 : 1
-                    }}
-                >
-                    {/* MODIFIED: Dynamic button text based on edit mode */}
-                    {submitSuccess ? "✅ Submitted" : (isSubmitting ? `⏳ ${isEditMode ? 'Updating' : 'Submitting'}... ${uploadProgress}%` : (isEditMode ? "📤 Update Report" : "📤 Submit Report"))}
-                </button>
-            </div>
-
             {/* Success Modal - Navigates to Dashboard when clicked */}
             {showSuccessModal && (
                 <div className="modal-overlay" style={{
@@ -1505,4 +1279,6 @@ export default function Step6Review({
             `}</style>
         </div>
     );
-}
+});
+
+export default Step6Review;
