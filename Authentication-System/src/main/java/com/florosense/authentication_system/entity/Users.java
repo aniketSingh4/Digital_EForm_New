@@ -1,6 +1,5 @@
 package com.florosense.authentication_system.entity;
 
-import java.text.DateFormat;
 import java.time.LocalDateTime;
 
 import jakarta.persistence.Column;
