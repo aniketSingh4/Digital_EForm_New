@@ -36,7 +36,6 @@ public class Users
 	//Constructor
 	public Users() {
 		super();
-		// TODO Auto-generated constructor stub
 	}
 
 	public Users(long id, String name, String email, String phone, String password, String role, boolean enabled,
