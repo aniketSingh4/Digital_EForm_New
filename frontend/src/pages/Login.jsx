@@ -2,15 +2,10 @@ import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import authService from "../services/authService";
 import { env } from "../config/env";
+import { IDLE_LOGOUT_FLAG } from "../hooks/useIdleTimeout";
 
 export default function Login() {
     const navigate = useNavigate();
-
-    useEffect(() => {
-        if (authService.validateToken()) {
-            navigate("/dashboard", { replace: true });
-        }
-    }, [navigate]);
 
     const [formData, setFormData] = useState({
         username: "",
@@ -20,6 +15,17 @@ export default function Login() {
     const [showPassword, setShowPassword] = useState(false);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
+
+    useEffect(() => {
+        if (authService.validateToken()) {
+            navigate("/dashboard", { replace: true });
+            return;
+        }
+        if (sessionStorage.getItem(IDLE_LOGOUT_FLAG)) {
+            sessionStorage.removeItem(IDLE_LOGOUT_FLAG);
+            // setError("You were signed out due to inactivity");
+        }
+    }, [navigate]);
 
     const handleChange = (e) => {
         setFormData({

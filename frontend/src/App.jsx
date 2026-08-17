@@ -20,8 +20,11 @@ import InstallationReportDetail from './components/installationReport/Installati
 import PMReportView from "./components/pm/PMReportView";
 import ProtectedRoute from "./components/ProtectedRoute";
 import AdminRoute from "./components/AdminRoute";
+import useIdleTimeout from "./hooks/useIdleTimeout";
 
 function App() {
+  useIdleTimeout();
+
   return (
     <NotificationProvider>
       <ToastContainer
