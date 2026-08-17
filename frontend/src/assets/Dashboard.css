@@ -1645,12 +1645,12 @@
     }
 
     .search-input {
-        width: 100px;
-        font-size: 12px;
-        padding: 6px 8px 6px 30px;
+        width: 100%;
+        font-size: 16px;
+        padding: 10px 12px 10px 36px;
     }
     .search-input:focus {
-        width: 130px;
+        width: 100%;
     }
 
     .search-icon {

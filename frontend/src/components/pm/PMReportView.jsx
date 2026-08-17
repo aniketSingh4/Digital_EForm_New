@@ -90,17 +90,25 @@ const PMReportView = () => {
             .replace(/\b\w/g, l => l.toUpperCase());
     };
 
-    // ✅ Helper function to get status badge
-    const getStatusBadge = (status) => {
-        const code = pickPmStatus(status) || pickSiteCondition(status);
+    const getPmStatusBadge = (status) => {
+        const code = pickPmStatus(status);
         if (!code) {
             return { label: 'N/A', className: 'status-pending', icon: <FaClock /> };
         }
-
         const statusMap = {
             'SATISFACTORY': { label: 'Satisfactory', className: 'status-success', icon: <FaCheckCircle /> },
             'FOLLOW_UP_VISIT_REQUIRED': { label: 'Follow-up Required', className: 'status-warning', icon: <FaClock /> },
-            'REQUIRES_ATTENTION': { label: 'Requires Attention', className: 'status-danger', icon: <FaClock /> },
+            'REQUIRES_ATTENTION': { label: 'Requires Attention', className: 'status-danger', icon: <FaClock /> }
+        };
+        return statusMap[code] || { label: formatStatusText(code), className: 'status-pending', icon: <FaClock /> };
+    };
+
+    const getSiteConditionBadge = (status) => {
+        const code = pickSiteCondition(status);
+        if (!code) {
+            return { label: 'N/A', className: 'status-pending', icon: <FaClock /> };
+        }
+        const statusMap = {
             'SYSTEM_OPERATIONAL': { label: 'System Operational', className: 'status-success', icon: <FaCheckCircle /> },
             'SYSTEM_NOT_OPERATIONAL': { label: 'System Not Operational', className: 'status-danger', icon: <FaClock /> },
             'SYSTEM_OPERATIONAL_WITH_OBSERVATION': { label: 'Operational with Observation', className: 'status-warning', icon: <FaClock /> }
@@ -180,8 +188,8 @@ const PMReportView = () => {
     );
 
     // ✅ Get status badges
-    const pmStatus = getStatusBadge(pmStatusValue);
-    const siteCondition = getStatusBadge(siteConditionValue);
+    const pmStatus = getPmStatusBadge(pmStatusValue);
+    const siteCondition = getSiteConditionBadge(siteConditionValue);
 
     return (
         <div className="pm-report-view-container">

@@ -43,7 +43,7 @@ import notificationService from '../services/notificationService';
 import { canModifyReports, getAuthHeaders } from '../utils/roles';
 import { getCached, setCached, invalidate, LIST_CACHE_TTL } from '../utils/cache';
 import { env } from '../config/env';
-import { pickPmStatus, pickSiteCondition, pmStatusLabel, siteConditionLabel, extractPmSummary } from '../utils/pmSummary';
+import { pickPmStatus, pickSiteCondition, pmStatusLabel, siteConditionLabel, extractPmSummary, toSiteConditionCode } from '../utils/pmSummary';
 
 export default function ViewReports() {
     const navigate = useNavigate();
@@ -1248,13 +1248,18 @@ export default function ViewReports() {
         setEditError(null);
 
         try {
+            const siteCondition = pickSiteCondition(editedReport.siteConditionAfterPm);
             const payload = {
                 ...editedReport,
                 preventiveMaintenanceStatus: pickPmStatus(editedReport.preventiveMaintenanceStatus),
-                siteConditionAfterPm: pickSiteCondition(editedReport.siteConditionAfterPm),
+                siteConditionAfterPm: siteCondition,
+                siteConditionCode: toSiteConditionCode(siteCondition),
+                siteConditionKey: toSiteConditionCode(siteCondition),
                 summary: {
                     preventiveMaintenanceStatus: pickPmStatus(editedReport.preventiveMaintenanceStatus),
-                    siteConditionAfterPm: pickSiteCondition(editedReport.siteConditionAfterPm)
+                    siteConditionAfterPm: siteCondition,
+                    siteConditionCode: toSiteConditionCode(siteCondition),
+                    siteConditionKey: toSiteConditionCode(siteCondition)
                 }
             };
             delete payload._original;

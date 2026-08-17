@@ -1,7 +1,7 @@
 import { getAuthHeaders } from '../utils/roles';
 import { invalidate } from '../utils/cache';
 import { env } from '../config/env';
-import { normalizePmStatus, normalizeSiteCondition } from '../utils/pmSummary';
+import { normalizePmStatus, normalizeSiteCondition, toSiteConditionCode } from '../utils/pmSummary';
 
 const API_BASE_URL = env.PM_REPORTS_URL
 
@@ -135,11 +135,15 @@ export const prepareUpdatePayload = (formData, id) => {
         engineerName: reportData.engineerName || '',
         observation: formData.summary?.observation || '',
         recommendation: formData.summary?.recommendation || '',
-        preventiveMaintenanceStatus: normalizePmStatus(formData.summary?.pmStatus),
-        siteConditionAfterPm: normalizeSiteCondition(formData.summary?.siteCondition),
+        preventiveMaintenanceStatus: formData.summary?.pmStatus,
+        siteConditionAfterPm: formData.summary?.siteCondition,
+        siteConditionCode: toSiteConditionCode(formData.summary?.siteCondition),
+        siteConditionKey: toSiteConditionCode(formData.summary?.siteCondition),
         summary: {
-            preventiveMaintenanceStatus: normalizePmStatus(formData.summary?.pmStatus),
-            siteConditionAfterPm: normalizeSiteCondition(formData.summary?.siteCondition)
+            preventiveMaintenanceStatus: formData.summary?.pmStatus,
+            siteConditionAfterPm: formData.summary?.siteCondition,
+            siteConditionCode: toSiteConditionCode(formData.summary?.siteCondition),
+            siteConditionKey: toSiteConditionCode(formData.summary?.siteCondition)
         },
         checklists: formData.checklists || [],
         signOff: {

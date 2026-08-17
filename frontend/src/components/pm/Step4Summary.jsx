@@ -16,6 +16,16 @@ export default function Step4Summary({ formData, setFormData }) {
         }));
     };
 
+    const selectOption = (field, value) => {
+        setFormData(prev => ({
+            ...prev,
+            summary: {
+                ...prev.summary,
+                [field]: value
+            }
+        }));
+    };
+
     return (
         <div className="step-container">
             <div className="section-header">
@@ -66,7 +76,7 @@ export default function Step4Summary({ formData, setFormData }) {
                                     name="pmStatus"
                                     value={option.value}
                                     checked={summary.pmStatus === option.value}
-                                    onChange={handleChange}
+                                    onChange={() => selectOption("pmStatus", option.value)}
                                 />
                                 <span className="radio-label">{option.label}</span>
                             </label>
@@ -89,7 +99,7 @@ export default function Step4Summary({ formData, setFormData }) {
                                     name="siteCondition"
                                     value={option.value}
                                     checked={summary.siteCondition === option.value}
-                                    onChange={handleChange}
+                                    onChange={() => selectOption("siteCondition", option.value)}
                                 />
                                 <span className="radio-label">{option.label}</span>
                             </label>

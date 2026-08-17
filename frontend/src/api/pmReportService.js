@@ -2,8 +2,8 @@
 import axios from 'axios';
 import { invalidate } from '../utils/cache';
 import { env } from '../config/env';
-import { normalizePmStatus, normalizeSiteCondition, pickPmStatus, pickSiteCondition } from '../utils/pmSummary';
 import { handleUnauthorizedResponse } from '../utils/authSession';
+import { toSiteConditionCode } from '../utils/pmSummary';
 
 const apiClient = axios.create({
   baseURL: env.PM_API_URL,
@@ -65,17 +65,6 @@ const mapInspectionStatus = (status) => {
 
   return statusMap[statusStr] || "NO";
 };
-
-/**
- * Map PM Status to enum values expected by backend
- */
-export const mapPMStatus = (status) => normalizePmStatus(status);
-
-/**
- * Map Site Condition to enum values expected by backend.
- * Exact-key only. Never use includes("OPERATIONAL").
- */
-export const mapSiteCondition = (condition) => normalizeSiteCondition(condition);
 
 /**
  * Map Checklist Category to enum values expected by backend
@@ -202,8 +191,9 @@ export const transformDataForAPI = (formData, isEditMode = false) => {
     { key: "Enclosure Cleaned", label: "Enclosure Cleaned" }
   ]);
 
-  const pmStatus = pickPmStatus(summary?.pmStatus, summary?.preventiveMaintenanceStatus);
-  const siteCondition = pickSiteCondition(summary?.siteCondition, summary?.siteConditionAfterPm);
+  const pmStatus = summary?.pmStatus || summary?.preventiveMaintenanceStatus || "";
+  const siteCondition = summary?.siteCondition || summary?.siteConditionAfterPm || "";
+  const siteConditionKey = toSiteConditionCode(siteCondition);
 
   // Build the final API payload
   let apiPayload = {
@@ -218,9 +208,13 @@ export const transformDataForAPI = (formData, isEditMode = false) => {
     recommendation: summary?.recommendation || "",
     preventiveMaintenanceStatus: pmStatus,
     siteConditionAfterPm: siteCondition,
+    siteConditionCode: siteConditionKey,
+    siteConditionKey: siteConditionKey,
     summary: {
       preventiveMaintenanceStatus: pmStatus,
-      siteConditionAfterPm: siteCondition
+      siteConditionAfterPm: siteCondition,
+      siteConditionCode: siteConditionKey,
+      siteConditionKey: siteConditionKey
     },
     checklists: checklists,
     signOff: {

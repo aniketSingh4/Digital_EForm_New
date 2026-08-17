@@ -1,9 +1,8 @@
 // src/components/pm/Step6Review.js
 import React, { useState, useEffect, forwardRef, useImperativeHandle } from "react";
-import { submitPMReportWithProgress, mapPMStatus, mapSiteCondition } from "../../api/pmReportService";
-import { updatePMReportWithProgress } from "../../api/pmReportService";
+import { submitPMReportWithProgress, updatePMReportWithProgress } from "../../api/pmReportService";
 import notificationService from '../../services/notificationService';
-import { pmStatusLabel, siteConditionLabel } from "../../utils/pmSummary";
+import { pmStatusLabel, siteConditionLabel, isCanonicalPmStatus, isCanonicalSiteCondition, toSiteConditionCode } from "../../utils/pmSummary";
 
 const Step6Review = forwardRef(function Step6Review({
     formData,
@@ -172,7 +171,7 @@ const Step6Review = forwardRef(function Step6Review({
             // Transform checklists
             const checklists = transformChecklists();
 
-            if (!mapPMStatus(summary.pmStatus) || !mapSiteCondition(summary.siteCondition)) {
+            if (!isCanonicalPmStatus(summary.pmStatus) || !isCanonicalSiteCondition(summary.siteCondition)) {
                 throw new Error("Please select Preventive Maintenance Status and Site Condition");
             }
 
@@ -189,11 +188,15 @@ const Step6Review = forwardRef(function Step6Review({
                 engineerName: report.engineerName || "",
                 observation: summary.observation || "",
                 recommendation: summary.recommendation || "",
-                preventiveMaintenanceStatus: mapPMStatus(summary.pmStatus),
-                siteConditionAfterPm: mapSiteCondition(summary.siteCondition),
+                preventiveMaintenanceStatus: summary.pmStatus,
+                siteConditionAfterPm: summary.siteCondition,
+                siteConditionCode: toSiteConditionCode(summary.siteCondition),
+                siteConditionKey: toSiteConditionCode(summary.siteCondition),
                 summary: {
-                    preventiveMaintenanceStatus: mapPMStatus(summary.pmStatus),
-                    siteConditionAfterPm: mapSiteCondition(summary.siteCondition)
+                    preventiveMaintenanceStatus: summary.pmStatus,
+                    siteConditionAfterPm: summary.siteCondition,
+                    siteConditionCode: toSiteConditionCode(summary.siteCondition),
+                    siteConditionKey: toSiteConditionCode(summary.siteCondition)
                 },
                 checklists: checklists,
                 signOff: {

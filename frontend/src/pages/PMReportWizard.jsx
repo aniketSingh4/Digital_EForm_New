@@ -16,8 +16,7 @@ import 'react-toastify/dist/ReactToastify.css';
 import { getAuthHeaders } from '../utils/roles';
 import { invalidate } from '../utils/cache';
 import { env } from '../config/env';
-import { mapPMStatus, mapSiteCondition } from '../api/pmReportService';
-import { normalizePmStatus, normalizeSiteCondition, extractPmSummary } from '../utils/pmSummary';
+import { isCanonicalPmStatus, isCanonicalSiteCondition, extractPmSummary, toSiteConditionCode } from '../utils/pmSummary';
 
 export default function PMReportWizard() {
     const navigate = useNavigate();
@@ -190,9 +189,9 @@ export default function PMReportWizard() {
 
     const nextStep = () => {
         if (step === 4) {
-            const pmStatus = normalizePmStatus(formData.summary?.pmStatus);
-            const siteCondition = normalizeSiteCondition(formData.summary?.siteCondition);
-            if (!pmStatus || !siteCondition) {
+            const pmStatus = formData.summary?.pmStatus;
+            const siteCondition = formData.summary?.siteCondition;
+            if (!isCanonicalPmStatus(pmStatus) || !isCanonicalSiteCondition(siteCondition)) {
                 notificationService.error('Please select Preventive Maintenance Status and Site Condition');
                 return;
             }
@@ -232,7 +231,7 @@ export default function PMReportWizard() {
             if (!pmVisitDate) {
                 throw new Error("PM Visit Date is required");
             }
-            if (!mapPMStatus(formData.summary?.pmStatus) || !mapSiteCondition(formData.summary?.siteCondition)) {
+            if (!isCanonicalPmStatus(formData.summary?.pmStatus) || !isCanonicalSiteCondition(formData.summary?.siteCondition)) {
                 throw new Error("Please select Preventive Maintenance Status and Site Condition");
             }
 
@@ -254,11 +253,15 @@ export default function PMReportWizard() {
                 engineerName: reportData.engineerName || "",
                 observation: formData.summary?.observation || "",
                 recommendation: formData.summary?.recommendation || "",
-                preventiveMaintenanceStatus: mapPMStatus(formData.summary?.pmStatus),
-                siteConditionAfterPm: mapSiteCondition(formData.summary?.siteCondition),
+                preventiveMaintenanceStatus: formData.summary?.pmStatus,
+                siteConditionAfterPm: formData.summary?.siteCondition,
+                siteConditionCode: toSiteConditionCode(formData.summary?.siteCondition),
+                siteConditionKey: toSiteConditionCode(formData.summary?.siteCondition),
                 summary: {
-                    preventiveMaintenanceStatus: mapPMStatus(formData.summary?.pmStatus),
-                    siteConditionAfterPm: mapSiteCondition(formData.summary?.siteCondition)
+                    preventiveMaintenanceStatus: formData.summary?.pmStatus,
+                    siteConditionAfterPm: formData.summary?.siteCondition,
+                    siteConditionCode: toSiteConditionCode(formData.summary?.siteCondition),
+                    siteConditionKey: toSiteConditionCode(formData.summary?.siteCondition)
                 },
                 checklists: formData.checklists || [],
                 signOff: {
