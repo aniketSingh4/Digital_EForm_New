@@ -1,80 +1,64 @@
-# Technical Interview Notes — Digital Installation & PM Visit E-Form System
+# How my Digital E-Form system works
 
-Use this file to **explain the project in an interview**. It covers how the system works, why each technology exists, and short answers you can say out loud. Keep explanations simple first, then add detail if the interviewer asks.
+I wrote this so I understand the **flow of my own code** — from the browser click to PostgreSQL and back. I use it to explain the project in interviews.
 
-The product itself is described in [`README.md`](README.md). This file is the **why and how**.
+The product overview (features, setup, APIs) is in [`README.md`](README.md). This file is **how the code runs and why I chose each piece**.
 
 ---
 
 ## Table of contents
 
-- [One-minute pitch](#one-minute-pitch)
-- [Problem we solved](#problem-we-solved)
-- [Architecture (how to draw it)](#architecture-how-to-draw-it)
-- [Why microservices](#why-microservices)
-- [Request flow (end to end)](#request-flow-end-to-end)
-- [Backend layered design](#backend-layered-design)
-- [Authentication and JWT](#authentication-and-jwt)
-- [Roles and authorization](#roles-and-authorization)
-- [Database and JPA](#database-and-jpa)
-- [The four report modules](#the-four-report-modules)
-- [Frontend architecture](#frontend-architecture)
-- [Images, signatures, and PDFs](#images-signatures-and-pdfs)
-- [Notifications](#notifications)
+- [What I built](#what-i-built)
+- [How I think about the architecture](#how-i-think-about-the-architecture)
+- [Where the code lives](#where-the-code-lives)
+- [How a user reaches a page](#how-a-user-reaches-a-page)
+- [Signup flow](#signup-flow)
+- [Login flow](#login-flow)
+- [How the JWT travels on every later request](#how-the-jwt-travels-on-every-later-request)
+- [Roles — USER vs ADMIN](#roles--user-vs-admin)
+- [Dashboard flow](#dashboard-flow)
+- [PM report flow (the 6-step wizard)](#pm-report-flow-the-6-step-wizard)
+- [Pre-visit, calibration, and installation flows](#pre-visit-calibration-and-installation-flows)
+- [How images are uploaded](#how-images-are-uploaded)
+- [How I generate PDFs](#how-i-generate-pdfs)
+- [Notification flow](#notification-flow)
+- [How I structured each Spring service](#how-i-structured-each-spring-service)
+- [How data is stored](#how-data-is-stored)
 - [Caching](#caching)
-- [API Gateway vs Nginx](#api-gateway-vs-nginx)
-- [Docker and production](#docker-and-production)
-- [Technology choices — why each one](#technology-choices--why-each-one)
-- [Design decisions and trade-offs](#design-decisions-and-trade-offs)
-- [Likely interview questions](#likely-interview-questions)
+- [Local vs production request path](#local-vs-production-request-path)
+- [Why I used each technology](#why-i-used-each-technology)
+- [Trade-offs I made](#trade-offs-i-made)
+- [How I explain this in an interview](#how-i-explain-this-in-an-interview)
 
 ---
 
-## One-minute pitch
+## What I built
 
-> “FloroSense field engineers used to fill paper checklists on site. I built a digital e-form platform so they can create, submit, and review four kinds of service reports from the browser: pre-visit, installation, calibration, and preventive maintenance.
->
-> The UI is a **React** SPA. The backend is **five Spring Boot microservices** sharing **JWT auth** and one **PostgreSQL** database. In production, **Docker Compose** runs the APIs behind an **Nginx** reverse proxy. Admins can edit and delete reports; regular users can create and view them, and export a PDF.”
+Field engineers at FloroSense used paper forms. I replaced that with a web app where they fill four digital reports:
 
-If they ask for one technical highlight:
-
-> “Auth is **stateless JWT**. The auth service issues the token. Every report service verifies the same token with a shared secret, so the engineer logs in once and can call all five APIs.”
-
----
-
-## Problem we solved
-
-| Paper process | Digital system |
-| --- | --- |
-| Handwritten checklists on site | Structured forms with validation |
-| Lost / unreadable copies | Reports stored in PostgreSQL |
-| No search or counts | Dashboard counts, search, date filters |
-| No access control | JWT + USER / ADMIN roles |
-| Hard to share with office | Browser view + client-side PDF |
-
-The business flow is a **site-visit lifecycle**:
-
-1. **Pre-visit** — is the site ready (power, mounting, internet, LED, scope)?
-2. **Installation & commissioning** — what was installed, with photos and dual sign-off?
+1. **Pre-visit** — before install, is the site ready?
+2. **Installation & commissioning** — what was installed, with photos and sign-off?
 3. **Calibration** — before/after readings against a master instrument?
-4. **Preventive maintenance** — scheduled inspection checklist and status?
+4. **Preventive maintenance (PM)** — scheduled inspection checklist?
+
+I built a **React** frontend and **five Spring Boot microservices**. Users log in once. I store reports in **PostgreSQL**. Completed reports can be viewed in the browser and downloaded as PDF.
 
 ---
 
-## Architecture (how to draw it)
+## How I think about the architecture
 
 ```mermaid
 flowchart LR
-  Browser["React SPA\nVite"]
-  Nginx["Nginx\npath-based proxy"]
-  Auth["Auth service\n:8089"]
-  PM["PM service\n:8090"]
-  Pre["Pre-visit service\n:8088"]
-  Cal["Calibration service\n:8087"]
-  Inst["Installation service\n:8086"]
+  Browser["My React app\nVite, port 5173"]
+  Nginx["Nginx\nproduction only"]
+  Auth["Authentication-System\n:8089"]
+  PM["PM-Service-Reports\n:8090"]
+  Pre["Pre-Visit-Report-Form\n:8088"]
+  Cal["Calibration-Report\n:8087"]
+  Inst["Installation-Commisioning-Report\n:8086"]
   DB[("PostgreSQL\nDigital_EForm")]
 
-  Browser -->|"local: direct ports"| Auth
+  Browser -->|"local: each VITE_* URL"| Auth
   Browser --> PM
   Browser --> Pre
   Browser --> Cal
@@ -92,508 +76,560 @@ flowchart LR
   Inst --> DB
 ```
 
-**How to explain this drawing**
+I split the backend into five services so each report type has its own API. Login lives in `Authentication-System`. The other four only care about their own tables.
 
-- The **browser never talks to PostgreSQL**. It only talks HTTP/JSON to APIs.
-- **Locally**, Vite on port `5173` calls each service on its own port (`VITE_*_SERVICE_URL` in `frontend/.env`).
-- **In production**, all five APIs sit on a Docker network. Only **Nginx on port 80** is public. It routes by URL path (`/api/auth` → auth, `/api/pm_reports` → PM, and so on).
-- All services share one database named `Digital_EForm`, but **each module owns its own tables**. That is a shared-database microservice style, not “one database per service.”
+**Why microservices instead of one Spring app?**  
+A bug in calibration should not take down login or PM. I can restart one service. The forms also have different shapes (PM has child checklists, calibration uses UUIDs, pre-visit stores photos as `BYTEA`).
+
+**What I did not split:** I still use **one PostgreSQL database** (`Digital_EForm`). Each service owns its own tables. That is simpler on a small VPS than five databases.
+
+On my laptop the React app calls each service by port. In production Docker Compose runs the five APIs on an internal network and **Nginx** is the only public entry. I also have an `Api-Gateway` module (Spring Cloud Gateway on port 7070) for optional local routing, but production uses Nginx.
 
 ---
 
-## Why microservices
+## Where the code lives
 
-**Simple answer:** each report type is a separate product area. A bug in calibration should not take down login or PM.
+```
+Digital_Installation_PM_Visit_E-Form_System/
+├── frontend/                          React + Vite
+│   ├── src/main.jsx                   BrowserRouter starts here
+│   ├── src/App.jsx                    All routes
+│   ├── src/pages/                     Login, Signup, Dashboard, PM wizard
+│   ├── src/components/                Forms, lists, ProtectedRoute, AdminRoute
+│   ├── src/services/  src/api/        Axios clients
+│   └── src/config/env.js              Reads VITE_* URLs
+├── Authentication-System/             Login, register, notifications
+├── PM-Service-Reports/
+├── Pre-Visit-Report-Form/
+├── Calibration-Report/
+├── Installation-Commisioning-Report/
+├── Api-Gateway/                       Optional, local only
+├── Thread-Starvation/                 Optional Hikari / thread-pool monitor
+├── nginx/                             Path-based reverse proxy
+└── docker-compose.yml
+```
 
-**Full answer you can give:**
+Every backend follows the same path:
 
-We split the backend into five Spring Boot apps:
+`controller` → `service` → `mapper` (if I have one) → `repository` → `entity` → PostgreSQL
 
-| Service | Port | Owns |
+The controller never talks to the database. I did that so HTTP, business rules, and persistence stay separate.
+
+---
+
+## How a user reaches a page
+
+The app starts in `frontend/src/main.jsx`. I wrap everything in `BrowserRouter`, then render `App.jsx`.
+
+In `App.jsx` I defined three kinds of routes:
+
+| Kind | Wrapper | Examples |
 | --- | --- | --- |
-| Authentication-System | 8089 | Users, login, JWT, notifications |
-| PM-Service-Reports | 8090 | Preventive maintenance reports |
-| Pre-Visit-Report-Form | 8088 | Pre-visit checklists + site photos |
-| Calibration-Report | 8087 | Calibration certificates |
-| Installation-Commisioning-Report | 8086 | Installation reports + photos |
+| Public | none | `/login`, `/signup` |
+| Logged in | `ProtectedRoute` | `/dashboard`, create/view reports |
+| Admin only | `ProtectedRoute` + `AdminRoute` | `/pm-reports/edit/:id` and the other edit URLs |
 
-**Why not one monolith?**
+**`ProtectedRoute.jsx`** reads `token` from `localStorage` and calls `authService.validateToken()`. That function only decodes the JWT payload and checks `exp`. If there is no token or it is expired, I `Navigate` to `/login`.
 
-- Teams / features can ship independently (PM wizard vs calibration form).
-- Each service can scale or restart on its own.
-- Different data shapes (PM has child checklists; calibration has UUID + nested readings; pre-visit has `bytea` images).
-- Failure isolation: if installation is down, engineers can still log in and submit PM.
+**`AdminRoute.jsx`** calls `canModifyReports()` from `utils/roles.js`. That is true only when the stored role is `ADMIN`. Otherwise I redirect to the list page.
 
-**Honest trade-off (interviewers like this):** we did **not** give each service its own database. They share PostgreSQL. That is simpler to operate on a small VPS, but it is weaker isolation than a textbook microservice. We still keep **table ownership** per service.
+So the UI flow is:
 
-There is also an optional **Spring Cloud Gateway** (`Api-Gateway`, port `7070`) for local routing, and a **Thread-Starvation** library that can watch HikariCP / thread pools. Production traffic goes through **Nginx**, not the Java gateway.
+```
+URL change
+  → React Router matches a Route in App.jsx
+  → ProtectedRoute: is there a valid token?
+       no  → /login
+       yes → render the page
+  → if it is an edit URL, AdminRoute: is role ADMIN?
+       no  → list page
+       yes → edit form
+```
+
+I know the UI check is not real security. The APIs also reject PUT/DELETE unless the JWT has `ROLE_ADMIN`. I explain that later.
 
 ---
 
-## Request flow (end to end)
+## Signup flow
 
-Walk this when they say “walk me through saving a report.”
+I start on `frontend/src/pages/Signup.jsx`.
 
-```
-1. Engineer opens /login
-2. POST /api/auth/login  →  Authentication-System
-   - Spring Security AuthenticationManager checks email + password
-   - BCrypt matches the stored hash
-   - JwtService builds a signed token (email, name, role, 24h expiry)
-3. Frontend stores token, userName, userRole, userEmail in localStorage
-4. Engineer fills the PM 6-step wizard  (state stays in React until the end)
-5. POST /api/pm_reports  +  Authorization: Bearer <jwt>
-   Local: http://localhost:8090
-   Prod:  Nginx → pm container :8080
-6. JwtAuthFilter verifies the signature and expiry
-   - Puts ROLE_USER or ROLE_ADMIN into SecurityContext
-7. Controller → Service → Mapper → Repository → PostgreSQL
-   - Parent row in pm_reports
-   - Child checklist rows (cascade)
-   - Sign-off row (cascade)
-8. Frontend invalidates list cache, shows a toast, creates a notification
-9. Dashboard GET /api/pm_reports/count  (and the other /count endpoints)
-```
+1. The user fills name, email, 10-digit Indian mobile (`^[6-9]\d{9}$`), password (min 8), confirm password, optional role (default `USER`).
+2. I call `authService.register()` in `frontend/src/services/authService.js`.
+3. That uses the Axios instance in `frontend/src/services/api.js`, whose `baseURL` is `VITE_AUTH_SERVICE_URL + /api`.
+4. Request: `POST /api/auth/register`.
 
-**Images** (pre-visit / installation) are a **second request** after the report ID exists: `POST /images/upload/{reportId}` as multipart. Bytes go into PostgreSQL `BYTEA`, not a public S3 bucket.
+On the backend:
+
+`AuthController.register()` → `AuthServiceImpl.register()`
+
+I check that email and phone are not already in the `users` table. I hash the password with **BCrypt** (`passwordEncoder.encode`). I only allow role `USER` or `ADMIN`; anything else becomes `USER`. Then I `userRepository.save(user)`.
+
+I do not log the user in automatically. After signup they go to `/login`.
+
+**Why BCrypt?** I never store the real password. BCrypt is a slow hash, so if the `users` table leaks, cracking passwords is expensive.
 
 ---
 
-## Backend layered design
+## Login flow
 
-Every service follows the same Spring layout. Say this as:
+This is the path I walk through first in an interview, because everything else depends on it.
 
-> “Controller never talks to the database. It receives a DTO, the service contains business logic, a mapper converts DTO ↔ entity, the repository is Spring Data JPA.”
+### Frontend
+
+`frontend/src/pages/Login.jsx`
+
+1. If a token is already valid, I send them straight to `/dashboard`.
+2. On submit I call `authService.login({ email, password })`.
+3. Axios `POST /api/auth/login` (no Bearer header — `api.js` skips the token for login/register).
+4. On success I store:
+
+   - `token`
+   - `userName`
+   - `userRole`
+   - `userEmail`
+
+   then I fire `eform-auth-changed` so the notification context reloads, and I `navigate("/dashboard")`.
+
+### Backend
+
+`AuthController.login()` → `AuthServiceImpl.login()`
 
 ```
-HTTP JSON
-   ↓
-Controller     (@RestController, validation with @Valid)
-   ↓
-Service        (create / update / cache evict / cascade children)
-   ↓
-Mapper         (MapStruct on PM; manual mapping on others)
-   ↓
-Repository     (JpaRepository + custom @Query)
-   ↓
-Entity         (JPA / Hibernate → PostgreSQL)
+POST /api/auth/login  { email, password }
+  → AuthenticationManager.authenticate(...)
+       → CustomUserDetailsService.loadUserByUsername(email)
+            → UserRepository.findByEmail
+            → wrap in CustomUserDetails
+       → BCrypt matches request password vs stored hash
+  → JwtService.generateToken(email, role, name)
+  → LoginResponse { token, role, name, email }
 ```
 
-**Why DTOs instead of exposing entities?**
+`SecurityConfig` in the auth service permits `/api/auth/**` without a token. `JwtAuthFilter` also skips `/api/auth/` and `/actuator/` via `shouldNotFilter`.
 
-- The JSON the UI sends is not the same shape as the tables (PM wizard sends nested `summary` + `checklists` + `signOff`).
-- Entities have relationships (`@OneToMany`). Returning them raw can cause lazy-load / circular JSON problems.
-- Validation (`@NotBlank`, `@Pattern`) belongs on the request DTO so bad input never becomes a half-saved entity.
+### What I put inside the JWT
 
-**Why a GlobalExceptionHandler?**
+In `JwtService.java` I set claims `role`, `name`, `email`, subject = email, issued-at, expiry (24 hours). I sign with HMAC using `JWT_SECRET` (at least 32 bytes). Every report service uses the **same** secret so they can verify a token they did not create.
 
-`@RestControllerAdvice` turns exceptions into consistent JSON:
+**Why JWT instead of server sessions?** I have five APIs. A session in one JVM would not exist in the others unless I added Redis. A JWT is self-contained. PM does not call auth on every request — it only verifies the signature.
 
-| Exception | HTTP status |
-| --- | --- |
-| `ResourceNotFoundException` | 404 |
-| `MethodArgumentNotValidException` (Bean Validation) | 400 + field errors |
-| Unexpected `Exception` | 500 with a generic message (no stack trace to the client) |
-
-That is cleaner than try/catch in every controller method.
+**Why Spring Security is STATELESS and CSRF is off:** I send the token in the `Authorization` header, not as a cookie. CSRF is a problem when the browser attaches cookies automatically. I still set CORS so only my frontend origins can call the APIs from a browser.
 
 ---
 
-## Authentication and JWT
+## How the JWT travels on every later request
 
-### What a JWT is (say this simply)
+After login, almost every HTTP call goes through an Axios instance or `fetch` with `getAuthHeaders()`.
 
-A JWT is three Base64 parts: **header.payload.signature**.
+```
+React component
+  → axios / fetch
+  → interceptor in api.js (or axiosConfig.js, or getAuthHeaders)
+  → header: Authorization: Bearer <token>
+  → (local) http://localhost:8090/...
+     or (prod) http://<nginx>/api/pm_reports
+  → JwtAuthFilter on that service
+       1. Read Authorization
+       2. jwtService.isTokenValid(token)  — signature + expiry
+       3. extract email and role
+       4. if role is ADMIN, authority becomes ROLE_ADMIN
+       5. put UsernamePasswordAuthenticationToken into SecurityContextHolder
+  → Spring Security filter chain
+       GET/POST  → any authenticated user
+       PUT/PATCH/DELETE → hasRole("ADMIN")
+  → Controller
+```
 
-- **Payload** holds `sub` (email), `role`, `name`, `iat`, `exp`.
-- **Signature** is HMAC-SHA with `JWT_SECRET`. If anyone tampers with the payload, verification fails.
-- The token is **self-contained**. Report services do **not** call the auth service on every request. They only need the same secret.
+If the token is missing or invalid, the API returns **401**. My Axios response interceptor calls `handleUnauthorizedResponse` in `utils/authSession.js`. I only log the user out on 401, not on 403. 403 means they are logged in but not allowed (for example a USER hitting DELETE). Logging them out for 403 would be wrong.
 
-### Why JWT (not server sessions)
-
-| Sessions | JWT (what we use) |
-| --- | --- |
-| Server stores session in memory/Redis | No session store |
-| Sticky sessions / shared cache needed | Any service can verify the token |
-| Harder across five APIs | One login works for all five |
-
-Spring Security is **stateless**: `SessionCreationPolicy.STATELESS`. CSRF is **disabled** because we do not use cookie-based session auth. The browser sends `Authorization: Bearer …` on each call. CSRF mainly matters when the browser automatically attaches cookies.
-
-### Login path (auth service)
-
-1. `AuthenticationManager.authenticate(email, password)`
-2. `CustomUserDetails` loads the user from PostgreSQL
-3. `BCryptPasswordEncoder.matches` (never store plain passwords)
-4. `JwtService.generateToken(email, role, name)` — HS256, secret ≥ 32 bytes
-5. Response: `{ token, role, name, email }`
-
-Public endpoints: `/api/auth/register`, `/api/auth/login`, `/actuator/health`. Everything else, including `/api/notifications`, requires a valid token.
-
-### How other services trust the token
-
-Each report service has the **same** `JwtAuthFilter` (`OncePerRequestFilter`):
-
-1. Read `Authorization` header.
-2. If it starts with `Bearer `, parse and verify with `JWT_SECRET`.
-3. Extract role. If it is `ADMIN`, set authority `ROLE_ADMIN` (Spring’s `hasRole("ADMIN")` expects that prefix).
-4. Put `UsernamePasswordAuthenticationToken` into `SecurityContextHolder`.
-
-**Interview point:** `JWT_SECRET` **must be identical** on all five services. If it differs, login works but PM/calibration calls return 401.
-
-### Frontend session
-
-- Token lives in **`localStorage`** (also `userName`, `userRole`, `userEmail`).
-- Axios request interceptors attach `Authorization: Bearer <token>`.
-- `ProtectedRoute` checks the token exists and `exp` is in the future (client-side decode of the payload — not a signature check).
-- On **401** (not 403), `handleUnauthorizedResponse` clears storage and redirects to login. 403 means “logged in but not allowed”; we must **not** log the user out for that.
-
-**Honest trade-off:** `localStorage` is simple and works well with a SPA + JWT header, but it is visible to XSS. HttpOnly cookies would be safer against XSS, but then we would need CSRF protection again. We mitigate XSS with normal React (no `dangerouslySetInnerHTML` for user HTML) and a 24-hour expiry.
+On the client, `ProtectedRoute` only checks expiry by decoding the payload. It does **not** check the signature. The signature check always happens on the server.
 
 ---
 
-## Roles and authorization
+## Roles — USER vs ADMIN
 
-| Role | UI | API |
+| | USER (default on signup) | ADMIN |
 | --- | --- | --- |
-| **USER** (default on signup) | Create + view + PDF | `GET` and `POST` |
-| **ADMIN** | Also edit + delete | `PUT` / `PATCH` / `DELETE` require `ROLE_ADMIN` |
+| Create reports | yes | yes |
+| View lists and details, PDF | yes | yes |
+| Edit / delete | no | yes |
 
-**Defense in depth** — say this; interviewers listen for it:
+I enforce this twice on purpose (**defense in depth**):
 
-1. **Frontend:** `AdminRoute` wraps `/edit/:id`. Non-admins are redirected to the list. Buttons for delete can be hidden with `canModifyReports()`.
-2. **Backend:** Spring Security `requestMatchers(HttpMethod.PUT/PATCH/DELETE, "/api/**").hasRole("ADMIN")`.
+1. **UI** — `AdminRoute` + `canModifyReports()` so a normal user never sees an edit screen.
+2. **API** — in each report service `SecurityConfig`, for example PM:
 
-The UI check is for UX. The **API check is the real security**. Anyone can call the API with curl; without `ROLE_ADMIN` they get 403.
+   - `PUT /api/**` → `hasRole("ADMIN")`
+   - `PATCH /api/**` → `hasRole("ADMIN")`
+   - `DELETE /api/**` → `hasRole("ADMIN")`
+   - `GET` and `POST` → authenticated
 
-Signup accepts an optional role, then `normalizeRole()` only allows `USER` or `ADMIN`. Unknown values become `USER`.
+Anyone can call the API with curl. Without `ROLE_ADMIN` in the JWT they get 403. Hiding a button is not enough.
+
+`hasRole("ADMIN")` expects the authority `ROLE_ADMIN`. That is why `JwtAuthFilter` prefixes `ROLE_` if it is missing.
 
 ---
 
-## Database and JPA
+## Dashboard flow
 
-**Why PostgreSQL**
+After login I land on `frontend/src/pages/Dashboard.jsx`.
 
-- Relational data with parent/child reports (checklists, equipment, images).
-- `BYTEA` for binary images.
-- Unique constraints (email, phone, report numbers).
-- Mature JDBC driver and Hibernate dialect.
+1. I wrap the app in `NotificationProvider` (`App.jsx`), so the bell on the dashboard has data.
+2. I load report counts. If `dashboard_data` in `localStorage` is younger than **2 hours**, I show the cache and skip the network.
+3. Otherwise I run `Promise.allSettled` on:
 
-**Shared database, separate tables**
+   - `GET {PM}/api/pm_reports/count`
+   - `GET {PREVISIT}/api/previsit-reports/count`
+   - `GET {CALIBRATION}/api/calibration-reports/count`
+   - `GET {INSTALLATION}/api/installation-reports` (I take `array.length`)
 
-Examples: `users`, `app_notifications`, `pm_reports`, `pm_sign_off`, `pre_visit_reports`, `previsit_site_images`, `calibration_reports`, `installation_reports`.
+   Each request carries the Bearer token. `allSettled` means if one service is down, the others still show.
 
-Hibernate `ddl-auto=update` creates/alters tables on startup. That is convenient for a small team iterating on entities. In a stricter production setup you would switch to Flyway/Liquibase migrations so schema changes are versioned.
+4. I save the counts back to `localStorage`.
+5. Every **20 seconds** I refresh notifications from `GET /api/notifications`.
 
-**Cascade and orphanRemoval (PM example)**
+That is why the dashboard can still open when one microservice is down — counts for that module just show 0.
+
+---
+
+## PM report flow (the 6-step wizard)
+
+This is the longest flow in the project. I use it as my “walk me through a feature” example.
+
+### Create (new report)
+
+Page: `frontend/src/pages/PMReportWizard.jsx`  
+Route: `/pm-reports` or `/pm-reports/new` (inside `ProtectedRoute`)
+
+I keep one React state object for the whole wizard:
+
+```js
+formData = {
+  report,      // step 1
+  inspection,  // step 2
+  technical,   // step 3
+  summary,     // step 4
+  signoff,     // step 5
+  checklists,  // flattened Yes/No rows
+}
+```
+
+Each step is a child component. I pass `formData` and `setFormData` down. That is **lifting state up** so step 6 can preview everything without extra API calls. Nothing is saved to the database until the last step.
+
+| Step | File | What the engineer fills |
+| --- | --- | --- |
+| 1 | `Step1BasicInfo.jsx` | Client, site, sensor ID, engineer, date. Report number `PM-YYYY-XXXX`. Visit number `FESPL_{sensorId}_{count}` from `GET /api/pm_reports/sensor/{sensorId}/count` |
+| 2 | `Step2Inspection.jsx` | Physical inspection + power supply |
+| 3 | `Step3Technical.jsx` | Sensor health, communication, calibration check, cleaning |
+| 4 | `Step4Summary.jsx` | Observation, recommendation, PM status, site condition |
+| 5 | `Step5SignOff.jsx` | Client + engineer names, dates, signatures |
+| 6 | `Step6Review.jsx` | Full preview, then submit |
+
+`ProgressBar.jsx` only displays which step is active.
+
+On submit, `handleSubmit` in `PMReportWizard.jsx`:
+
+1. Validates client name, site, date, PM status, site condition, report number, sensor ID.
+2. Builds one JSON payload (`checklists` + `signOff` + summary fields).
+3. `POST {VITE_PM_SERVICE_URL}/api/pm_reports` with `getAuthHeaders()`.
+
+### Backend save
+
+```
+PreventiveMaintenanceController.saveReport(@Valid PMReportRequest)
+  → PreventiveMaintenanceServiceImpl.saveReport()
+       → check duplicate serviceReportNo
+       → PMMapper / manual mapping to PreventiveMaintenanceReport
+       → attach checklist children (category enum + YES/NO)
+       → attach sign-off child
+       → repository.save(parent)
+            Hibernate cascade ALL writes:
+              pm_reports
+              checklist rows
+              pm_sign_off
+       → @CacheEvict list + count caches
+  → 201 + PMReportResponse JSON
+```
 
 `PreventiveMaintenanceReport` has:
 
-- `@OneToMany` checklists with `cascade = ALL` and `orphanRemoval = true`
+- `@OneToMany` checklists with `cascade = ALL`, `orphanRemoval = true`
 - `@OneToOne` sign-off with the same cascade
 
-**How to explain cascade:** saving the parent saves children. Deleting the parent deletes children. `orphanRemoval` means if a checklist item is removed from the list, Hibernate deletes that row. That matches “one report is one document.”
+So one `save(parent)` persists the whole document. If I delete the report, children go too.
 
-**Enums:** PM status is `SATISFACTORY` / `FOLLOW_UP_VISIT_REQUIRED` / `REQUIRES_ATTENTION`, stored as VARCHAR via a converter so the DB stays readable.
+After a successful POST I:
 
-**IDs:** most tables use `IDENTITY` (auto-increment `Long`). Calibration uses **UUID strings** because certificate records are treated as independent documents that may be referenced externally.
+- `invalidate('pm_reports')` so the list cache is stale
+- clear dashboard count cache
+- `notificationService.reportCreated(...)` which POSTs to `/api/notifications`
+- navigate to the list / view
+
+### Edit (admin only)
+
+Route: `/pm-reports/edit/:id` → `AdminRoute` then the same wizard with `isEditMode`.
+
+1. `GET /api/pm_reports/{id}`
+2. I map checklist rows back into `inspection` / `technical` so steps 2 and 3 show the saved Yes/No values.
+3. I freeze `serviceReportNo`, `serviceVisitNo`, and `sensorId` in `originalImmutableFields` so an edit cannot change identity fields.
+4. Submit is `PUT /api/pm_reports/{id}` — backend requires `ROLE_ADMIN`.
+
+### View and list
+
+- List: `ViewReports.jsx` → `GET /api/pm_reports` (summary DTOs, not full checklists).
+- Detail: `PMReportView.jsx` → `GET /api/pm_reports/{id}`.
 
 ---
 
-## The four report modules
+## Pre-visit, calibration, and installation flows
 
-### 1. Preventive Maintenance — 6-step wizard
+Same idea as PM: form in React → JWT → that module’s controller → service → PostgreSQL. Differences:
 
-**Why a wizard, not one long page?** A PM visit has many checklist sections. Splitting into steps reduces mistakes on a tablet in the field. Data stays in React `formData` until step 6 submits **one JSON** to `POST /api/pm_reports`.
+### Pre-visit (`Pre-Visit-Report-Form`, port 8088)
 
-| Step | What it captures |
+Single page `PreVisitReportForm.jsx`, not a wizard.
+
+1. Engineer fills contacts + six Yes/No items (power, mounting, sensor location, internet, LED, client scope).
+2. `POST /api/previsit-reports` creates the row (`pre_visit_reports`).
+3. Photos are a **second** call once I have `reportId` (see images below).
+4. Customer and technician signatures are TEXT columns (canvas data URL or typed name).
+
+List/search: `usePreVisitReports.js` → `preVisitReportService`. Detail: `PreVisitReportDetail.jsx`.
+
+### Calibration (`Calibration-Report`, port 8087)
+
+Form: `CalibrationReportForm.jsx`. One JSON to `POST /api/calibration-reports`.
+
+The entity `CalibrationReport` uses a **UUID** id and `@OneToOne(cascade = ALL)` for:
+
+- master reference instrument
+- reading before
+- reading after
+- summary flags
+- engineer details
+
+`ReportNumberGenerator` builds `FLO_CAL_yyyyMMdd` + a 4-digit sequence from `count() + 1`. Due date is typically +90 days.
+
+### Installation (`Installation-Commisioning-Report`, port 8086)
+
+Form: `InstallationReportForm.jsx`. Equipment is `@ElementCollection` (`report_equipment_details`). Work activities are booleans (unboxing, wiring, internet, safety briefing, …). Photos use the same upload pattern as pre-visit.
+
+---
+
+## How images are uploaded
+
+I do not send photos in the first create JSON. The report row must exist first.
+
+```
+POST /api/previsit-reports                  → get reportId
+POST /api/previsit-reports/images/upload/{reportId}   multipart file
+```
+
+Same pattern for installation: `/api/installation-reports/images/upload/{reportId}`.
+
+On the server I read the file bytes and save a `SiteImage` / `InstallationSiteImage` row:
+
+- `image_data` → PostgreSQL `BYTEA` (`byte[]` + `@Lob`)
+- name, type, size, `report_id`
+
+When the UI loads a report, the API returns a Base64 data URI so `<img src>` works without a public file server.
+
+**Why the database instead of S3 / disk?** One `pg_dump` backs up reports and photos. Docker containers are disposable. The trade-off is larger DB rows and JSON. Nginx `client_max_body_size` is **25m** so the proxy does not reject the multipart request. Compose still bind-mounts `./data/previsit-uploads` and `./data/installation-uploads` for temp/static files.
+
+---
+
+## How I generate PDFs
+
+There is no PDF service on the backend.
+
+`frontend/src/utils/pdfGenerator.js`:
+
+1. `html2canvas` takes a screenshot of the report DOM (`scale: 2`, white background, `useCORS: true` for images).
+2. `jsPDF` writes A4 pages and `pdf.save(filename)`.
+
+Some list pages also use `jspdf-autotable`. I generate the file **in the browser** so I do not add a PDF library to every microservice, and the PDF looks like the screen the engineer already reviewed.
+
+---
+
+## Notification flow
+
+Notifications are **not** stored on the report services. They live on **auth**, because they belong to a user (email, read/unread), not to one report type.
+
+After create/update/delete, `notificationService.js` shows a toast and `POST /api/notifications`.
+
+```
+NotificationController
+  → reads Authentication.getName()  (email from the JWT)
+  → NotificationService.create / listForUser / markRead
+  → table app_notifications
+```
+
+On the frontend:
+
+- `NotificationProvider` in `notificationContext.jsx` holds the list and unread count.
+- It loads from `GET /api/notifications`, merges with `localStorage` keyed by email (`notifications_<email>`).
+- Dashboard polls every 20 seconds.
+- Mark read / clear all call PATCH/POST/DELETE on the same API.
+
+I used **polling**, not WebSockets. It is simpler to deploy. 20 seconds is enough for an office admin watching the bell.
+
+---
+
+## How I structured each Spring service
+
+Example: saving a PM report.
+
+| Layer | What it does | Why I have it |
+| --- | --- | --- |
+| **Controller** | `@Valid` DTO in, HTTP status out | HTTP stays out of business logic |
+| **DTO** | JSON shape the UI sends | Not the same as the table (nested `summary`, `checklists`) |
+| **Service** | Duplicate checks, cascade children, `@Transactional`, cache evict | One place for rules |
+| **Mapper** | PM uses MapStruct `PMMapper` | Compile-time DTO ↔ entity |
+| **Repository** | `JpaRepository` + `@Query` | No JDBC boilerplate |
+| **Entity** | Tables and relations | Hibernate maps to PostgreSQL |
+| **GlobalExceptionHandler** | `@RestControllerAdvice` | 404 / 400 field errors / 500 without leaking stack traces |
+
+If Bean Validation fails (`@NotBlank`, `@Pattern` on `PM-YYYY-XXXX`), Spring throws `MethodArgumentNotValidException` and I return 400 with field names. The row is never saved.
+
+---
+
+## How data is stored
+
+One database, many tables:
+
+| Service | Main tables |
 | --- | --- |
-| 1 Basic info | Client, site, sensor ID, engineer, date. Report no `PM-YYYY-XXXX`. Visit no `FESPL_{sensorId}_{count}` from live `GET /sensor/{id}/count` |
-| 2 Inspection | Physical + power-supply Yes/No + remark |
-| 3 Technical | Sensor health, communication, calibration check, cleaning |
-| 4 Summary | Observations, recommendations, PM status, site condition |
-| 5 Sign-off | Client + engineer names, dates, signatures |
-| 6 Review | Full preview, then submit |
+| Auth | `users`, `app_notifications` |
+| PM | `pm_reports`, checklist table, `pm_sign_off` |
+| Pre-visit | `pre_visit_reports`, `previsit_site_images` |
+| Calibration | `calibration_reports` + related one-to-one tables |
+| Installation | `installation_reports`, `report_equipment_details`, image table |
 
-Checklist rows are stored as `PreventiveMaintenanceChecklist` with a `ChecklistCategory` enum. MapStruct (`PMMapper`) maps request DTO ↔ entity.
+I use `spring.jpa.hibernate.ddl-auto=update` so new entity fields create columns on startup. That is convenient while I iterate. For a stricter production setup I would switch to Flyway so schema changes are versioned.
 
-### 2. Pre-visit
+IDs: most tables use `IDENTITY` (`Long`). Calibration uses UUID strings because I treat a certificate as an independent document.
 
-Single-page form **before** installation. Six readiness flags (power, mounting, sensor location, internet, LED, client scope), each Yes/No + remark. Photos upload after create. Customer and technician signatures stored as TEXT (canvas data URL or typed name).
-
-### 3. Calibration
-
-Nested document: master reference instrument, readings **before** and **after**, summary flags, engineer declaration. Related rows use `@OneToOne(cascade = ALL)`. Certificate number from `ReportNumberGenerator` (`FLO_CAL_yyyyMMdd` + sequence). Due date typically +90 days.
-
-### 4. Installation & commissioning
-
-Equipment list is an `@ElementCollection` (separate `report_equipment_details` table). Work activities are booleans (unboxing, wiring, internet, safety briefing, …). Photos follow the same `BYTEA` pattern as pre-visit.
-
----
-
-## Frontend architecture
-
-**Stack in one sentence:** React 19 SPA built with Vite, routed by React Router 7, talking to APIs with Axios.
-
-```
-main.jsx          BrowserRouter
-  App.jsx         Routes + NotificationProvider + ToastContainer
-    ProtectedRoute / AdminRoute
-      pages/      Dashboard, wizards, list/detail
-      components/ PM steps, forms, lists
-      services/   Axios clients (auth, notifications, each report type)
-      config/env.js   Vite env → base URLs
-```
-
-**Why Vite:** fast HMR in development; `import.meta.env.VITE_*` bakes API origins into the production build. Changing hosts does not require editing source — only `.env` and a rebuild.
-
-**Why React Router:** login/signup are public; everything else is behind `ProtectedRoute`. Edit URLs are a second gate (`AdminRoute`).
-
-**Why Axios interceptors:** every service client attaches the JWT once. Failed 401s are handled in one place instead of in every `try/catch`.
-
-**Forms:** PM keeps a single `formData` object lifted in `PMReportWizard`. Child steps receive `formData` + `setFormData`. That is **lifting state up** so Review can show everything without extra fetches.
-
-**Validation:** client-side (required fields, report-number regex, Indian mobile `^[6-9]\d{9}$`) for instant feedback; server-side Bean Validation is the authority.
-
-**UX libraries:** MUI for some controls, `react-datepicker` + `date-fns` for dates, `react-toastify` for success/error, `lucide-react` / `react-icons` for icons, `react-signature-canvas` where the user draws a signature.
-
----
-
-## Images, signatures, and PDFs
-
-### Site photos in the database
-
-Pre-visit and installation store files as `byte[]` mapped to PostgreSQL `BYTEA` (`@Lob` + `BinaryJdbcType`).
-
-**Why DB, not disk/S3 (for this project)?**
-
-- One backup (pg_dump) includes reports **and** photos.
-- Docker containers are disposable; a local folder can vanish on rebuild unless you bind-mount it.
-- The API can return a Base64 data URI so the React view does not need a separate public file server.
-
-**Cost:** large images inflate the DB and JSON payloads. Nginx `client_max_body_size` is **25 MB** so multipart uploads are not silently rejected. Compose still bind-mounts `./data/previsit-uploads` and `./data/installation-uploads` for temp/static serving.
-
-### Signatures
-
-Drawn on a canvas (`react-signature-canvas`) and saved as a string (often a PNG data URL in a TEXT column). Dual sign-off (customer + technician/engineer) is a **business rule**: the visit is not complete until both parties acknowledge the work.
-
-### PDF export (client-side)
-
-`html2canvas` snapshots the report DOM; `jsPDF` writes an A4 PDF. Some list views also use `jspdf-autotable`.
-
-**Why client-side, not a Java PDF library?**
-
-- No extra server CPU or PDF dependency on each microservice.
-- The PDF looks like the on-screen report (what you see is what you print).
-- Works even if the engineer is viewing a completed report and only needs a file to email.
-
-**Limitation:** very long reports / CORS images need `useCORS: true`. Quality depends on the DOM, not a print stylesheet.
-
----
-
-## Notifications
-
-When a report is created/updated/deleted, the UI calls the **auth** service `POST /api/notifications`.
-
-- Stored in `app_notifications` (type, audience, recipient email, report id/title, read flag).
-- `NotificationProvider` (React Context) holds the feed, unread count, and mark-read / clear-all.
-- Dashboard **polls every 20 seconds**.
-- A copy is also kept in `localStorage` per email so the bell is not empty on refresh if the API is slow.
-
-**Why Context, not prop drilling:** Navbar, Dashboard, and forms all need the same feed. Context is the shared client store for that.
-
-**Why notifications live on the auth service:** they are user-centric (recipient email, read state), not report-centric. One inbox for all four report types.
-
-This is **polling**, not WebSockets. Polling is simpler to deploy on a small VPS; 20s is “near real-time” for office admins.
+PM status is an enum (`SATISFACTORY`, `FOLLOW_UP_VISIT_REQUIRED`, `REQUIRES_ATTENTION`) stored as VARCHAR through a converter so the column stays readable.
 
 ---
 
 ## Caching
 
-Three layers — mention this if they ask about performance.
+I cache in three places because dashboard and lists are hit often, and reports do not change every second.
 
-| Layer | What | TTL / policy |
+| Where | What | When it expires |
 | --- | --- | --- |
-| **Browser dashboard** | Report counts in `localStorage` | 2 hours |
-| **Browser list pages** | `cache.js` (`app_cache:` keys) | 15 minutes, then invalidate on create/update/delete |
-| **Spring Caffeine** | `@Cacheable` on list + count in report services | 10 minutes, max 500 entries; `@CacheEvict` on writes |
+| Dashboard `localStorage` | Counts | 2 hours, or I clear it after save |
+| `frontend/src/utils/cache.js` | List pages (`app_cache:` keys) | 15 minutes; `invalidate()` on create/update/delete |
+| Spring **Caffeine** | `@Cacheable` on list + count | 10 minutes, max 500 entries; `@CacheEvict` on writes |
 
-**How to explain Caffeine:** in-process cache. The next `GET /count` after a dashboard load hits memory instead of `COUNT(*)`. When someone saves a report, `@CacheEvict` drops those keys so the next read is fresh.
-
-**Stale-data trade-off:** a second browser tab might show old counts until TTL or a manual refresh. That is acceptable for dashboard totals.
+Example: `PreventiveMaintenanceServiceImpl.getReportCount()` is `@Cacheable("pmReportCount")`. After `saveReport` I `@CacheEvict` that cache so the next dashboard load is not stale.
 
 ---
 
-## API Gateway vs Nginx
+## Local vs production request path
 
-**Spring Cloud Gateway** (`Api-Gateway`) is a Java reactive proxy (port 7070) useful in local microservice development.
+**On my machine**
 
-**Production uses Nginx** because:
+`frontend/.env` points each `VITE_*_SERVICE_URL` at `localhost` and ports 8086–8090. Vite (`npm run dev`) serves the UI on 5173. I start each API with `mvn spring-boot:run`. CORS allows `http://localhost:5173`.
 
-- It is a tiny Alpine container, not another JVM.
-- Path routing is a few `location` blocks.
-- Same place to terminate TLS later (`ssl_certificate` is ready to uncomment).
-- Health: Compose waits until each API’s Actuator health is up before starting Nginx (`depends_on: condition: service_healthy`).
+**In Docker / production**
 
-| Public path | Container |
+`docker compose up` starts five API containers (each listens on **8080** inside the network) plus `eform-nginx` on host port 80. Nginx routes:
+
+| Path | Container |
 | --- | --- |
-| `/api/auth`, `/api/notifications` | `auth` |
-| `/api/pm_reports` | `pm` |
-| `/api/previsit-reports` | `previsit` |
-| `/api/calibration-reports` | `calibration` |
-| `/api/installation-reports` | `installation` |
-| `/uploads/previsit-images/` | `previsit` |
-| `/uploads/installation-images/` | `installation` |
+| `/api/auth`, `/api/notifications` | auth |
+| `/api/pm_reports` | pm |
+| `/api/previsit-reports` | previsit |
+| `/api/calibration-reports` | calibration |
+| `/api/installation-reports` | installation |
+| `/uploads/previsit-images/` | previsit |
+| `/uploads/installation-images/` | installation |
 
-Inside Docker, every API listens on **8080**. Host ports 8086–8090 are only for local `mvn spring-boot:run`.
+Compose waits for `/actuator/health` on each API before starting Nginx.
 
----
+I build the frontend separately (`npm run build`) and host it as static files. All five `VITE_*` URLs then point at the **same** Nginx origin. An HTTPS site cannot call HTTP APIs (browser mixed content).
 
-## Docker and production
-
-```
-docker compose up -d --build
-```
-
-Runs `eform-auth`, `eform-pm`, `eform-previsit`, `eform-calibration`, `eform-installation`, `eform-nginx` on a bridge network `eform`. Postgres is typically on the host (`host.docker.internal`) via `SPRING_DATASOURCE_URL`.
-
-The **frontend is built separately** (`npm run build`) and hosted as static files. `VITE_*_SERVICE_URL` must be the **public** API origin (the Nginx host). An HTTPS site cannot call HTTP APIs (browser mixed-content block).
-
-**Why Docker:** same runtime on a laptop and a VPS; restart policies; isolated processes; Nginx as the only published port.
+**Why Nginx in production, not Spring Cloud Gateway?** Nginx is a small Alpine container. I only need path routing and a 25 MB upload limit. Another JVM just for routing is extra memory on a 4 GB VPS.
 
 ---
 
-## Technology choices — why each one
-
-Use this table when they ask “why this library?”
+## Why I used each technology
 
 ### Frontend
 
-| Technology | Why it is required |
+| What I used | Why I need it in this project |
 | --- | --- |
-| **React 19** | Component UI for four large forms, lists, and a dashboard. State + routing fit a SPA. |
-| **Vite 8** | Dev server and production bundle. Env-based API URLs without rebuilding a Java backend. |
+| **React 19** | Four large forms, lists, dashboard. Component state matches the wizard. |
+| **Vite 8** | Fast refresh while I work. `import.meta.env.VITE_*` so API hosts are not hard-coded. |
 | **React Router 7** | Login vs app vs admin edit URLs. |
-| **Axios** | JSON + multipart to five origins; interceptors for JWT and 401. |
-| **React Context** | Notification bell shared across pages. |
-| **MUI** | Faster, accessible form controls where custom CSS would be slow to build. |
-| **react-signature-canvas** | On-site dual sign-off without printing a paper form. |
-| **html2canvas + jsPDF** | Engineer downloads a PDF of the filled report from the browser. |
-| **date-fns / react-datepicker** | Visit dates, calibration due dates. |
-| **react-toastify** | Immediate feedback after save/delete (field network can be slow). |
+| **Axios** | JSON and multipart to five origins. Interceptors attach JWT and handle 401 in one place. |
+| **React Context** | Notification bell is used on Dashboard and Navbar without passing props through every page. |
+| **MUI** | Some form controls so I did not custom-style every input. |
+| **react-signature-canvas** | Customer and engineer sign on a tablet instead of paper. |
+| **html2canvas + jsPDF** | Download the filled report as PDF from the view page. |
+| **date-fns / react-datepicker** | Visit dates and calibration due dates. |
+| **react-toastify** | Immediate save/error feedback on a slow field network. |
 
 ### Backend
 
-| Technology | Why it is required |
+| What I used | Why I need it |
 | --- | --- |
-| **Java 17 + Spring Boot 3.5** | REST APIs, dependency injection, production-ready defaults. |
-| **Spring Security** | Filter chain, CORS, method/HTTP role checks, password encoding. |
-| **JJWT 0.12.6** | Create and verify JWTs with HMAC. |
-| **BCrypt** | Slow hash so leaked password tables are hard to crack. |
-| **Spring Data JPA + Hibernate** | CRUD without hand-written SQL for every entity; relationships and cascade. |
-| **PostgreSQL** | Relational integrity + `BYTEA` images. |
-| **Bean Validation** | Reject bad report numbers / missing fields before persist. |
-| **MapStruct (PM)** | Compile-time DTO mapping; less error-prone than manual setters. |
-| **Lombok** | Less boilerplate on DTOs/entities in several modules. |
-| **Caffeine** | Cheap in-memory cache for list/count endpoints. |
-| **Spring Actuator** | `/actuator/health` for Docker healthchecks. |
-| **Maven** | Standard Java build, Docker `mvn package`. |
-| **Spring Mail (auth)** | Optional email from the auth service if configured. |
+| **Java 17 + Spring Boot 3.5** | REST APIs, DI, production defaults. |
+| **Spring Security** | Filter chain, CORS, HTTP method + role checks, password encoding. |
+| **JJWT 0.12.6** | Create and verify the token. |
+| **BCrypt** | Hash passwords in `users`. |
+| **Spring Data JPA + Hibernate** | Relations and cascade without raw SQL for every save. |
+| **PostgreSQL** | Relational reports + `BYTEA` images + unique report numbers. |
+| **Bean Validation** | Reject bad report numbers before insert. |
+| **MapStruct (PM)** | DTO mapping at compile time. |
+| **Lombok** | Less getter/setter noise on several modules. |
+| **Caffeine** | In-memory list/count cache inside each API. |
+| **Actuator** | Health check for Docker. |
+| **Maven** | Build JARs for Docker. |
 
-### Infrastructure
+### Infra
 
-| Technology | Why it is required |
+| What I used | Why I need it |
 | --- | --- |
-| **Docker Compose** | Run five APIs + Nginx with one command. |
-| **Nginx** | Single public port, path routing, 25 MB uploads, future TLS. |
-| **CORS config** | Browser on `localhost:5173` (or the hosted SPA origin) calling APIs on another origin. |
+| **Docker Compose** | Five APIs + Nginx with one command. |
+| **Nginx** | One public port, path routing, upload size, later TLS. |
+| **CORS** | Browser on 5173 (or the hosted SPA) calling a different API origin. |
 
 ---
 
-## Design decisions and trade-offs
+## Trade-offs I made
 
-Say a few of these unprompted — it shows you thought, not just followed a tutorial.
+I mention a few of these so it is clear I chose them on purpose.
 
-1. **Microservices + shared DB** — independent deploys and failure isolation, without operating five Postgres instances on a 4 GB VPS.
-2. **Stateless JWT** — no session store; every service verifies locally. Revoking a token before 24h expiry would need a denylist we do not have yet.
-3. **RBAC on HTTP methods** — USER can create; only ADMIN mutates. Enforced on the server.
-4. **Wizard state client-side** — PM is one transaction at the end. If the browser closes mid-wizard, unsaved steps are lost (no draft table).
-5. **Images in Postgres** — operational simplicity vs DB size.
-6. **PDF in the browser** — no PDF service to maintain vs weaker print layout control.
-7. **Nginx over Spring Cloud Gateway in prod** — fewer JVMs, enough routing for this app.
-8. **`ddl-auto=update`** — fast iteration vs less control than versioned migrations.
-9. **Polling notifications** — simple vs extra load; 20s is enough for this use case.
+1. **Five services, one database** — independent deploys without operating five Postgres instances.
+2. **JWT in `localStorage`** — simple for a SPA. Risk is XSS; HttpOnly cookies would need CSRF again. Token lasts 24 hours; I have no denylist, so logout only clears the browser until expiry.
+3. **PM wizard state only in React** — one DB write at the end. If the tab closes mid-wizard, the draft is gone. I do not have a draft table.
+4. **Photos in Postgres** — easy backup vs larger database.
+5. **PDF in the browser** — no extra service vs less control than a server-side template.
+6. **`ddl-auto=update`** — fast while developing vs weaker than Flyway in production.
+7. **Notification polling** — simple vs extra requests every 20 seconds.
 
----
-
-## Likely interview questions
-
-### “What is the architecture?”
-
-React SPA → (local ports or Nginx) → five Spring Boot services → one PostgreSQL. Auth issues JWT; report services verify it. See the diagram above.
-
-### “How does authentication work across microservices?”
-
-Shared `JWT_SECRET`. Auth signs; others verify in `JwtAuthFilter`. No synchronous call to auth on each request.
-
-### “How do you protect edit and delete?”
-
-Frontend `AdminRoute` plus Spring `hasRole("ADMIN")` on PUT/PATCH/DELETE. UI hiding is not security by itself.
-
-### “Why disable CSRF?”
-
-APIs are stateless JWT in the `Authorization` header, not cookie sessions. CSRF exploits cookie auto-send. We still configure CORS so only allowed origins can call the APIs from a browser.
-
-### “How are report numbers unique?”
-
-Formats like `PM-YYYY-XXXX` and calibration `FLO_CAL_yyyyMMdd` + sequence. DB unique constraints on report number columns. PM visit count comes from `COUNT` by `sensorId`.
-
-### “How do you store images?”
-
-Multipart upload after the report row exists. Bytes in `BYTEA`. GET returns Base64 for `<img src>`.
-
-### “What happens if a token expires?”
-
-JWT `exp` is 24 hours. `ProtectedRoute` and Axios 401 handler clear `localStorage` and send the user to `/login`.
-
-### “How would you scale this?”
-
-- Run more replicas of a busy service behind Nginx (need sticky-free JWT — we already have that).
-- Move images to object storage if the DB grows.
-- Replace notification polling with WebSockets or SSE.
-- Split the database per service if teams and load grow.
-- Add Flyway and stop using `ddl-auto=update` in production.
-
-### “What would you improve next?”
-
-Possible honest answers: refresh tokens + logout denylist; HttpOnly cookie option; draft-save for the PM wizard; Flyway; React Query (dependency is present but lists currently use a custom `localStorage` cache); tighter signup so clients cannot self-assign `ADMIN`.
-
-### “Walk me through a class you wrote.”
-
-Pick **JwtAuthFilter** or **PreventiveMaintenanceService** (save + cascade + cache evict) or **PMReportWizard** (lifted state, edit vs create). Explain input → steps → output, and one failure case (invalid token, validation error, 403).
+If the system grew I would add Flyway, object storage for images, refresh tokens, and maybe a database per service.
 
 ---
 
-## Quick glossary (if they use these words)
+## How I explain this in an interview
 
-| Term | Meaning in this project |
-| --- | --- |
-| **SPA** | Single-page app: React handles routing in the browser. |
-| **DTO** | JSON shape for the API, not the JPA entity. |
-| **JPA / Hibernate** | Maps Java objects to tables. |
-| **Cascade** | Save/delete parent also save/delete children. |
-| **Stateless** | Server does not keep a login session; JWT carries identity. |
-| **CORS** | Browser rule: frontend origin must be allowed by the API. |
-| **Reverse proxy** | Nginx accepts public HTTP and forwards to the right container. |
-| **Actuator health** | `/actuator/health` so Compose knows the API is ready. |
-| **BYTEA** | PostgreSQL binary column for image bytes. |
-| **RBAC** | Role-based access control (USER vs ADMIN). |
+**30 seconds**  
+I built a digital e-form platform for FloroSense. React frontend, five Spring Boot microservices, PostgreSQL, JWT login. Engineers fill pre-visit, installation, calibration, and PM reports instead of paper. Admins can edit and delete. Production is Docker Compose behind Nginx.
 
----
+**If they ask how auth works**  
+Auth service checks email/password with BCrypt, signs a JWT with a shared secret. Every report service has the same `JwtAuthFilter`. One login works on all five APIs. I do not store sessions.
 
-## How to practice
+**If they say walk through saving a PM report**  
+I walk Login → token in localStorage → six wizard steps in `PMReportWizard` (state stays in React) → `POST /api/pm_reports` with Bearer token → filter verifies JWT → service saves parent + checklists + sign-off with cascade → I invalidate caches and create a notification.
 
-1. Draw the architecture from memory (browser, Nginx, five services, one DB).
-2. Narrate login → JWT → POST PM report → cascade persist → notification.
-3. Explain **one** trade-off (shared DB, localStorage JWT, or images in Postgres) and what you would change at larger scale.
-4. Open `JwtAuthFilter`, `SecurityConfig` (PM `hasRole("ADMIN")`), and `PMReportWizard` once so you can point to real code if they ask.
+**If they ask about security**  
+USER vs ADMIN is checked in `AdminRoute` and again in Spring `hasRole("ADMIN")` on PUT/DELETE. The API is the real gate.
+
+**If they ask what I would improve**  
+Draft-save for the wizard, Flyway, image object storage, token revocation, and stop allowing signup to pick `ADMIN` in production.
 )
