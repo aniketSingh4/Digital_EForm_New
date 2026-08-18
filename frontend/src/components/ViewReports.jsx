@@ -97,7 +97,7 @@ export default function ViewReports() {
                 { key: "pmVisitDate", label: "Visit Date" },
                 { key: "sensorId", label: "Sensor ID" },
                 { key: "engineerName", label: "Engineer" },
-                // { key: "siteConditionAfterPm", label: "Site Condition" }
+                { key: "siteConditionAfterPm", label: "Site Condition" }
             ]
         },
         2: {
