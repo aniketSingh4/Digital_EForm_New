@@ -175,12 +175,12 @@ export default function Login() {
                         </button>
                     </form>
 
-                    <p style={styles.signupPrompt}>
+                    {/* <p style={styles.signupPrompt}>
                         Don&apos;t have an account?{" "}
                         <Link to="/signup" style={styles.signupLink}>
                             Sign up
                         </Link>
-                    </p>
+                    </p> */}
                 </div>
             </div>
         </div>
