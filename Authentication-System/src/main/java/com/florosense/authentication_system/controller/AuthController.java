@@ -1,5 +1,6 @@
 package com.florosense.authentication_system.controller;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.AuthenticationException;
@@ -21,9 +22,13 @@ import jakarta.validation.Valid;
 public class AuthController {
 
     private final AuthService authService;
+    private final boolean registrationEnabled;
 
-    public AuthController(AuthService authService) {
+    public AuthController(
+            AuthService authService,
+            @Value("${auth.registration.enabled:true}") boolean registrationEnabled) {
         this.authService = authService;
+        this.registrationEnabled = registrationEnabled;
     }
 
     @GetMapping("/ping")
@@ -34,6 +39,10 @@ public class AuthController {
     @PostMapping("/register")
     public ResponseEntity<ApiResponse> register(
             @Valid @RequestBody RegisterRequest request) {
+        if (!registrationEnabled) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body(new ApiResponse(false, "Registration is disabled"));
+        }
         return ResponseEntity.ok(authService.register(request));
     }
 
