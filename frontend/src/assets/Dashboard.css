@@ -45,6 +45,12 @@
     min-height: 100vh;
     position: relative;
     overflow-x: hidden;
+    /* Opaque cinematic base. The MP4 is not in the image, so without this
+       the global page background shows through the glass overlay. */
+    background:
+        radial-gradient(ellipse at 20% 50%, rgba(99, 102, 241, 0.22) 0%, transparent 55%),
+        radial-gradient(ellipse at 80% 40%, rgba(139, 92, 246, 0.18) 0%, transparent 55%),
+        #070b18;
 }
 
 /* ========================================
@@ -61,6 +67,7 @@
     z-index: 0;
     object-fit: cover;
     filter: brightness(0.6) saturate(0.8);
+    background: #070b18;
 }
 
 .overlay {

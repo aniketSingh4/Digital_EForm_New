@@ -26,7 +26,6 @@ Thumbs.db
 *.md
 README.md
 
-# Docker files
+# Docker files (nginx.conf must stay in context — stage 2 COPY nginx.conf)
 dockerfile
 .dockerignore
-nginx.conf

@@ -189,7 +189,8 @@ const styles = {
         overflow: 'hidden',
         display: 'flex',
         justifyContent: 'center',
-        alignItems: 'center'
+        alignItems: 'center',
+        backgroundColor: '#070b18'
     },
     video: {
         position: 'absolute',
