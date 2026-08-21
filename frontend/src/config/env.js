@@ -1,18 +1,41 @@
 /**
  * Centralized microservice URLs from Vite environment variables.
- * Update frontend/.env to change hosts without editing source files.
+ *
+ * Local: set VITE_* in frontend/.env to each service (localhost ports).
+ * Production (https://digitalform.florosense.com on the VPS): leave VITE_*
+ * unset so Axios calls same-origin /api. eform-nginx routes /api to the
+ * Spring services. Never bake http://72.60.74.221 into an HTTPS build.
  */
 
-const stripTrailingSlash = (url = '') => url.replace(/\/+$/, '');
+const stripTrailingSlash = (url = '') => String(url || '').replace(/\/+$/, '');
 
-const AUTH_SERVICE_URL = stripTrailingSlash(import.meta.env.VITE_AUTH_SERVICE_URL);
-const PM_SERVICE_URL = stripTrailingSlash(import.meta.env.VITE_PM_SERVICE_URL);
-const PREVISIT_SERVICE_URL = stripTrailingSlash(import.meta.env.VITE_PREVISIT_SERVICE_URL);
-const CALIBRATION_SERVICE_URL = stripTrailingSlash(import.meta.env.VITE_CALIBRATION_SERVICE_URL);
-const INSTALLATION_SERVICE_URL = stripTrailingSlash(import.meta.env.VITE_INSTALLATION_SERVICE_URL);
+/** Drop http:// origins when the page itself is HTTPS (avoids mixed content). */
+const publicOrigin = (url = '') => {
+  const origin = stripTrailingSlash(url);
+  if (
+    typeof window !== 'undefined' &&
+    window.location?.protocol === 'https:' &&
+    origin.startsWith('http:')
+  ) {
+    return '';
+  }
+  return origin;
+};
+
+const AUTH_SERVICE_URL = publicOrigin(import.meta.env.VITE_AUTH_SERVICE_URL);
+const PM_SERVICE_URL = publicOrigin(import.meta.env.VITE_PM_SERVICE_URL);
+const PREVISIT_SERVICE_URL = publicOrigin(import.meta.env.VITE_PREVISIT_SERVICE_URL);
+const CALIBRATION_SERVICE_URL = publicOrigin(import.meta.env.VITE_CALIBRATION_SERVICE_URL);
+const INSTALLATION_SERVICE_URL = publicOrigin(import.meta.env.VITE_INSTALLATION_SERVICE_URL);
+
+export const ENABLE_SIGNUP =
+  import.meta.env.VITE_ENABLE_SIGNUP === 'true' ||
+  (Boolean(import.meta.env.DEV) && import.meta.env.VITE_ENABLE_SIGNUP !== 'false');
 
 export const env = {
-  // Service origins (for images / absolute asset URLs)
+  ENABLE_SIGNUP,
+
+  // Service origins (for images / absolute asset URLs). Empty = same origin.
   AUTH_SERVICE_URL,
   PM_SERVICE_URL,
   PREVISIT_SERVICE_URL,

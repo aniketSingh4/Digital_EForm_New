@@ -49,7 +49,7 @@ A **dashboard** shows report counts, notifications, and shortcuts to create or v
 - Client-side PDF export of completed reports (`html2canvas` + `jsPDF`)
 - In-app notifications when reports are created
 - Search, date filters, and list views for every report type
-- Docker Compose + Nginx reverse proxy for production
+- Docker Compose + Nginx reverse proxy for production (SPA and APIs on one origin)
 
 ---
 
@@ -57,22 +57,26 @@ A **dashboard** shows report counts, notifications, and shortcuts to create or v
 
 ```mermaid
 flowchart LR
-  Browser["React frontend\n(Vite, port 5173)"]
-  Nginx["Nginx reverse proxy\n(production, port 80)"]
-  Auth["Authentication-System\n:8089"]
-  PM["PM-Service-Reports\n:8090"]
-  Pre["Pre-Visit-Report-Form\n:8088"]
-  Cal["Calibration-Report\n:8087"]
-  Inst["Installation-Commissioning\n:8086"]
+  Browser["Browser"]
+  Vite["Vite dev server\n:5173"]
+  Nginx["eform-nginx\n:80 / :443"]
+  UI["eform-frontend\nSPA"]
+  Auth["Authentication-System\n:8089 local / :8080 prod"]
+  PM["PM-Service-Reports"]
+  Pre["Pre-Visit-Report-Form"]
+  Cal["Calibration-Report"]
+  Inst["Installation-Commissioning"]
   DB[("PostgreSQL\nDigital_EForm")]
 
-  Browser -->|"local: direct URLs"| Auth
-  Browser --> PM
-  Browser --> Pre
-  Browser --> Cal
-  Browser --> Inst
+  Browser -->|"local"| Vite
+  Vite -->|"VITE_* URLs"| Auth
+  Vite --> PM
+  Vite --> Pre
+  Vite --> Cal
+  Vite --> Inst
   Browser -->|"production"| Nginx
-  Nginx --> Auth
+  Nginx -->|"/ SPA"| UI
+  Nginx -->|"/api /uploads"| Auth
   Nginx --> PM
   Nginx --> Pre
   Nginx --> Cal
@@ -86,10 +90,11 @@ flowchart LR
 
 **Locally**, the Vite app calls each service on its own port using `VITE_*_SERVICE_URL` in `frontend/.env`.
 
-**In production**, Docker Compose runs the five APIs on an internal network. **Nginx** is the only public entry point. It routes by path:
+**In production**, Docker Compose runs the five APIs **and** the React SPA on an internal network. **Nginx** is the only public entry point (`https://digitalform.florosense.com`). It routes by path:
 
 | Public path | Service |
 | --- | --- |
+| `/` (SPA routes such as `/login`) | Frontend (`eform-frontend`) |
 | `/api/auth`, `/api/notifications` | Authentication |
 | `/api/pm_reports` | Preventive Maintenance |
 | `/api/previsit-reports` | Pre-Visit |
@@ -141,8 +146,8 @@ Service URLs live in `frontend/src/config/env.js` and come from Vite env vars (`
 
 | Piece | Used for |
 | --- | --- |
-| **Docker + Docker Compose** | Run the five APIs and Nginx together |
-| **Nginx (alpine)** | Path-based reverse proxy, 25 MB upload limit |
+| **Docker + Docker Compose** | Run the five APIs, the SPA, and Nginx together |
+| **Nginx (alpine)** | Path-based reverse proxy + TLS, 25 MB upload limit |
 | **PostgreSQL** | One database for all services (tables per module) |
 | **Thread-Starvation** | Optional HikariCP / thread-pool monitor (library module, not a running service) |
 | **Api-Gateway** | Optional Spring Cloud Gateway for local development |
@@ -299,7 +304,7 @@ Digital_Installation_PM_Visit_E-Form_System/
 ├── Api-Gateway/                       Optional Spring Cloud Gateway   :7070
 ├── Thread-Starvation/                 Optional pool / Hikari monitor
 ├── nginx/                             Reverse-proxy config for Docker
-├── docker-compose.yml                 Five APIs + Nginx
+├── docker-compose.yml                 Five APIs + frontend + Nginx
 ├── .env.example                       Backend / Compose secrets template
 └── deploy/hostinger.md                VPS deploy notes
 ```
@@ -391,11 +396,13 @@ cp .env.example .env
 docker compose up -d --build
 ```
 
-Compose starts `eform-auth`, `eform-pm`, `eform-previsit`, `eform-calibration`, `eform-installation`, and `eform-nginx`. Nginx listens on port **80** (override with `NGINX_HTTP_PORT`). Postgres is expected on the host (`host.docker.internal`) or another container you configure in `SPRING_DATASOURCE_URL`.
+Compose starts `eform-auth`, `eform-pm`, `eform-previsit`, `eform-calibration`, `eform-installation`, `eform-frontend`, and `eform-nginx`. Nginx listens on port **80** and **443** (override with `NGINX_HTTP_PORT` / `NGINX_HTTPS_PORT`). Postgres is expected on the host (`host.docker.internal`) or another container you configure in `SPRING_DATASOURCE_URL`.
 
-The frontend is built separately (`npm run build`) and hosted as a static site. Set `frontend/.env` so `VITE_*_SERVICE_URL` values match the public API origin (the Nginx host). An HTTPS frontend must call an HTTPS API; mixed content is blocked by the browser.
+The frontend is **`eform-frontend`** in the same Compose file. Leave `VITE_*_SERVICE_URL` **empty** in that image so the SPA calls same-origin `/api`. `eform-nginx` routes `/api` and `/uploads` to the Spring services and `/` to the SPA. Signup is hidden in production builds (`VITE_ENABLE_SIGNUP=false`). Point `digitalform.florosense.com` at the VPS and enable Let’s Encrypt as in [`deploy/hostinger.md`](deploy/hostinger.md) Step 9. Render is not used for production.
 
-More VPS detail: [`deploy/hostinger.md`](deploy/hostinger.md).
+On a 4 GB VPS, build the UI first so Node/Vite does not compete with the JVMs: `docker compose build frontend` then `docker compose up -d --build`.
+
+More VPS detail: [`deploy/hostinger.md`](deploy/hostinger.md). To update an existing VPS deploy without rotating `JWT_SECRET`, see **Updating an existing deployment** in that file, or run `./deploy/redeploy.sh`. A new `eform-auth:latest` image ID after rebuild is normal; recreate containers instead of copying `.env.example` over `.env`.
 
 ---
 
@@ -412,18 +419,21 @@ More VPS detail: [`deploy/hostinger.md`](deploy/hostinger.md).
 | `CORS_ALLOWED_ORIGINS` | Allowed frontend origins |
 | `JAVA_OPTS` | Heap size, e.g. `-Xmx256m` on a 4 GB VPS |
 | `NGINX_HTTP_PORT` | Public HTTP port (default 80) |
+| `NGINX_HTTPS_PORT` | Public HTTPS port (default 443) |
+| `AUTH_REGISTRATION_ENABLED` | Auth service public signup (`true` until VPS users exist) |
 
 **Frontend** (`frontend/.env`):
 
 | Variable | Purpose |
 | --- | --- |
-| `VITE_AUTH_SERVICE_URL` | Origin of the auth API |
-| `VITE_PM_SERVICE_URL` | Origin of the PM API |
-| `VITE_PREVISIT_SERVICE_URL` | Origin of the pre-visit API |
-| `VITE_CALIBRATION_SERVICE_URL` | Origin of the calibration API |
-| `VITE_INSTALLATION_SERVICE_URL` | Origin of the installation API |
+| `VITE_AUTH_SERVICE_URL` | Origin of the auth API (empty in production) |
+| `VITE_PM_SERVICE_URL` | Origin of the PM API (empty in production) |
+| `VITE_PREVISIT_SERVICE_URL` | Origin of the pre-visit API (empty in production) |
+| `VITE_CALIBRATION_SERVICE_URL` | Origin of the calibration API (empty in production) |
+| `VITE_INSTALLATION_SERVICE_URL` | Origin of the installation API (empty in production) |
+| `VITE_ENABLE_SIGNUP` | `true` to show `/signup` (on by default in `npm run dev`) |
 
-In production all five can be the **same** Nginx origin. Restart Vite (or rebuild) after changing these.
+Locally, point each `VITE_*_SERVICE_URL` at localhost ports. Production Compose builds leave them empty (same-origin `/api` via `eform-nginx`). Restart Vite (or rebuild the frontend image) after changing these.
 
 ---
 

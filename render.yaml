@@ -1,0 +1,13 @@
+# Unused. Production UI runs on the VPS (eform-frontend in docker-compose).
+# Keep this file only if you need a temporary Render rollback.
+# Do not point digitalform.florosense.com here after DNS is on 72.60.74.221.
+services:
+  - type: web
+    name: digitalform-frontend
+    runtime: docker
+    rootDir: frontend
+    dockerfilePath: ./dockerfile
+    healthCheckPath: /
+    envVars:
+      - key: VITE_ENABLE_SIGNUP
+        value: "false"

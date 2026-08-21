@@ -21,6 +21,7 @@ import PMReportView from "./components/pm/PMReportView";
 import ProtectedRoute from "./components/ProtectedRoute";
 import AdminRoute from "./components/AdminRoute";
 import useIdleTimeout from "./hooks/useIdleTimeout";
+import { ENABLE_SIGNUP } from "./config/env";
 
 function App() {
   useIdleTimeout();
@@ -43,7 +44,10 @@ function App() {
         {/* Public Routes */}
         <Route path="/" element={<Navigate to="/login" />} />
         <Route path="/login" element={<Login />} />
-        <Route path="/signup" element={<Signup />} />
+        <Route
+          path="/signup"
+          element={ENABLE_SIGNUP ? <Signup /> : <Navigate to="/login" replace />}
+        />
 
         {/* Protected Routes */}
         <Route path="/dashboard" element={

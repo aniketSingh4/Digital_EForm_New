@@ -12,7 +12,7 @@ for arg in "$@"; do
     -h|--help)
       echo "Usage: $0 [--skip-pull]"
       echo
-      echo "Redeploy eForm APIs on this VPS: git pull, rebuild, recreate containers."
+      echo "Redeploy eForm APIs + frontend on this VPS: git pull, rebuild, recreate containers."
       echo "Does not copy .env.example or rotate JWT_SECRET."
       exit 0
       ;;
@@ -88,8 +88,10 @@ echo "=== compose ps ==="
 docker compose ps
 
 echo
-echo "=== nginx / ==="
-curl -sS http://127.0.0.1/ || true
+echo "=== nginx / (expect login HTML, not eform-api) ==="
+curl -sSI http://127.0.0.1/ | head -n 15 || true
+echo
+curl -sS http://127.0.0.1/ | head -c 200 || true
 echo
 
 echo

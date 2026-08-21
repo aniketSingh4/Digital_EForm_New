@@ -93,17 +93,42 @@ services:
     networks:
       - eform
 
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: dockerfile
+      args:
+        # Empty VITE_*_SERVICE_URL so the SPA calls same-origin /api.
+        VITE_ENABLE_SIGNUP: "false"
+    container_name: eform-frontend
+    restart: unless-stopped
+    expose:
+      - "80"
+    healthcheck:
+      test: ["CMD-SHELL", "wget --quiet --tries=1 --spider http://127.0.0.1:80/ || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    networks:
+      - eform
+
   nginx:
     image: nginx:alpine
     container_name: eform-nginx
     restart: unless-stopped
     ports:
-      # Public HTTP. Hostinger already allows 80; 9080 is blocked.
-      # Access APIs at http://72.60.74.221/api/...
+      # Public HTTP/HTTPS. Hostinger must allow 80 and 443.
+      # UI + APIs: https://digitalform.florosense.com (after Let's Encrypt)
+      # IP fallback: http://72.60.74.221/
       - "${NGINX_HTTP_PORT:-80}:80"
+      - "${NGINX_HTTPS_PORT:-443}:443"
     volumes:
       - ./nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
       - ./nginx/proxy_params:/etc/nginx/conf.d/proxy_params:ro
+      # Snippets are not named *.conf under conf.d/ — nginx would load them as servers.
+      - ./nginx/api-locations.conf:/etc/nginx/includes/api-locations.conf:ro
+      - ./nginx/spa-location.conf:/etc/nginx/includes/spa-location.conf:ro
       - ./nginx/certs:/etc/nginx/certs:ro
       - ./nginx/www:/var/www/certbot:ro
     depends_on:
@@ -116,6 +141,8 @@ services:
       calibration:
         condition: service_healthy
       installation:
+        condition: service_healthy
+      frontend:
         condition: service_healthy
     healthcheck:
       test: ["CMD-SHELL", "pidof nginx >/dev/null || exit 1"]

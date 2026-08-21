@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import authService from "../services/authService";
 import { env } from "../config/env";
 import { IDLE_LOGOUT_FLAG } from "../hooks/useIdleTimeout";
@@ -71,12 +71,13 @@ export default function Login() {
                 data?.error ||
                 null;
 
+            const authOrigin = env.AUTH_SERVICE_URL || window.location.origin;
             if (error.response) {
                 setError(serverMessage || "Login Failed");
             } else if (error.code === "ECONNABORTED") {
-                setError(`Request timed out. Cannot reach ${env.AUTH_SERVICE_URL}`);
+                setError(`Request timed out. Cannot reach ${authOrigin}`);
             } else {
-                setError(`Cannot reach ${env.AUTH_SERVICE_URL}. Check that the APIs are running.`);
+                setError(`Cannot reach ${authOrigin}. Check that the APIs are running.`);
             }
         } finally {
             setLoading(false);
@@ -174,13 +175,6 @@ export default function Login() {
                             {loading ? "Logging in..." : "Login"}
                         </button>
                     </form>
-
-                    {/* <p style={styles.signupPrompt}>
-                        Don&apos;t have an account?{" "}
-                        <Link to="/signup" style={styles.signupLink}>
-                            Sign up
-                        </Link>
-                    </p> */}
                 </div>
             </div>
         </div>
@@ -345,18 +339,6 @@ const styles = {
         fontWeight: '600',
         cursor: 'pointer',
         transition: 'background 0.2s'
-    },
-    signupPrompt: {
-        textAlign: 'center',
-        marginTop: '22px',
-        marginBottom: 0,
-        fontSize: '14px',
-        color: '#666'
-    },
-    signupLink: {
-        color: '#4CAF50',
-        fontWeight: '600',
-        textDecoration: 'none'
     }
 };
 
