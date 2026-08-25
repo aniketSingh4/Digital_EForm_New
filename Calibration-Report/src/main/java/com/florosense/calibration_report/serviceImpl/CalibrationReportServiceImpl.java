@@ -430,14 +430,14 @@ public class CalibrationReportServiceImpl implements CalibrationReportService {
         
         // Basic fields
         dto.setId(report.getId());
-        dto.setReportNo(report.getReportNo());
+        dto.setReportNo(ReportNumberGenerator.withDateSequenceHyphen(report.getReportNo(), "FLO_CAL_"));
         dto.setReportDate(report.getReportDate());
         dto.setClientName(report.getClientName());
         dto.setSiteName(report.getSiteName());
         dto.setSiteAddress(report.getSiteAddress());
         dto.setSensorId(report.getSensorId());
         dto.setModelNo(report.getModelNo());
-        dto.setSerialNo(report.getSerialNo());
+        dto.setSerialNo(ReportNumberGenerator.withDateSequenceHyphen(report.getSerialNo(), "FLO_SER_"));
         dto.setCalibrationDate(report.getCalibrationDate());
         dto.setCalibrationDueDate(report.getCalibrationDueDate());
         dto.setRemarks(report.getRemarks());

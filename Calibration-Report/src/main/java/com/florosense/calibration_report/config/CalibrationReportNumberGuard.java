@@ -26,12 +26,17 @@ public class CalibrationReportNumberGuard implements ApplicationRunner {
     public void run(ApplicationArguments args) {
         try (Connection connection = dataSource.getConnection();
              Statement statement = connection.createStatement()) {
+            // Normalize to FLO_CAL_yyyyMMdd-NNNN / FLO_SER_yyyyMMdd-NNNN
             int reports = statement.executeUpdate(
-                    "UPDATE calibration_reports SET report_no = REPLACE(report_no, 'FLO_CAL_-', 'FLO_CAL_') "
-                            + "WHERE report_no LIKE 'FLO_CAL_-%'");
+                    "UPDATE calibration_reports SET report_no = "
+                            + "regexp_replace(report_no, '^FLO_CAL[_-]+(\\d{8})-?(\\d{4})$', 'FLO_CAL_\\1-\\2') "
+                            + "WHERE report_no ~ '^FLO_CAL[_-]+\\d{8}-?\\d{4}$' "
+                            + "AND report_no !~ '^FLO_CAL_\\d{8}-\\d{4}$'");
             int serials = statement.executeUpdate(
-                    "UPDATE calibration_reports SET serial_no = REPLACE(serial_no, 'FLO_SER_-', 'FLO_SER_') "
-                            + "WHERE serial_no LIKE 'FLO_SER_-%'");
+                    "UPDATE calibration_reports SET serial_no = "
+                            + "regexp_replace(serial_no, '^FLO_SER[_-]+(\\d{8})-?(\\d{4})$', 'FLO_SER_\\1-\\2') "
+                            + "WHERE serial_no ~ '^FLO_SER[_-]+\\d{8}-?\\d{4}$' "
+                            + "AND serial_no !~ '^FLO_SER_\\d{8}-\\d{4}$'");
             if (reports > 0 || serials > 0) {
                 log.info("Normalized calibration IDs: {} report numbers, {} serial numbers", reports, serials);
             }
