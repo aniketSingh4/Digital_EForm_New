@@ -4,6 +4,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -24,6 +26,8 @@ import jakarta.validation.Valid;
 @CrossOrigin(origins = "*", allowedHeaders ="*", methods = {RequestMethod.GET, RequestMethod.POST, RequestMethod.PUT, RequestMethod.DELETE, RequestMethod.OPTIONS})
 public class PreventiveMaintenanceController 
 {
+    private static final Logger log = LoggerFactory.getLogger(PreventiveMaintenanceController.class);
+
     @Autowired
     private PreventiveMaintenanceReportRepository repository;
 
@@ -47,7 +51,7 @@ public class PreventiveMaintenanceController
             response.put("count", count);
             return ResponseEntity.ok(response);
         } catch (Exception e) {
-            System.err.println("Error getting sensor count: " + e.getMessage());
+            log.error("Error getting sensor count: {}", e.getMessage());
             return ResponseEntity.ok(Map.of("count", 0));
         }
     }
@@ -55,37 +59,6 @@ public class PreventiveMaintenanceController
     @PostMapping
     public ResponseEntity<PMReportResponse> saveReport(
             @Valid @RequestBody PMReportRequest request) {
-        
-        // DEBUG: Log received data
-//        System.out.println("========================================");
-//        System.out.println("📥 Received POST request to save report");
-//        System.out.println("Service Report No: " + request.getServiceReportNo());
-//        System.out.println("Client Name: " + request.getClientName());
-//        System.out.println("Site Name: " + request.getSiteName());
-//        System.out.println("Sensor ID: " + request.getSensorId());
-//        System.out.println("Engineer Name: " + request.getEngineerName());
-//        System.out.println("PM Visit Date: " + request.getPmVisitDate());
-//        System.out.println("Checklists received: " + (request.getChecklists() != null ? request.getChecklists().size() : 0));
-        
-        if (request.getChecklists() != null && !request.getChecklists().isEmpty()) {
-            for (var cl : request.getChecklists()) {
-                System.out.println("  📋 " + cl.getItemName() + 
-                                 " | Category: " + cl.getCategory() + 
-                                 " | Status: " + cl.getStatus() + 
-                                 " | Remark: " + cl.getRemark());
-            }
-        } else {
-            System.out.println("⚠️ No checklists in request!");
-        }
-        System.out.println("========================================");
-
-        System.out.println("📥 POST preventiveMaintenanceStatus(root)=" + request.getPreventiveMaintenanceStatus()
-                + " summary=" + (request.getSummary() != null ? request.getSummary().getPreventiveMaintenanceStatus() : null));
-        System.out.println("📥 POST siteConditionAfterPm(root)=" + request.getSiteConditionAfterPm()
-                + " code=" + request.getSiteConditionCode()
-                + " summary=" + (request.getSummary() != null ? request.getSummary().getSiteConditionAfterPm() : null)
-                + " summaryCode=" + (request.getSummary() != null ? request.getSummary().getSiteConditionCode() : null));
-
         PMReportResponse response = service.saveReport(request);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
@@ -106,7 +79,7 @@ public class PreventiveMaintenanceController
             PMReportResponse report = service.getReport(id);
             return ResponseEntity.ok(report);
         } catch (Exception e) {
-            System.err.println("Error fetching report: " + e.getMessage());
+            log.error("Error fetching report: {}", e.getMessage());
             return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
         }
     }

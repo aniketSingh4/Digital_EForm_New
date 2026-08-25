@@ -2,13 +2,14 @@ package com.florosense.pm_service_reports.serviceImpl;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
-import java.sql.ResultSet;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
 import javax.sql.DataSource;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
@@ -36,6 +37,8 @@ import com.florosense.pm_service_reports.service.PreventiveMaintenanceService;
 @Service
 @Transactional
 public class PreventiveMaintenanceServiceImpl implements PreventiveMaintenanceService {
+
+    private static final Logger log = LoggerFactory.getLogger(PreventiveMaintenanceServiceImpl.class);
 
     private static final Set<String> PM_STATUS_CODES = Set.of(
             "SATISFACTORY",
@@ -74,8 +77,8 @@ public class PreventiveMaintenanceServiceImpl implements PreventiveMaintenanceSe
                 applyResolvedSiteCondition(report, summary);
                 summaries.add(summary);
             } catch (Exception mappingError) {
-                System.err.println("Skipping summary mapping for report "
-                        + report.getId() + ": " + mappingError.getMessage());
+                log.warn("Skipping summary mapping for report {}: {}",
+                        report.getId(), mappingError.getMessage());
                 summaries.add(toMinimalSummary(report));
             }
         }
@@ -108,7 +111,7 @@ public class PreventiveMaintenanceServiceImpl implements PreventiveMaintenanceSe
             if (upper.contains("CLEANING")) return ChecklistCategory.CLEANING_ACTIVITY;
             return ChecklistCategory.valueOf(upper);
         } catch (IllegalArgumentException e) {
-            System.out.println("⚠️ Invalid category: " + category + ", defaulting to PHYSICAL_INSPECTION");
+            log.warn("Invalid category: {}, defaulting to PHYSICAL_INSPECTION", category);
             return ChecklistCategory.PHYSICAL_INSPECTION;
         }
     }
@@ -135,7 +138,7 @@ public class PreventiveMaintenanceServiceImpl implements PreventiveMaintenanceSe
             }
             return InspectionStatus.valueOf(upper);
         } catch (IllegalArgumentException e) {
-            System.out.println("⚠️ Invalid status: " + status + ", defaulting to NO");
+            log.warn("Invalid status: {}, defaulting to NO", status);
             return InspectionStatus.NO;
         }
     }
@@ -237,37 +240,24 @@ public class PreventiveMaintenanceServiceImpl implements PreventiveMaintenanceSe
                 request.getSummary() != null ? request.getSummary().getSiteConditionAfterPm() : null,
                 request.getSiteConditionAfterPm());
 
-        System.out.println("📥 Incoming PM Status: " + pmStatusValue);
-        System.out.println("📥 Incoming Site Condition key: " + siteConditionKey);
-        System.out.println("📥 Incoming Site Condition full: " + siteConditionFull);
-
         String canonicalPmStatus = canonicalizePmStatus(pmStatusValue);
         if (canonicalPmStatus != null) {
             report.setPreventiveMaintenanceStatus(canonicalPmStatus);
         } else if (required || (pmStatusValue != null && !pmStatusValue.isBlank())) {
             throw new IllegalArgumentException("Invalid or missing PM Status: " + pmStatusValue);
-        } else {
-            System.out.println("⚠️ PM Status omitted, leaving existing value");
         }
 
         String fromFull = toSiteConditionKey(siteConditionFull);
         String fromKey = toSiteConditionKey(siteConditionKey);
         String resolvedKey = fromFull != null ? fromFull : fromKey;
-        if (fromFull != null && fromKey != null && !fromFull.equals(fromKey)) {
-            System.out.println("⚠️ Site condition mismatch full=" + fromFull + " key=" + fromKey
-                    + "; using full value");
-        }
         String canonicalSiteCondition = toSiteConditionFull(resolvedKey);
         if (canonicalSiteCondition != null) {
             report.setSiteConditionKey(resolvedKey);
             report.setSiteConditionAfterPm(canonicalSiteCondition);
-            System.out.println("📊 Canonical Site Condition: " + canonicalSiteCondition + " key=" + resolvedKey);
         } else if (required || (siteConditionFull != null && !siteConditionFull.isBlank())
                 || (siteConditionKey != null && !siteConditionKey.isBlank())) {
             throw new IllegalArgumentException("Invalid or missing Site Condition: "
                     + firstNonBlank(siteConditionFull, siteConditionKey));
-        } else {
-            System.out.println("⚠️ Site Condition omitted, leaving existing value");
         }
     }
 
@@ -292,20 +282,16 @@ public class PreventiveMaintenanceServiceImpl implements PreventiveMaintenanceSe
         if (id == null || canonicalSiteCondition == null || canonicalSiteCondition.isBlank()) {
             return;
         }
-        int updated = entityManager.createNativeQuery(
+        entityManager.createNativeQuery(
                 "UPDATE pm_reports SET site_condition_after_pm = CAST(:value AS text) WHERE id = :id")
                 .setParameter("value", canonicalSiteCondition)
                 .setParameter("id", id)
                 .executeUpdate();
-        System.out.println("📝 in-session site_condition_after_pm update rows=" + updated
-                + " id=" + id + " value=" + canonicalSiteCondition);
         Object stored = entityManager.createNativeQuery(
                 "SELECT site_condition_after_pm FROM pm_reports WHERE id = :id")
                 .setParameter("id", id)
                 .getSingleResult();
         String storedText = stored == null ? null : stored.toString();
-        System.out.println("📊 Site Condition in-session SELECT: " + storedText
-                + " length=" + (storedText == null ? 0 : storedText.length()));
         if (storedText == null || !canonicalSiteCondition.equals(storedText)) {
             throw new IllegalStateException("Site condition did not persist as " + canonicalSiteCondition
                     + " (stored=" + storedText + ")");
@@ -319,23 +305,10 @@ public class PreventiveMaintenanceServiceImpl implements PreventiveMaintenanceSe
                     "UPDATE pm_reports SET site_condition_after_pm = CAST(? AS text) WHERE id = ?")) {
                 ps.setString(1, canonicalSiteCondition);
                 ps.setLong(2, id);
-                int updated = ps.executeUpdate();
-                System.out.println("📝 afterCommit site_condition_after_pm update rows=" + updated
-                        + " id=" + id + " value=" + canonicalSiteCondition);
+                ps.executeUpdate();
             }
             if (!autoCommit) {
                 connection.commit();
-            }
-            try (PreparedStatement ps = connection.prepareStatement(
-                    "SELECT site_condition_after_pm FROM pm_reports WHERE id = ?")) {
-                ps.setLong(1, id);
-                try (ResultSet rs = ps.executeQuery()) {
-                    if (rs.next()) {
-                        String stored = rs.getString(1);
-                        System.out.println("📊 Site Condition afterCommit SELECT: " + stored
-                                + " length=" + (stored == null ? 0 : stored.length()));
-                    }
-                }
             }
         } catch (Exception ex) {
             throw new IllegalStateException("Failed to persist site_condition_after_pm for report " + id, ex);
@@ -360,29 +333,6 @@ public class PreventiveMaintenanceServiceImpl implements PreventiveMaintenanceSe
     @Override
     @CacheEvict(value = {"pmReportList", "pmReportCount", "pmReportById"}, allEntries = true)
     public PMReportResponse saveReport(PMReportRequest request) {
-        System.out.println("========================================");
-        System.out.println("📝 Saving report: " + request.getServiceReportNo());
-        System.out.println("📊 Checklists received: " + (request.getChecklists() != null ? request.getChecklists().size() : 0));
-        System.out.println("📋 Summary received: " + (request.getSummary() != null ? "Yes" : "No"));
-
-        // Debug: Print summary details
-        if (request.getSummary() != null) {
-            System.out.println("  📊 PM Status: " + request.getSummary().getPreventiveMaintenanceStatus());
-            System.out.println("  📊 Site Condition: " + request.getSummary().getSiteConditionAfterPm());
-        }
-
-        // Debug: Print checklists details
-        if (request.getChecklists() != null && !request.getChecklists().isEmpty()) {
-            for (ChecklistItemDTO cl : request.getChecklists()) {
-                System.out.println("  📋 Checklist: " + cl.getItemName() + 
-                                 " | Category: " + cl.getCategory() + 
-                                 " | Status: " + cl.getStatus() + 
-                                 " | Remark: " + cl.getRemark());
-            }
-        } else {
-            System.out.println("⚠️ No checklists in request!");
-        }
-
         if (request.getPmVisitDate() == null) {
             throw new IllegalArgumentException("PM Visit Date is required");
         }
@@ -416,7 +366,6 @@ public class PreventiveMaintenanceServiceImpl implements PreventiveMaintenanceSe
             for (ChecklistItemDTO dto : request.getChecklists()) {
                 // Skip if item name is empty
                 if (dto.getItemName() == null || dto.getItemName().trim().isEmpty()) {
-                    System.out.println("⚠️ Skipping checklist item with empty name");
                     continue;
                 }
                 
@@ -439,9 +388,7 @@ public class PreventiveMaintenanceServiceImpl implements PreventiveMaintenanceSe
             }
             
             report.setChecklists(checklistList);
-            System.out.println("✅ Added " + checklistList.size() + " checklists to report");
         } else {
-            System.out.println("⚠️ No checklists to add");
             report.setChecklists(new ArrayList<>());
         }
 
@@ -459,29 +406,18 @@ public class PreventiveMaintenanceServiceImpl implements PreventiveMaintenanceSe
             signOff.setClientDate(request.getSignOff().getClientDate());
             signOff.setReport(report);
             report.setSignOff(signOff);
-            System.out.println("✅ Added sign-off for: " + request.getSignOff().getClientRepresentativeName());
         }
 
-        System.out.println("💾 Saving report with " + report.getChecklists().size() + " checklists...");
-        System.out.println("📊 Final PM Status: " + report.getPreventiveMaintenanceStatus());
-        System.out.println("📊 Final Site Condition: " + report.getSiteConditionAfterPm());
-        
         String canonicalSiteCondition = report.getSiteConditionAfterPm();
         PreventiveMaintenanceReport savedReport = repository.save(report);
         entityManager.flush();
         writeSiteConditionInSession(savedReport.getId(), canonicalSiteCondition);
         persistSiteConditionAfterCommit(savedReport.getId(), canonicalSiteCondition);
-        
-        System.out.println("✅ Report saved with ID: " + savedReport.getId());
-        System.out.println("📊 Checklists saved: " + (savedReport.getChecklists() != null ? savedReport.getChecklists().size() : 0));
-        System.out.println("📊 PM Status saved: " + savedReport.getPreventiveMaintenanceStatus());
-        System.out.println("📊 Site Condition saved: " + savedReport.getSiteConditionAfterPm());
-        System.out.println("========================================");
 
         try {
             return toResponse(savedReport);
         } catch (Exception mappingError) {
-            System.err.println("Report saved but response mapping failed: " + mappingError.getMessage());
+            log.warn("Report saved but response mapping failed: {}", mappingError.getMessage());
             return toMinimalResponse(savedReport);
         }
     }
@@ -555,8 +491,6 @@ public class PreventiveMaintenanceServiceImpl implements PreventiveMaintenanceSe
         return response;
     }
 
- // In your Controller or Service, update the update method to skip validation for immutable fields
-
     @Override
     @Transactional
     @CacheEvict(value = {"pmReportList", "pmReportCount", "pmReportById"}, allEntries = true)
@@ -564,26 +498,13 @@ public class PreventiveMaintenanceServiceImpl implements PreventiveMaintenanceSe
             Long id,
             PMReportRequest request) 
     {
-        System.out.println("📝 Updating report ID: " + id);
-        
         PreventiveMaintenanceReport report =
                 repository.findById(id)
                 .orElseThrow(() ->
                         new ResourceNotFoundException(
                                 "PM Report not found."));
 
-        // 🔒 Store original immutable values
-        String originalServiceReportNo = report.getServiceReportNo();
-        String originalServiceVisitNo = report.getServiceVisitNo();
-        String originalSensorId = report.getSensorId();
-        
-        System.out.println("🔒 Immutable fields preserved:");
-        System.out.println("   - ServiceReportNo: " + originalServiceReportNo);
-        System.out.println("   - ServiceVisitNo: " + originalServiceVisitNo);
-        System.out.println("   - SensorId: " + originalSensorId);
-
-        // ✅ Update ONLY editable fields
-        // ❌ DO NOT update: serviceReportNo, serviceVisitNo, sensorId
+        // Update only editable fields; do not change serviceReportNo, serviceVisitNo, or sensorId
         if (request.getClientName() != null) {
             report.setClientName(request.getClientName());
         }
@@ -649,14 +570,7 @@ public class PreventiveMaintenanceServiceImpl implements PreventiveMaintenanceSe
         entityManager.flush();
         writeSiteConditionInSession(updatedReport.getId(), canonicalSiteCondition);
         persistSiteConditionAfterCommit(updatedReport.getId(), canonicalSiteCondition);
-        
-        // Verify immutable fields were not changed
-        System.out.println("✅ Update successful:");
-        System.out.println("   - ID: " + updatedReport.getId());
-        System.out.println("   - ServiceReportNo: " + updatedReport.getServiceReportNo() + " (unchanged)");
-        System.out.println("   - ServiceVisitNo: " + updatedReport.getServiceVisitNo() + " (unchanged)");
-        System.out.println("   - SensorId: " + updatedReport.getSensorId() + " (unchanged)");
-        
+
         return toResponse(updatedReport);
     }
 
@@ -669,6 +583,5 @@ public class PreventiveMaintenanceServiceImpl implements PreventiveMaintenanceSe
                         new ResourceNotFoundException(
                                 "PM Report not found."));
         repository.delete(report);
-        System.out.println("🗑️ Report deleted with ID: " + id);
     }
 }

@@ -16,8 +16,6 @@ public interface PreventiveMaintenanceService
     PMReportResponse getReport(Long id);
 
     PMReportResponse getReportByServiceReportNo(String serviceReportNo);
-    
-    //PMReportSummaryResponse get
 
     List<PMReportSummaryResponse> getAllReports();
 
