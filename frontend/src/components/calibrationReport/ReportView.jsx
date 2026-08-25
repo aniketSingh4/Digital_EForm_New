@@ -4,6 +4,7 @@ import { FaArrowLeft } from "react-icons/fa";
 import { calibrationReportService } from "../../services/CalibrationReportService";
 import "./ReportView.css";
 import notificationService from "../../services/notificationService";
+import { formatCalibrationReportNo } from "../../utils/calibrationReportValidators";
 
 const ReportView = () => {
     const navigate = useNavigate();
@@ -108,8 +109,9 @@ const ReportView = () => {
     const engineer = report.engineerDetails || {};
 
     //Get the certificate number (or report number as fallback)
-    const certificateNo = String(masterRef.calibrationCertificateNo || report.reportNo || 'N/A')
-        .replace('FLO_CAL_-', 'FLO_CAL_');
+    const certificateNo = formatCalibrationReportNo(
+        masterRef.calibrationCertificateNo || report.reportNo
+    );
 
     return (
         <div className="report-view-container">

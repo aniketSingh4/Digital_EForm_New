@@ -25,6 +25,7 @@ import {
 import { calibrationReportService } from "../../services/CalibrationReportService";  //Import Fixed
 import notificationService from "../../services/notificationService";
 import { canModifyReports, getAuthHeaders } from "../../utils/roles";
+import { formatCalibrationReportNo } from "../../utils/calibrationReportValidators";
 import { env } from "../../config/env";
 import jsPDF from 'jspdf';
 import "./CalibrationViewAll.css";
@@ -97,9 +98,7 @@ const CalibrationViewAll = () => {
             const mappedData = data.map(report => ({
                 ...report,
                 id: report.id || report._id || report.reportId,
-                reportNo: String(report.reportNo || '')
-                    .replace('FLO_CAL_-', 'FLO_CAL_')
-                    || 'N/A',
+                reportNo: formatCalibrationReportNo(report.reportNo),
                 clientName: report.clientName || 'N/A',
                 siteName: report.siteName || 'N/A',
                 sensorId: report.sensorId || 'N/A',

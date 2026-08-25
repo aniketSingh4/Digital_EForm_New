@@ -27,7 +27,6 @@ import {
     FaPlusCircle
 } from "react-icons/fa";
 import { jsPDF } from 'jspdf';
-import 'jspdf-autotable';
 import "../assets/PreVisitViewAll.css";
 import notificationService from "../services/notificationService";
 import { canModifyReports, getAuthHeaders } from "../utils/roles";

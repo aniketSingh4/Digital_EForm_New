@@ -105,12 +105,7 @@ const removeImmutableFields = (payload) => {
   delete cleanPayload.serviceReportNo;
   delete cleanPayload.serviceVisitNo;
   delete cleanPayload.sensorId;
-  
-  console.log('Immutable fields removed for update:', {
-    removed: ['serviceReportNo', 'serviceVisitNo', 'sensorId'],
-    remainingFields: Object.keys(cleanPayload)
-  });
-  
+
   return cleanPayload;
 };
 
@@ -120,8 +115,6 @@ const removeImmutableFields = (payload) => {
  * @param {boolean} isEditMode - Whether this is an edit operation
  */
 export const transformDataForAPI = (formData, isEditMode = false) => {
-  // console.log("Transforming form data:", formData);
-
   const { report, inspection, technical, summary, signoff } = formData;
 
   const checklists = [];
@@ -232,10 +225,6 @@ export const transformDataForAPI = (formData, isEditMode = false) => {
   if (isEditMode) {
     apiPayload = removeImmutableFields(apiPayload);
   }
-
-  // Debug: Validate the payload
-  // console.log("Final API Payload:", JSON.stringify(apiPayload, null, 2));
-  // console.log("Number of checklists:", checklists.length);
 
   // Validate enum values
   const validStatuses = ["YES", "NO"];
@@ -362,8 +351,6 @@ export const updatePMReport = async (id, formData, onProgress) => {
     // Transform data for API with edit mode = true
     const payload = transformDataForAPI(formData, true);
 
-    // console.log(`Updating report ${id} with payload:`, JSON.stringify(payload, null, 2));
-
     const response = await apiClient.put(`/pm_reports/${id}`, payload, {
       onUploadProgress: (progressEvent) => {
         if (progressEvent.total && onProgress) {
@@ -375,7 +362,6 @@ export const updatePMReport = async (id, formData, onProgress) => {
       }
     });
 
-    // console.log("Update success:", response.data);
     invalidate('pm_reports');
     localStorage.removeItem('dashboard_data');
     localStorage.removeItem('dashboard_timestamp');
@@ -458,9 +444,6 @@ export const updatePMReportWithProgress = async (id, formData, onProgress) => {
       payload = transformDataForAPI(formData, true); // Pass true for edit mode
     }
 
-    // console.log(`Updating report ${id} with payload:`, JSON.stringify(payload, null, 2));
-    // console.log("Checklists in payload:", payload.checklists?.length || 0);
-
     const response = await apiClient.put(`/pm_reports/${id}`, payload, {
       onUploadProgress: (progressEvent) => {
         if (progressEvent.total) {
@@ -474,7 +457,6 @@ export const updatePMReportWithProgress = async (id, formData, onProgress) => {
       }
     });
 
-    //console.log("Update success:", response.data);
     invalidate('pm_reports');
     localStorage.removeItem('dashboard_data');
     localStorage.removeItem('dashboard_timestamp');

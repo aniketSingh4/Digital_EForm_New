@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import authService from "../services/authService";
-import { env } from "../config/env";
+import { ENABLE_SIGNUP, env } from "../config/env";
 import { IDLE_LOGOUT_FLAG } from "../hooks/useIdleTimeout";
 
 export default function Login() {
@@ -175,7 +175,17 @@ export default function Login() {
                             {loading ? "Logging in..." : "Login"}
                         </button>
                     </form>
+
+                    {ENABLE_SIGNUP && (
+                        <p style={styles.signupPrompt}>
+                            Don't have an account?{" "}
+                            <Link to="/signup" style={styles.signupLink}>
+                                Sign up
+                            </Link>
+                        </p>
+                    )}
                 </div>
+                
             </div>
         </div>
     );
@@ -340,6 +350,18 @@ const styles = {
         fontWeight: '600',
         cursor: 'pointer',
         transition: 'background 0.2s'
+    },
+    signupPrompt: {
+        textAlign: 'center',
+        marginTop: '22px',
+        marginBottom: 0,
+        fontSize: '14px',
+        color: '#666'
+    },
+    signupLink: {
+        color: '#4CAF50',
+        fontWeight: '600',
+        textDecoration: 'none'
     }
 };
 

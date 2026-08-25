@@ -3,6 +3,21 @@ import axios from 'axios';
 import { getCached, setCached, invalidate, LIST_CACHE_TTL } from '../utils/cache';
 import { env } from '../config/env';
 import { handleUnauthorizedResponse } from '../utils/authSession';
+import { formatCalibrationReportNo, formatCalibrationSerialNo } from '../utils/calibrationReportValidators';
+
+const normalizeReport = (report) => {
+  if (!report || typeof report !== 'object') return report;
+  return {
+    ...report,
+    reportNo: formatCalibrationReportNo(report.reportNo),
+    serialNo: formatCalibrationSerialNo(report.serialNo) || report.serialNo,
+  };
+};
+
+const normalizeReports = (data) => {
+  if (Array.isArray(data)) return data.map(normalizeReport);
+  return normalizeReport(data);
+};
 
 const LIST_CACHE_KEY = 'calibration_reports_list';
 
@@ -36,7 +51,7 @@ export const calibrationReportService = {
     invalidate('calibration_reports');
     localStorage.removeItem('dashboard_data');
     localStorage.removeItem('dashboard_timestamp');
-    return response.data;
+    return normalizeReport(response.data);
   },
 
   async updateReport(id, data) {
@@ -44,24 +59,24 @@ export const calibrationReportService = {
     invalidate('calibration_reports');
     localStorage.removeItem('dashboard_data');
     localStorage.removeItem('dashboard_timestamp');
-    return response.data;
+    return normalizeReport(response.data);
   },
 
   async getReportById(id) {
     const response = await api.get(`/${id}`);
-    return response.data;
+    return normalizeReport(response.data);
   },
 
   async getAllReports(options = {}) {
     const { forceRefresh = false } = options;
     if (!forceRefresh) {
       const cached = getCached(LIST_CACHE_KEY);
-      if (cached) return cached;
+      if (cached) return normalizeReports(cached);
     }
     const response = await api.get('');
     const data = response.data;
     setCached(LIST_CACHE_KEY, data, LIST_CACHE_TTL);
-    return data;
+    return normalizeReports(data);
   },
 
   async deleteReport(id) {

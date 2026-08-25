@@ -1,12 +1,23 @@
-// src/utils/calibrationReportValidators.js
+const insertDateSequenceHyphen = (value, type, emptyFallback = '') => {
+  const raw = String(value || '').trim();
+  if (!raw) return emptyFallback;
+  const match = raw.match(new RegExp(`^FLO_${type}[_-]+(\\d{8})-?(\\d{4})$`));
+  if (match) {
+    return `FLO_${type}_${match[1]}-${match[2]}`;
+  }
+  return raw;
+};
 
-import { format, addDays, parseISO } from 'date-fns';
+/** Display/store format: FLO_CAL_yyyyMMdd-NNNN */
+export const formatCalibrationReportNo = (reportNo) =>
+  insertDateSequenceHyphen(reportNo, 'CAL', 'N/A');
+
+/** Display/store format: FLO_SER_yyyyMMdd-NNNN */
+export const formatCalibrationSerialNo = (serialNo) =>
+  insertDateSequenceHyphen(serialNo, 'SER');
 
 export const validateCalibrationReport = (formData) => {
   const errors = {};
-
-  // Debug: Log what we're validating
-  console.log('🔍 Validating form data:', formData);
 
   // Report Header Validations
   if (!formData.reportDate) {
@@ -113,31 +124,10 @@ export const validateCalibrationReport = (formData) => {
     errors['engineerDetails.date'] = 'Date is required';
   }
 
-  // Debug: Log errors found
-  //console.log('🔍 Validation errors found:', errors);
-  //console.log('🔍 Number of errors:', Object.keys(errors).length);
-
-  // ✅ FIX: Return an object with isValid and errors properties
   const isValid = Object.keys(errors).length === 0;
-  //console.log('🔍 Is valid?', isValid);
 
   return {
     isValid: isValid,
     errors: errors
   };
-};
-
-export const calculateCalibrationDueDate = (calibrationDate) => {
-  if (!calibrationDate) return null;
-  const date = new Date(calibrationDate);
-  return addDays(date, 90);
-};
-
-export const formatCalibrationDate = (date) => {
-  if (!date) return '';
-  try {
-    return format(new Date(date), 'yyyy-MM-dd');
-  } catch {
-    return '';
-  }
 };

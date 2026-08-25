@@ -133,12 +133,9 @@ export default function PMReportWizard() {
 
             // Transform checklists for the form
             const transformedChecklists = mapChecklistsToForm(data.checklists);
-            //console.log('📋 Transformed checklists for form:', transformedChecklists);
 
             // Populate inspection and technical data from checklists
             const { inspection, technical } = populateStepDataFromChecklists(data.checklists);
-            //console.log('Populated inspection:', inspection);
-            //console.log('Populated technical:', technical);
 
             // Populate form data with fetched data
             const extracted = extractPmSummary(data);
@@ -173,8 +170,6 @@ export default function PMReportWizard() {
                 checklists: transformedChecklists // Store checklists directly
             });
 
-            //console.log('Form data populated successfully');
-            //console.log('Form checklists:', transformedChecklists.length);
             notificationService.success('Report data loaded successfully', { type: 'REPORT_VIEWED', identifier: id, reportName: data.serviceReportNo || '' });
 
         } catch (error) {
@@ -283,12 +278,6 @@ export default function PMReportWizard() {
                     serviceVisitNo: originalImmutableFields.serviceVisitNo || reportData.serviceVisitNo?.trim() || "",
                     sensorId: originalImmutableFields.sensorId || reportData.sensorId?.trim() || "",
                 };
-                
-                console.log('🔒 Edit Mode - Sending immutable fields with original values:', {
-                    serviceReportNo: payload.serviceReportNo,
-                    serviceVisitNo: payload.serviceVisitNo,
-                    sensorId: payload.sensorId
-                });
             } else {
                 // For new reports, include all fields
                 payload = {
@@ -298,9 +287,6 @@ export default function PMReportWizard() {
                     sensorId: reportData.sensorId.trim(),
                 };
             }
-
-            //console.log('Final Payload:', payload);
-            //console.log('Checklists in payload:', payload.checklists?.length || 0);
 
             let response;
             let url = env.PM_REPORTS_URL;

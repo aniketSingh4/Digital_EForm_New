@@ -13,11 +13,8 @@ const api = axios.create({
 const isPublicAuthUrl = (url = "") =>
     url.includes("/auth/login") || url.includes("/auth/register");
 
-// Request interceptor with timing
 api.interceptors.request.use(
     (config) => {
-        config.metadata = { startTime: new Date() };
-
         const token = localStorage.getItem("token");
         const url = config.url || "";
         if (token && !isPublicAuthUrl(url)) {
@@ -28,27 +25,15 @@ api.interceptors.request.use(
     (error) => Promise.reject(error)
 );
 
-// Response interceptor with timing
 api.interceptors.response.use(
-    (response) => {
-        const duration = new Date() - response.config.metadata.startTime;
-        console.log(`Request completed in ${duration}ms`);
-        return response;
-    },
+    (response) => response,
     (error) => {
-        if (error.config && error.config.metadata) {
-            const duration = new Date() - error.config.metadata.startTime;
-            console.log(`Request failed after ${duration}ms`);
-        }
-
         if (error.code === "ECONNABORTED") {
             console.error("Request timeout!");
         }
 
         const failedUrl = error.config?.url || "";
-        const isPublicAuth = isPublicAuthUrl(failedUrl);
-
-        if (!isPublicAuth) {
+        if (!isPublicAuthUrl(failedUrl)) {
             handleUnauthorizedResponse(error);
         }
 

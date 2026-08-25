@@ -104,7 +104,6 @@ Digital_Installation_PM_Visit_E-Form_System/
 ├── Calibration-Report/
 ├── Installation-Commisioning-Report/
 ├── Api-Gateway/                       Optional, local only
-├── Thread-Starvation/                 Optional Hikari / thread-pool monitor
 ├── nginx/                             Path-based reverse proxy
 └── docker-compose.yml
 ```
@@ -441,14 +440,7 @@ When the UI loads a report, the API returns a Base64 data URI so `<img src>` wor
 
 ## How I generate PDFs
 
-There is no PDF service on the backend.
-
-`frontend/src/utils/pdfGenerator.js`:
-
-1. `html2canvas` takes a screenshot of the report DOM (`scale: 2`, white background, `useCORS: true` for images).
-2. `jsPDF` writes A4 pages and `pdf.save(filename)`.
-
-Some list pages also use `jspdf-autotable`. I generate the file **in the browser** so I do not add a PDF library to every microservice, and the PDF looks like the screen the engineer already reviewed.
+There is no PDF service on the backend. Report view pages screenshot the DOM with `html2canvas` and write A4 pages with `jsPDF` (`pdf.save(filename)`). I generate the file **in the browser** so I do not add a PDF library to every microservice, and the PDF looks like the screen the engineer already reviewed.
 
 ---
 
@@ -567,10 +559,7 @@ I build the frontend separately (`npm run build`) and host it as static files. A
 | **React Router 7** | Login vs app vs admin edit URLs. |
 | **Axios** | JSON and multipart to five origins. Interceptors attach JWT and handle 401 in one place. |
 | **React Context** | Notification bell is used on Dashboard and Navbar without passing props through every page. |
-| **MUI** | Some form controls so I did not custom-style every input. |
-| **react-signature-canvas** | Customer and engineer sign on a tablet instead of paper. |
 | **html2canvas + jsPDF** | Download the filled report as PDF from the view page. |
-| **date-fns / react-datepicker** | Visit dates and calibration due dates. |
 | **react-toastify** | Immediate save/error feedback on a slow field network. |
 
 ### Backend

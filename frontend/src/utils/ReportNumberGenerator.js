@@ -243,8 +243,6 @@ export const preloadCounters = () => {
     // Preload last generated numbers
     cache.lastReportNo = localStorage.getItem(STORAGE_KEYS.LAST_REPORT_NO) || null;
     cache.lastVisitNo = localStorage.getItem(STORAGE_KEYS.LAST_VISIT_NO) || null;
-    
-    console.log('✅ Counters preloaded into cache');
 };
 
 /**
@@ -285,7 +283,6 @@ export const resetCounts = (confirm = false) => {
     localStorage.removeItem(STORAGE_KEYS.LAST_VISIT_NO);
     cache.lastVisitNo = null;
     
-    console.log('✅ All counters reset successfully');
     return true;
 };
 
@@ -308,7 +305,6 @@ export const resetMonthCount = (month, confirm = false) => {
     const storageKey = STORAGE_KEYS.VISIT_COUNT_PREFIX + month;
     localStorage.removeItem(storageKey);
     cache.visitCounts[storageKey] = undefined;
-    console.log(`✅ Counters reset for ${MONTHS[month]}`);
     return true;
 };
 
@@ -330,7 +326,6 @@ export const setReportCount = (count, confirm = false) => {
     
     localStorage.setItem(STORAGE_KEYS.PM_REPORT_COUNT, count.toString());
     cache.reportCount = count;
-    console.log(`✅ Report count set to ${count}`);
     return true;
 };
 
