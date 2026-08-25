@@ -45,7 +45,7 @@ A **dashboard** shows report counts, notifications, and shortcuts to create or v
 - Four independent report modules, each backed by its own microservice
 - Auto-generated report numbers (for example `PM-2026-0001`, `FESPL_CAL_YYYYMMDD_0001`)
 - Site image upload for pre-visit and installation reports (stored in PostgreSQL as binary, returned as Base64)
-- Customer and technician signatures (drawn on a signature pad)
+- Customer and technician signatures (typed names)
 - Client-side PDF export of completed reports (`html2canvas` + `jsPDF`)
 - In-app notifications when reports are created
 - Search, date filters, and list views for every report type
@@ -115,13 +115,9 @@ There is also a **Spring Cloud Gateway** module (`Api-Gateway`, port `7070`) for
 | **Vite 8** | Dev server and production build |
 | **React Router 7** | Pages and protected routes |
 | **Axios** | HTTP calls to the five APIs |
-| **TanStack React Query** | Server-state caching |
-| **Material UI (MUI)** | Some form controls |
 | **React Toastify** | Success / error toasts |
-| **react-signature-canvas** | Customer and engineer signatures |
-| **html2canvas + jsPDF + html2pdf.js** | Download reports as PDF |
-| **date-fns + react-datepicker** | Dates |
-| **lucide-react + react-icons** | Icons |
+| **html2canvas + jsPDF** | Download reports as PDF |
+| **react-icons** | Icons |
 
 Service URLs live in `frontend/src/config/env.js` and come from Vite env vars (`VITE_AUTH_SERVICE_URL`, and so on). The JWT is stored in `localStorage` and sent as `Authorization: Bearer <token>`.
 
@@ -138,7 +134,6 @@ Service URLs live in `frontend/src/config/env.js` and come from Vite env vars (`
 | **BCrypt** | Password hashing (auth service only) |
 | **Bean Validation** | Request DTOs |
 | **Lombok** | Boilerplate reduction |
-| **Spring Mail** | Optional email from the auth service |
 | **Spring Actuator** | Health checks (used by Docker Compose) |
 | **Maven** | Build |
 
@@ -149,7 +144,6 @@ Service URLs live in `frontend/src/config/env.js` and come from Vite env vars (`
 | **Docker + Docker Compose** | Run the five APIs, the SPA, and Nginx together |
 | **Nginx (alpine)** | Path-based reverse proxy + TLS, 25 MB upload limit |
 | **PostgreSQL** | One database for all services (tables per module) |
-| **Thread-Starvation** | Optional HikariCP / thread-pool monitor (library module, not a running service) |
 | **Api-Gateway** | Optional Spring Cloud Gateway for local development |
 
 ---
@@ -302,7 +296,6 @@ Digital_Installation_PM_Visit_E-Form_System/
 ├── Calibration-Report/                Calibration certificates        :8087
 ├── Installation-Commisioning-Report/  Installation reports + images   :8086
 ├── Api-Gateway/                       Optional Spring Cloud Gateway   :7070
-├── Thread-Starvation/                 Optional pool / Hikari monitor
 ├── nginx/                             Reverse-proxy config for Docker
 ├── docker-compose.yml                 Five APIs + frontend + Nginx
 ├── .env.example                       Backend / Compose secrets template
