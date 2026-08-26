@@ -1,6 +1,5 @@
 // src/components/pm/Step1BasicInfo.jsx
 import React, { useState, useEffect, useCallback, useRef, useMemo } from "react";
-import { preloadCounters } from "../../utils/ReportNumberGenerator";
 import { getAuthHeaders } from "../../utils/roles";
 import { env } from "../../config/env";
 
@@ -95,8 +94,6 @@ export default function Step1BasicInfo({ formData, setFormData, onNext, onBackTo
         let cancelled = false;
 
         const initialize = async () => {
-            preloadCounters();
-
             const today = getTodayDate();
             const updatedReport = { ...report };
             let hasChanges = false;
@@ -411,7 +408,11 @@ export default function Step1BasicInfo({ formData, setFormData, onNext, onBackTo
                     <div className="info-card-value">
                         {report.serviceReportNo}
                     </div>
-                    {/* <div className="info-card-hint">Auto-generated: PM-YYYY-XXXX</div> */}
+                    {!isEditMode && (
+                        <div className="info-card-hint">
+                            Preview from database — the final number is assigned when you submit
+                        </div>
+                    )}
                 </div>
                 <div className="info-card">
                     <div className="info-card-header">

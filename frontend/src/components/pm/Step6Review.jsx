@@ -235,7 +235,7 @@ const Step6Review = forwardRef(function Step6Review({
             if (result.success) {
                 setSubmitSuccess(true);
                 setUploadProgress(100);
-                setSubmittedReportNo(result.data?.serviceReportNo || report.serviceReportNo);
+                setSubmittedReportNo(result.data?.serviceReportNo || (isEditMode ? report.serviceReportNo : ''));
                 setShowSuccessModal(true);
 
                 if (onSubmit) {
@@ -251,7 +251,7 @@ const Step6Review = forwardRef(function Step6Review({
                 const reportMeta = {
                     id: result.data?.id || reportId,
                     reportType: 'PM Report',
-                    reportName: result.data?.serviceReportNo || report.serviceReportNo,
+                    reportName: result.data?.serviceReportNo || (isEditMode ? report.serviceReportNo : ''),
                     customerName: report.clientName,
                     location: report.siteName,
                     createdBy: localStorage.getItem('userName') || ''
