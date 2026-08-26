@@ -2,6 +2,7 @@ package com.florosense.installation_report.serviceImpl;
 
 import com.florosense.installation_report.dto.InstallationReportRequest;
 import com.florosense.installation_report.dto.InstallationReportResponse;
+import com.florosense.installation_report.dto.InstallationReportSummaryResponse;
 import com.florosense.installation_report.entity.InstallationReport;
 import com.florosense.installation_report.entity.InstallationSiteImage;
 import com.florosense.installation_report.exception.ResourceNotFoundException;
@@ -22,7 +23,6 @@ import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -174,35 +174,30 @@ public class InstallationReportServiceImpl implements InstallationReportService 
     @Override
     @Transactional(readOnly = true)
     @Cacheable(value = "installationReportList", key = "'all'")
-    public List<InstallationReportResponse> getAllReports() {
-        log.info("Fetching all installation reports");
-        
-        return reportRepository.findAll()
-                .stream()
-                .map(this::convertToResponse)
-                .collect(Collectors.toList());
+    public List<InstallationReportSummaryResponse> getAllReports() {
+        log.info("Fetching all installation report summaries");
+        return reportRepository.findAllSummaries();
     }
     
     @Override
     @Transactional(readOnly = true)
-    public List<InstallationReportResponse> getReportsByDateRange(LocalDateTime startDate, LocalDateTime endDate) {
-        log.info("Fetching reports between {} and {}", startDate, endDate);
-        
-        return reportRepository.findByDateBetween(startDate, endDate)
-                .stream()
-                .map(this::convertToResponse)
-                .collect(Collectors.toList());
+    public List<InstallationReportSummaryResponse> getReportsByDateRange(LocalDateTime startDate, LocalDateTime endDate) {
+        log.info("Fetching report summaries between {} and {}", startDate, endDate);
+        return reportRepository.findSummariesByDateBetween(startDate, endDate);
     }
     
     @Override
     @Transactional(readOnly = true)
-    public List<InstallationReportResponse> getReportsByInstalledBy(String installedBy) {
-        log.info("Fetching reports installed by: {}", installedBy);
-        
-        return reportRepository.findByInstalledBy(installedBy)
-                .stream()
-                .map(this::convertToResponse)
-                .collect(Collectors.toList());
+    public List<InstallationReportSummaryResponse> getReportsByInstalledBy(String installedBy) {
+        log.info("Fetching report summaries installed by: {}", installedBy);
+        return reportRepository.findSummariesByInstalledBy(installedBy);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    @Cacheable(value = "installationReportCount", key = "'count'")
+    public long getReportCount() {
+        return reportRepository.count();
     }
     
     @Override

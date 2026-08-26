@@ -5,6 +5,7 @@ import java.util.List;
 
 import com.florosense.installation_report.dto.InstallationReportRequest;
 import com.florosense.installation_report.dto.InstallationReportResponse;
+import com.florosense.installation_report.dto.InstallationReportSummaryResponse;
 import com.florosense.installation_report.entity.InstallationSiteImage;
 
 public interface InstallationReportService 
@@ -21,11 +22,13 @@ public interface InstallationReportService
     
     InstallationReportResponse getReportByReportNo(String reportNo);
     
-    List<InstallationReportResponse> getAllReports();
+    List<InstallationReportSummaryResponse> getAllReports();
     
-    List<InstallationReportResponse> getReportsByDateRange(LocalDateTime startDate, LocalDateTime endDate);
+    List<InstallationReportSummaryResponse> getReportsByDateRange(LocalDateTime startDate, LocalDateTime endDate);
     
-    List<InstallationReportResponse> getReportsByInstalledBy(String installedBy);
+    List<InstallationReportSummaryResponse> getReportsByInstalledBy(String installedBy);
+
+    long getReportCount();
     
     void deleteReport(Long id);
     

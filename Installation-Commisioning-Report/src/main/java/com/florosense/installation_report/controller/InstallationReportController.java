@@ -2,6 +2,7 @@ package com.florosense.installation_report.controller;
 
 import com.florosense.installation_report.dto.InstallationReportRequest;
 import com.florosense.installation_report.dto.InstallationReportResponse;
+import com.florosense.installation_report.dto.InstallationReportSummaryResponse;
 import com.florosense.installation_report.dto.InstallationSiteImageDTO;
 import com.florosense.installation_report.entity.InstallationReport;
 import com.florosense.installation_report.entity.InstallationSiteImage;
@@ -56,6 +57,12 @@ public class InstallationReportController
         return ResponseEntity.ok(response);
     }
     
+    @GetMapping("/count")
+    public ResponseEntity<Long> getReportCount() {
+        log.info("Fetching installation report count");
+        return ResponseEntity.ok(reportService.getReportCount());
+    }
+
     @GetMapping("/{id}")
     public ResponseEntity<InstallationReportResponse> getReportById(@PathVariable Long id) {
         log.info("Fetching installation report by ID: {}", id);
@@ -71,25 +78,25 @@ public class InstallationReportController
     }
     
     @GetMapping
-    public ResponseEntity<List<InstallationReportResponse>> getAllReports() {
+    public ResponseEntity<List<InstallationReportSummaryResponse>> getAllReports() {
         log.info("Fetching all installation reports");
-        List<InstallationReportResponse> responses = reportService.getAllReports();
+        List<InstallationReportSummaryResponse> responses = reportService.getAllReports();
         return ResponseEntity.ok(responses);
     }
     
     @GetMapping("/search")
-    public ResponseEntity<List<InstallationReportResponse>> getReportsByDateRange(
+    public ResponseEntity<List<InstallationReportSummaryResponse>> getReportsByDateRange(
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime startDate,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime endDate) {
         log.info("Fetching reports between {} and {}", startDate, endDate);
-        List<InstallationReportResponse> responses = reportService.getReportsByDateRange(startDate, endDate);
+        List<InstallationReportSummaryResponse> responses = reportService.getReportsByDateRange(startDate, endDate);
         return ResponseEntity.ok(responses);
     }
     
     @GetMapping("/installed-by/{installedBy}")
-    public ResponseEntity<List<InstallationReportResponse>> getReportsByInstalledBy(@PathVariable String installedBy) {
+    public ResponseEntity<List<InstallationReportSummaryResponse>> getReportsByInstalledBy(@PathVariable String installedBy) {
         log.info("Fetching reports installed by: {}", installedBy);
-        List<InstallationReportResponse> responses = reportService.getReportsByInstalledBy(installedBy);
+        List<InstallationReportSummaryResponse> responses = reportService.getReportsByInstalledBy(installedBy);
         return ResponseEntity.ok(responses);
     }
     

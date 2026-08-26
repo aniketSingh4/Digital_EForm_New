@@ -1,6 +1,8 @@
 // src/main/java/com/florosense/installation_report/entity/InstallationSiteImage.java
 package com.florosense.installation_report.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -15,6 +17,7 @@ import java.time.LocalDateTime;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
+@JsonIgnoreProperties({"installationReport"})
 public class InstallationSiteImage 
 {
 
@@ -45,6 +48,7 @@ public class InstallationSiteImage
     @Column(name = "description", length = 500)
     private String description;
 
+    @JsonIgnore
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "report_id", nullable = false)
     private InstallationReport installationReport;
