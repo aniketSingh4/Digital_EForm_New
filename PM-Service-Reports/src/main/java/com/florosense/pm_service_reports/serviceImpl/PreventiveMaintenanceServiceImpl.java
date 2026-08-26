@@ -56,6 +56,7 @@ public class PreventiveMaintenanceServiceImpl implements PreventiveMaintenanceSe
             "SYSTEM_OPERATIONAL_WITH_OBSERVATION");
 
     private static final int MAX_REPORT_NUMBER_RETRIES = 5;
+    private static final long REPORT_NUMBER_LOCK_NAMESPACE = 0x504D0000L;
 
     private final PreventiveMaintenanceReportRepository repository;
     private final PMMapper mapper;
@@ -104,7 +105,16 @@ public class PreventiveMaintenanceServiceImpl implements PreventiveMaintenanceSe
 
     @Override
     public String generateServiceReportNo() {
+        return nextServiceReportNo(LocalDate.now().getYear());
+    }
+
+    private String allocateServiceReportNo() {
         int year = LocalDate.now().getYear();
+        repository.acquirePmReportNumberLock(REPORT_NUMBER_LOCK_NAMESPACE + year);
+        return nextServiceReportNo(year);
+    }
+
+    private String nextServiceReportNo(int year) {
         String prefix = "PM-" + year + "-";
         int sequence = 1;
         Optional<PreventiveMaintenanceReport> latest =
@@ -429,7 +439,7 @@ public class PreventiveMaintenanceServiceImpl implements PreventiveMaintenanceSe
     }
 
     private PMReportResponse persistNewReport(PMReportRequest request) {
-        String reportNo = generateServiceReportNo();
+        String reportNo = allocateServiceReportNo();
 
         // Create entity manually for better control
         PreventiveMaintenanceReport report = new PreventiveMaintenanceReport();

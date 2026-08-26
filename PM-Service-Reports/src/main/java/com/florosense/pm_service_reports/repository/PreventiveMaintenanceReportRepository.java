@@ -49,4 +49,7 @@ public interface PreventiveMaintenanceReportRepository extends JpaRepository<Pre
     // In PreventiveMaintenanceReportRepository.java
     @Query("SELECT COUNT(r) FROM PreventiveMaintenanceReport r WHERE r.sensorId = :sensorId")
     int countBySensorId(@Param("sensorId") String sensorId);
+
+    @Query(value = "SELECT pg_advisory_xact_lock(:lockKey)", nativeQuery = true)
+    List<Object> acquirePmReportNumberLock(@Param("lockKey") long lockKey);
 }
