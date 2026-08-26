@@ -16,6 +16,8 @@ public interface PreventiveMaintenanceReportRepository extends JpaRepository<Pre
 
     Optional<PreventiveMaintenanceReport> findByServiceReportNo(String serviceReportNo);
 
+    Optional<PreventiveMaintenanceReport> findFirstByServiceReportNoStartingWithOrderByServiceReportNoDesc(String prefix);
+
     // Count reports for a specific year using YEAR function (HQL)
     @Query("SELECT COUNT(r) FROM PreventiveMaintenanceReport r WHERE YEAR(r.createdAt) = :year")
     long countByYear(@Param("year") String year);

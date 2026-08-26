@@ -21,6 +21,8 @@ public interface PreventiveMaintenanceService
 
     long getReportCount();
 
+    String generateServiceReportNo();
+
     PMReportResponse updateReport(Long id, PMReportRequest request);
 
     void deleteReport(Long id);

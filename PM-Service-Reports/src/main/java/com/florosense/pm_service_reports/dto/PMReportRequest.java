@@ -16,7 +16,6 @@ import jakarta.validation.constraints.NotNull;
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class PMReportRequest {
 
-    @NotBlank
     private String serviceReportNo;
 
     @NotBlank

@@ -2,8 +2,10 @@ package com.florosense.pm_service_reports.serviceImpl;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 
 import javax.sql.DataSource;
@@ -12,10 +14,14 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import jakarta.persistence.EntityManager;
 
@@ -49,20 +55,25 @@ public class PreventiveMaintenanceServiceImpl implements PreventiveMaintenanceSe
             "SYSTEM_NOT_OPERATIONAL",
             "SYSTEM_OPERATIONAL_WITH_OBSERVATION");
 
+    private static final int MAX_REPORT_NUMBER_RETRIES = 5;
+
     private final PreventiveMaintenanceReportRepository repository;
     private final PMMapper mapper;
     private final DataSource dataSource;
     private final EntityManager entityManager;
+    private final TransactionTemplate transactionTemplate;
 
     public PreventiveMaintenanceServiceImpl(
             PreventiveMaintenanceReportRepository repository,
             PMMapper mapper,
             DataSource dataSource,
-            EntityManager entityManager) {
+            EntityManager entityManager,
+            PlatformTransactionManager transactionManager) {
         this.repository = repository;
         this.mapper = mapper;
         this.dataSource = dataSource;
         this.entityManager = entityManager;
+        this.transactionTemplate = new TransactionTemplate(transactionManager);
     }
     
     @Override
@@ -89,6 +100,59 @@ public class PreventiveMaintenanceServiceImpl implements PreventiveMaintenanceSe
     @Cacheable(value = "pmReportCount", key = "'count'")
     public long getReportCount() {
         return repository.count();
+    }
+
+    @Override
+    public String generateServiceReportNo() {
+        int year = LocalDate.now().getYear();
+        String prefix = "PM-" + year + "-";
+        int sequence = 1;
+        Optional<PreventiveMaintenanceReport> latest =
+                repository.findFirstByServiceReportNoStartingWithOrderByServiceReportNoDesc(prefix);
+        if (latest.isPresent()) {
+            sequence = parseReportSequence(latest.get().getServiceReportNo()) + 1;
+        }
+        if (sequence < 1) {
+            sequence = 1;
+        }
+        String reportNo = String.format("PM-%d-%04d", year, sequence);
+        while (repository.existsByServiceReportNo(reportNo)) {
+            sequence++;
+            if (sequence > 9999) {
+                throw new IllegalStateException("PM report number sequence exhausted for year " + year);
+            }
+            reportNo = String.format("PM-%d-%04d", year, sequence);
+        }
+        return reportNo;
+    }
+
+    private int parseReportSequence(String serviceReportNo) {
+        if (serviceReportNo == null) {
+            return 0;
+        }
+        int dash = serviceReportNo.lastIndexOf('-');
+        if (dash < 0 || dash == serviceReportNo.length() - 1) {
+            return 0;
+        }
+        try {
+            return Integer.parseInt(serviceReportNo.substring(dash + 1));
+        } catch (NumberFormatException e) {
+            return 0;
+        }
+    }
+
+    private boolean isServiceReportNoConflict(Throwable error) {
+        while (error != null) {
+            String message = error.getMessage();
+            if (message != null) {
+                String lower = message.toLowerCase();
+                if (lower.contains("service_report_no") || lower.contains("servicereportno")) {
+                    return true;
+                }
+            }
+            error = error.getCause();
+        }
+        return false;
     }
 
     // Helper method to convert String to ChecklistCategory enum
@@ -331,21 +395,47 @@ public class PreventiveMaintenanceServiceImpl implements PreventiveMaintenanceSe
 
 
     @Override
+    @Transactional(propagation = Propagation.NOT_SUPPORTED)
     @CacheEvict(value = {"pmReportList", "pmReportCount", "pmReportById"}, allEntries = true)
     public PMReportResponse saveReport(PMReportRequest request) {
         if (request.getPmVisitDate() == null) {
             throw new IllegalArgumentException("PM Visit Date is required");
         }
 
-        if (repository.existsByServiceReportNo(request.getServiceReportNo())) {
-            throw new DuplicateResourceException("Service Report Number already exists: " + request.getServiceReportNo());
+        DataIntegrityViolationException lastConflict = null;
+        for (int attempt = 1; attempt <= MAX_REPORT_NUMBER_RETRIES; attempt++) {
+            try {
+                return transactionTemplate.execute(status -> persistNewReport(request));
+            } catch (DataIntegrityViolationException e) {
+                if (!isServiceReportNoConflict(e)) {
+                    throw e;
+                }
+                lastConflict = e;
+                log.warn("Unique service report number collision on save, retry {}", attempt);
+            } catch (RuntimeException e) {
+                if (!isServiceReportNoConflict(e)) {
+                    throw e;
+                }
+                lastConflict = e instanceof DataIntegrityViolationException
+                        ? (DataIntegrityViolationException) e
+                        : lastConflict;
+                log.warn("Unique service report number collision on save, retry {}", attempt);
+            }
         }
+        log.error("Could not allocate a unique Service Report Number after {} attempts",
+                MAX_REPORT_NUMBER_RETRIES, lastConflict);
+        throw new DuplicateResourceException(
+                "Could not allocate a unique Service Report Number. Please try again.");
+    }
+
+    private PMReportResponse persistNewReport(PMReportRequest request) {
+        String reportNo = generateServiceReportNo();
 
         // Create entity manually for better control
         PreventiveMaintenanceReport report = new PreventiveMaintenanceReport();
         
-        // Set basic fields
-        report.setServiceReportNo(request.getServiceReportNo());
+        // Set basic fields — number is always assigned from the database
+        report.setServiceReportNo(reportNo);
         report.setServiceVisitNo(request.getServiceVisitNo());
         report.setClientName(request.getClientName());
         report.setSiteName(request.getSiteName());

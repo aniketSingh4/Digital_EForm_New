@@ -42,6 +42,11 @@ public class PreventiveMaintenanceController
     public ResponseEntity<Long> getCount() {
         return ResponseEntity.ok(service.getReportCount());
     }
+
+    @GetMapping(value = "/generate-report-number", produces = "text/plain")
+    public ResponseEntity<String> generateReportNumber() {
+        return ResponseEntity.ok(service.generateServiceReportNo());
+    }
     
     @GetMapping("/sensor/{sensorId}/count")
     public ResponseEntity<Map<String, Integer>> getSensorVisitCount(@PathVariable String sensorId) {
