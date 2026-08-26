@@ -1,10 +1,10 @@
 // src/components/pm/Step1BasicInfo.jsx
 import React, { useState, useEffect, useCallback, useRef, useMemo } from "react";
-import { generateServiceReportNo, preloadCounters } from "../../utils/ReportNumberGenerator";
+import { preloadCounters } from "../../utils/ReportNumberGenerator";
 import { getAuthHeaders } from "../../utils/roles";
 import { env } from "../../config/env";
 
-export default function Step1BasicInfo({ formData, setFormData, onNext, onBackToDashboard }) {
+export default function Step1BasicInfo({ formData, setFormData, onNext, onBackToDashboard, isEditMode = false }) {
     // Initialize report from formData or empty object
     const [report, setReport] = useState(() => {
         if (formData.report && Object.keys(formData.report).length > 0) {
@@ -18,6 +18,7 @@ export default function Step1BasicInfo({ formData, setFormData, onNext, onBackTo
     const [visitCount, setVisitCount] = useState(0);
     const [isInitialized, setIsInitialized] = useState(false);
     const [isLoadingCount, setIsLoadingCount] = useState(false);
+    const [reportNumberError, setReportNumberError] = useState(null);
     
     // Cache for sensor visit counts
     const sensorCache = useRef(new Map());
@@ -71,43 +72,78 @@ export default function Step1BasicInfo({ formData, setFormData, onNext, onBackTo
         }
     }, []);
 
+    const fetchPreviewReportNumber = useCallback(async () => {
+        const response = await fetch(`${env.PM_REPORTS_URL}/generate-report-number`, {
+            headers: getAuthHeaders()
+        });
+        if (!response.ok) {
+            throw new Error(`Failed to generate report number (${response.status})`);
+        }
+        const contentType = response.headers.get('content-type') || '';
+        const raw = contentType.includes('application/json')
+            ? await response.json()
+            : await response.text();
+        const reportNo = typeof raw === 'string' ? raw.replace(/^"|"$/g, '').trim() : String(raw ?? '').trim();
+        if (!reportNo) {
+            throw new Error('Empty report number from server');
+        }
+        return reportNo;
+    }, []);
+
     // Initialize component - runs only once
     useEffect(() => {
-        //console.log("🚀 Initializing Step1BasicInfo...");
-        
-        // Preload counters
-        preloadCounters();
+        let cancelled = false;
 
-        // Generate report number and set date
-        const today = getTodayDate();
-        const updatedReport = { ...report };
-        let hasChanges = false;
+        const initialize = async () => {
+            preloadCounters();
 
-        // Generate Report No if not exists
-        if (!updatedReport.serviceReportNo) {
-            const newReportNo = generateServiceReportNo();
-            updatedReport.serviceReportNo = newReportNo;
-            hasChanges = true;
-            //console.log("📋 Generated Service Report No:", newReportNo);
-        }
+            const today = getTodayDate();
+            const updatedReport = { ...report };
+            let hasChanges = false;
 
-        // Set default date if not exists
-        if (!updatedReport.pmVisitDate) {
-            updatedReport.pmVisitDate = today;
-            hasChanges = true;
-            //console.log("📅 Set default date to today:", today);
-        }
+            if (!updatedReport.serviceReportNo) {
+                try {
+                    const newReportNo = await fetchPreviewReportNumber();
+                    if (cancelled) {
+                        return;
+                    }
+                    updatedReport.serviceReportNo = newReportNo;
+                    hasChanges = true;
+                    setReportNumberError(null);
+                } catch (error) {
+                    console.error("Error generating service report number:", error);
+                    if (!cancelled) {
+                        setReportNumberError('Could not generate a report number. Please try again.');
+                        setIsInitialized(true);
+                    }
+                    return;
+                }
+            }
 
-        if (hasChanges) {
-            setReport(updatedReport);
-            setFormData(prev => ({
-                ...prev,
-                report: updatedReport
-            }));
-        }
+            if (!updatedReport.pmVisitDate) {
+                updatedReport.pmVisitDate = today;
+                hasChanges = true;
+            }
 
-        setIsInitialized(true);
-        //console.log("✅ Initialization complete");
+            if (cancelled) {
+                return;
+            }
+
+            if (hasChanges) {
+                setReport(updatedReport);
+                setFormData(prev => ({
+                    ...prev,
+                    report: updatedReport
+                }));
+            }
+
+            setIsInitialized(true);
+        };
+
+        initialize();
+        return () => {
+            cancelled = true;
+        };
     }, []); // Empty array - runs once
 
     // Generate service visit number based on sensor ID
@@ -131,9 +167,9 @@ export default function Step1BasicInfo({ formData, setFormData, onNext, onBackTo
         return visitNo;
     }, [getLiveSensorVisitCount]);
 
-    // Auto-generate Visit No when sensor ID changes
+    // Auto-generate Visit No when sensor ID changes (create only)
     useEffect(() => {
-        if (!isInitialized) return;
+        if (!isInitialized || isEditMode) return;
         
         const generateVisitNo = async () => {
             if (report.sensorId && report.sensorId.trim()) {
@@ -170,7 +206,7 @@ export default function Step1BasicInfo({ formData, setFormData, onNext, onBackTo
         };
         
         generateVisitNo();
-    }, [report.sensorId, isInitialized]);
+    }, [report.sensorId, isInitialized, isEditMode]);
 
     const handleFieldChange = useCallback(async (field, value) => {
         if (field === 'pmVisitDate' && value) {
@@ -227,7 +263,7 @@ export default function Step1BasicInfo({ formData, setFormData, onNext, onBackTo
             newErrors.engineerName = "Engineer Name is required";
         }
 
-        if (report.sensorId) {
+        if (report.sensorId && !isEditMode) {
             // Get live count for validation
             const count = await getLiveSensorVisitCount(report.sensorId);
             if (count >= 6) {
@@ -238,7 +274,7 @@ export default function Step1BasicInfo({ formData, setFormData, onNext, onBackTo
 
         setErrors(newErrors);
         return Object.keys(newErrors).length === 0;
-    }, [report, getLiveSensorVisitCount]);
+    }, [report, getLiveSensorVisitCount, isEditMode]);
 
     const handleNext = useCallback(async () => {
         const isValid = await validateForm();
@@ -276,11 +312,35 @@ export default function Step1BasicInfo({ formData, setFormData, onNext, onBackTo
         return 0;
     }, [report.sensorId]);
     
+    const retryReportNumber = async () => {
+        setIsInitialized(false);
+        setReportNumberError(null);
+        try {
+            const newReportNo = await fetchPreviewReportNumber();
+            const today = getTodayDate();
+            const updatedReport = {
+                ...report,
+                serviceReportNo: newReportNo,
+                pmVisitDate: report.pmVisitDate || today
+            };
+            setReport(updatedReport);
+            setFormData(prev => ({
+                ...prev,
+                report: updatedReport
+            }));
+        } catch (error) {
+            console.error("Error generating service report number:", error);
+            setReportNumberError('Could not generate a report number. Please try again.');
+        } finally {
+            setIsInitialized(true);
+        }
+    };
+
     const isLimitReached = currentVisitCount >= 6;
     const todayDate = getTodayDate();
 
     // Show loading state
-    if (!isInitialized || !report.serviceReportNo) {
+    if (!isInitialized) {
         return (
             <div style={{ 
                 display: 'flex', 
@@ -306,6 +366,17 @@ export default function Step1BasicInfo({ formData, setFormData, onNext, onBackTo
                         100% { transform: rotate(360deg); }
                     }
                 `}</style>
+            </div>
+        );
+    }
+
+    if (reportNumberError && !report.serviceReportNo) {
+        return (
+            <div className="step-container" style={{ textAlign: 'center', padding: '40px 20px' }}>
+                <p style={{ color: '#b91c1c', marginBottom: '16px' }}>{reportNumberError}</p>
+                <button type="button" className="back-to-dashboard-btn" onClick={retryReportNumber}>
+                    Retry
+                </button>
             </div>
         );
     }
@@ -443,6 +514,8 @@ export default function Step1BasicInfo({ formData, setFormData, onNext, onBackTo
                         onChange={handleInputChange}
                         className={`form-control ${errors.sensorId ? 'error' : ''}`}
                         placeholder="Enter sensor ID (e.g., 001, 733, ABC123...)"
+                        disabled={isEditMode}
+                        readOnly={isEditMode}
                     />
                     {errors.sensorId && (
                         <span className="error-message">{errors.sensorId}</span>

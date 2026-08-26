@@ -34,7 +34,15 @@ import { env } from '../../config/env';
 import "./InstallationReportList.css";
 
 const API_BASE_URL = env.INSTALLATION_REPORTS_URL;
-const LIST_CACHE_KEY = 'installation_reports_list';
+const LIST_CACHE_KEY = 'installation_reports_list_v2';
+const SEARCH_DEBOUNCE_MS = 300;
+
+const parseCount = (data) => {
+  if (typeof data === 'object' && data !== null) {
+    return data.count || 0;
+  }
+  return typeof data === 'number' ? data : 0;
+};
 
 const InstallationReportList = () => {
   const navigate = useNavigate();
@@ -44,6 +52,8 @@ const InstallationReportList = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
+  const [totalCount, setTotalCount] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(10);
   const [sortField, setSortField] = useState('date');
@@ -62,13 +72,31 @@ const InstallationReportList = () => {
   }, []);
 
   useEffect(() => {
+    const timer = setTimeout(() => setDebouncedSearchTerm(searchTerm), SEARCH_DEBOUNCE_MS);
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
+
+  useEffect(() => {
     applyFilters();
-  }, [reports, searchTerm]);
+  }, [reports, debouncedSearchTerm]);
+
+  const fetchTotalCount = async () => {
+    try {
+      const response = await axios.get(`${API_BASE_URL}/count`, {
+        headers: getAuthHeaders()
+      });
+      setTotalCount(parseCount(response.data));
+    } catch (err) {
+      console.error('Error fetching installation report count:', err);
+    }
+  };
 
   const fetchReports = async (forceRefresh = false) => {
     try {
       setLoading(true);
       setError(null);
+      fetchTotalCount();
+
       if (!forceRefresh) {
         const cached = getCached(LIST_CACHE_KEY);
         if (cached && Array.isArray(cached)) {
@@ -78,12 +106,14 @@ const InstallationReportList = () => {
           return;
         }
       }
+
       const response = await axios.get(API_BASE_URL, {
         headers: getAuthHeaders()
       });
-      setReports(response.data);
-      setFilteredReports(response.data);
-      setCached(LIST_CACHE_KEY, response.data, LIST_CACHE_TTL);
+      const data = Array.isArray(response.data) ? response.data : [];
+      setReports(data);
+      setFilteredReports(data);
+      setCached(LIST_CACHE_KEY, data, LIST_CACHE_TTL);
     } catch (err) {
       setError('Failed to load reports. Please try again.');
       notificationService.error('Failed to fetch Installation Reports');
@@ -96,12 +126,12 @@ const InstallationReportList = () => {
   const applyFilters = () => {
     let filtered = [...reports];
 
-    if (searchTerm) {
-      const term = searchTerm.toLowerCase();
+    if (debouncedSearchTerm) {
+      const term = debouncedSearchTerm.toLowerCase();
       filtered = filtered.filter(report =>
         report.reportNo?.toLowerCase().includes(term) ||
         report.companyName?.toLowerCase().includes(term) ||
-        report.siteName?.toLowerCase().includes(term) ||
+        report.siteAddress?.toLowerCase().includes(term) ||
         report.customerName?.toLowerCase().includes(term) ||
         report.installedBy?.toLowerCase().includes(term)
       );
@@ -885,28 +915,9 @@ const InstallationReportList = () => {
     return { label: 'Pending', className: 'status-pending', icon: <FaClock /> };
   };
 
-  if (loading) {
-    return (
-      <div className="view-reports-container">
-        <div className="loading-container">
-          <FaSpinner className="spinner" />
-          <p>Loading reports...</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="view-reports-container">
-        <div className="error-message">
-          <div className="error-icon">⚠️</div>
-          <span>{error}</span>
-          <button onClick={fetchReports}>Retry</button>
-        </div>
-      </div>
-    );
-  }
+  const displayedTotal = debouncedSearchTerm.trim()
+    ? filteredReports.length
+    : (totalCount ?? filteredReports.length);
 
   return (
     <div className="view-reports-container">
@@ -947,16 +958,29 @@ const InstallationReportList = () => {
         </div>
 
         <div className="reports-count">
-          Total: {filteredReports.length} reports
+          Total: {totalCount == null && loading && !debouncedSearchTerm.trim() ? '…' : displayedTotal} reports
         </div>
 
-        <button className="refresh-btn" onClick={fetchReports} title="Refresh">
+        <button className="refresh-btn" onClick={() => fetchReports(true)} title="Refresh">
           <FaSync />
         </button>
       </div>
 
+      {error && (
+        <div className="error-message">
+          <div className="error-icon">⚠️</div>
+          <span>{error}</span>
+          <button onClick={() => fetchReports(true)}>Retry</button>
+        </div>
+      )}
+
       {/* Reports Table */}
-      {filteredReports.length === 0 ? (
+      {loading ? (
+        <div className="table-loading">
+          <FaSpinner className="spinner" />
+          <p>Loading reports...</p>
+        </div>
+      ) : filteredReports.length === 0 ? (
         <div className="no-reports">
           <div className="no-reports-icon">📋</div>
           <h3>No Reports Found</h3>
@@ -1076,7 +1100,7 @@ const InstallationReportList = () => {
       )}
 
       {/* Pagination */}
-      {totalPages > 1 && (
+      {!loading && totalPages > 1 && (
         <div className="pagination">
           <button
             onClick={() => paginate(currentPage - 1)}

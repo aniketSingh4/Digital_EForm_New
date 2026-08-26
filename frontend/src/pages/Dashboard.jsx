@@ -192,11 +192,9 @@ export default function Dashboard() {
                 fetch(`${env.CALIBRATION_REPORTS_URL}/count`, {
                     headers: getAuthHeaders()
                 }).then(res => res.ok ? res.json() : 0).catch(() => 0),
-                fetch(env.INSTALLATION_REPORTS_URL, {
+                fetch(`${env.INSTALLATION_REPORTS_URL}/count`, {
                     headers: getAuthHeaders()
-                }).then(res => res.ok ? res.json() : [])
-                    .then(data => Array.isArray(data) ? data.length : 0)
-                    .catch(() => 0)
+                }).then(res => res.ok ? res.json() : 0).catch(() => 0)
             ]);
 
             const counts = results.map(result =>
@@ -207,7 +205,7 @@ export default function Dashboard() {
                 pmReports: typeof counts[0] === 'object' ? counts[0].count || 0 : counts[0] || 0,
                 preVisitChecklists: typeof counts[1] === 'object' ? counts[1].count || 0 : counts[1] || 0,
                 calibrationReports: typeof counts[2] === 'object' ? counts[2].count || 0 : counts[2] || 0,
-                installationReports: typeof counts[3] === 'number' ? counts[3] : 0
+                installationReports: typeof counts[3] === 'object' ? counts[3].count || 0 : counts[3] || 0
             };
 
             setReportCounts(newCounts);

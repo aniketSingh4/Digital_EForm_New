@@ -239,57 +239,6 @@ export const transformDataForAPI = (formData, isEditMode = false) => {
   return apiPayload;
 };
 
-const getServiceReportNoFromPayload = (formData, payload) =>
-  payload?.serviceReportNo
-  || formData?.serviceReportNo
-  || formData?.report?.serviceReportNo
-  || '';
-
-const shouldLookupExistingReport = (error) => {
-  if (!error) {
-    return false;
-  }
-  const status = error.response?.status;
-  if (status === 409 || (status >= 500 && status < 600)) {
-    return true;
-  }
-  return !error.response && (!!error.request || error.code === 'ECONNABORTED' || error.code === 'ERR_NETWORK');
-};
-
-export const fetchPMReportByNumber = async (serviceReportNo) => {
-  if (!serviceReportNo) {
-    return null;
-  }
-  const response = await apiClient.get(
-    `/pm_reports/by-number/${encodeURIComponent(serviceReportNo)}`,
-    { timeout: 20000 }
-  );
-  return response.data;
-};
-
-const recoverCreatedReport = async (error, formData, payload) => {
-  if (!shouldLookupExistingReport(error)) {
-    return null;
-  }
-  const serviceReportNo = getServiceReportNoFromPayload(formData, payload);
-  if (!serviceReportNo) {
-    return null;
-  }
-  const lookup = async () => {
-    try {
-      return await fetchPMReportByNumber(serviceReportNo);
-    } catch {
-      return null;
-    }
-  };
-  let existing = await lookup();
-  if (!existing && (!error.response || error.code === 'ECONNABORTED')) {
-    await new Promise((resolve) => setTimeout(resolve, 1500));
-    existing = await lookup();
-  }
-  return existing || null;
-};
-
 const successResult = (data) => {
   invalidate('pm_reports');
   localStorage.removeItem('dashboard_data');
@@ -303,6 +252,11 @@ const successResult = (data) => {
 
 const failureMessage = (error) => {
   if (error.response) {
+    if (error.response.status === 409) {
+      return error.response.data && typeof error.response.data === 'string' && error.response.data.trim()
+        ? error.response.data
+        : 'Could not allocate a unique Service Report Number. Please try again.';
+    }
     const data = error.response.data;
     if (typeof data === 'string' && data.trim()) {
       return data;
@@ -310,10 +264,10 @@ const failureMessage = (error) => {
     return data?.message || data?.error || `Server error: ${error.response.status}`;
   }
   if (error.code === 'ECONNABORTED') {
-    return 'The request timed out. Checking whether the report was saved...';
+    return 'The request timed out. Check the report list before retrying, in case the report was already saved.';
   }
   if (error.request) {
-    return 'No response from server. Please check your network connection.';
+    return 'No response from server. Check the report list before retrying, then try again if it is not there.';
   }
   return error.message || 'Failed to submit report';
 };
@@ -327,10 +281,6 @@ export const submitPMReport = async (formData) => {
     const response = await apiClient.post('/pm_reports', payload, { timeout: 120000 });
     return successResult(response.data);
   } catch (error) {
-    const recovered = await recoverCreatedReport(error, formData, payload);
-    if (recovered) {
-      return successResult(recovered);
-    }
     console.error("Submit error:", error);
     return {
       success: false,
@@ -419,11 +369,6 @@ export const submitPMReportWithProgress = async (formData, onProgress) => {
 
     return successResult(response.data);
   } catch (error) {
-    const recovered = await recoverCreatedReport(error, formData, payload);
-    if (recovered) {
-      return successResult(recovered);
-    }
-
     return {
       success: false,
       data: null,
